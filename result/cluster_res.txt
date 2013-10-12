@@ -1,0 +1,15 @@
+(choose the maximum value)
+emd based:
+11: 1 2 3 10x 15x
+a: 4 5 6 15x
+c: 7 8 9 12
+e: 10 11 14x
+f: 13 14 15
+
+
+baseline:
+11:
+a:
+c:
+e:
+f:
