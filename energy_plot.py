@@ -26,8 +26,8 @@ num = raw_input("choose a # from above to query: ")
 bldg = bldg_dict[int(num)]
 # start = raw_input("start time (\"%m-%d-%Y %H:%M\" or "-d" for default): ")
 # end = raw_input("end time (\"%m-%d-%Y %H:%M\") or "-d" for default: ")
-start = "6-23-2013 00:00"
-end = "6-30-2013 23:59"
+start = "10-21-2013 00:00"
+end = "10-27-2013 23:59"
 # get the outside air temperature during the period specified
 # get_temp(start, end)
 
@@ -58,36 +58,36 @@ fw = open('energy.csv', 'w')
 fw.writelines("%s,%s\n" %(rd[0],rd[1]) for rd in reading)
 fw.close()
 
-# adujst to data to an array of even length
-data = np.asarray(reading)
-data = data[:,1]
-if len(data)%2==0:
-	data = data
-else:
-	data = data[:len(data)-1]
-# print len(data)
+# # adujst to data to an array of even length
+# data = np.asarray(reading)
+# data = data[:,1]
+# if len(data)%2==0:
+# 	data = data
+# else:
+# 	data = data[:len(data)-1]
+# # print len(data)
 
-# EMD
-res = EMD.emd(data)
-col = res.shape[1]
-print "got ", col, "IMFs"
-# output IMFs to file
-with file('imfs.csv', 'w') as outfile:
-	fw = csv.writer(outfile, delimiter=',')
-	fw.writerows(res[i,:] for i in range(1,res.shape[0]))
-outfile.close()
+# # EMD
+# res = EMD.emd(data)
+# col = res.shape[1]
+# print "got ", col, "IMFs"
+# # output IMFs to file
+# with file('imfs.csv', 'w') as outfile:
+# 	fw = csv.writer(outfile, delimiter=',')
+# 	fw.writerows(res[i,:] for i in range(1,res.shape[0]))
+# outfile.close()
 
-#plot figures
-plt.figure()
-plt.title("Power Consumption of %s (kWh)"%bldg)
-for i in range(col):
-	plt.subplot(col+1, 1, i+1)
-	# tmp = np.zeros([len(res),1])
-	# for t in range(i+1):
-	# 	tmp[:,0] += res[:,t]
-	# plt.plot(tmp, 'b-', data, 'r--')
-	plt.plot(res[:,i])
+# #plot figures
+# plt.figure()
+# plt.title("Power Consumption of %s (kWh)"%bldg)
+# for i in range(col):
+# 	plt.subplot(col+1, 1, i+1)
+# 	# tmp = np.zeros([len(res),1])
+# 	# for t in range(i+1):
+# 	# 	tmp[:,0] += res[:,t]
+# 	# plt.plot(tmp, 'b-', data, 'r--')
+# 	plt.plot(res[:,i])
 
-plt.subplot(col+1,1,col+1)
-plt.plot(data)
-plt.show()
+# plt.subplot(col+1,1,col+1)
+# plt.plot(data)
+# plt.show()

@@ -8,19 +8,19 @@ import os
 c = SmapClient("http://new.openbms.org/backend")
 
 # start and end values are Unix timestamps
-t_start = "6-16-2013 8:00"
-t_end = "6-20-2013 18:30"
+t_start = "6-12-2013 8:00"
+t_end = "6-19-2013 8:00"
 start = 1000*dtutil.dt2ts(dtutil.strptime_tz(t_start, "%m-%d-%Y %H:%M"))
 end   = 1000*dtutil.dt2ts(dtutil.strptime_tz(t_end, "%m-%d-%Y %H:%M"))
 
-# stnc = "select distinct Metadata/Location/RoomNumber where Metadata/SourceName='KETI Motes'"
-# roomlist = c.query(stnc) #the result is a list
+stnc = "select distinct Metadata/Location/RoomNumber where Metadata/SourceName='KETI Motes'"
+roomlist = c.query(stnc) #the result is a list
 
-# roomlist = roomlist[16:]
-roomlist = ['510']
+#roomlist = roomlist[16:]
+#roomlist = ['621A','621B','621C','621D','621E']
 for room in roomlist:
 	print "==========Fetching streams in Room %s=========="%room
-	stnc = "select Path where Metadata/Location/RoomNumber='%s'" %room
+	stnc = "select Path where Metadata/Location/RoomNumber='%s' and not Path ~ '.*pir.*'" %room
 	streams = c.query(stnc)
 	if len(streams)>0:
 		# print "----%d streams in Room %s----"%(len(streams), room)
@@ -30,7 +30,7 @@ for room in roomlist:
 			tags = c.tags("Path='%s'"%s['Path'])
 
 			# mkdir for each room
-			path = "/Users/hdz_1989/Downloads//SDB/KETI"
+			path = "/Users/hdz_1989/Documents/Dropbox/SDB/KETI_tmp"
 			folder = room
 			if not os.path.exists(path+'/'+folder):
 				os.makedirs(path+'/'+folder)
