@@ -1,10 +1,11 @@
 from sklearn.cross_validation import LeaveOneOut
 from sklearn.tree import DecisionTreeClassifier as DT
 from sklearn.metrics import confusion_matrix as CM
+from sklearn.preprocessing import normalize
 import numpy as np
 import pylab as pl
 
-input = np.genfromtxt('sdh', delimiter=',')
+input = np.genfromtxt('rice', delimiter=',')
 data = input[:,0:-1]
 label = input[:,-1]
 
@@ -37,7 +38,10 @@ while i<len(data):
 print '%d wrongly predicted'%ctr, 'err rate:', float(ctr)/len(data)
 
 cm = CM(label,preds)
-cm = cm/cm.astype(np.float).sum(axis=1)
+print cm
+cm = normalize(cm.astype(np.float), axis=1, norm='l1')
+print cm
+#cm /= cm.astype(np.float).sum(axis=1)
 fig = pl.figure()
 ax = fig.add_subplot(111)
 cax = ax.matshow(cm)
@@ -45,7 +49,7 @@ fig.colorbar(cax)
 
 for x in xrange(len(cm)):
     for y in xrange(len(cm)):
-        ax.annotate(str(cm[x][y])[:4], xy=(y,x), 
+        ax.annotate(str("%.2f"%cm[x][y]), xy=(y,x),
                     horizontalalignment='center',
                     verticalalignment='center')
 
