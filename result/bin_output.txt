@@ -1,0 +1,24 @@
+"""
+binary output of classification
+1 is classified as in this room
+0 is not
+the 3 digits for each room follows the sequency of co2-hum-temp
+
+take the third row in SET1 as an example--row 0xc--and you have 111 in column 0xC, which means sensor co2-hum-temp have results of 1-1-1 and they are all classified correctly, and you have 010 in column 0xe, which means you have 1 for hum. therefore hum. from 0xe is classified as in room 0xc. So when you generate the graph for room 0xc, you plot co2-hum-temp of 0xc in 0xc because they are correctly classified, and you also put hum. of 0xe in 0xc as a False Positive.
+And you follow the same rule for each ROW.
+
+"""
+=====set1=====(with 90% corrcoef)
+		0x11 0xa 0xc 0xe 0xf
+0x11	010 000 000 000 000
+0xa		000 110 000 000 000
+0xc		000 000 111 010 000
+0xe		000	000 010 000 000
+0xf		000	000 000 000 110
+=====set2=====(with 70% corrcoef)
+		0x11 0xa 0xc 0xe 0xf
+0x11	111 000	000	100 001
+0xa		000 111 000 000 001
+0xc		001 000 111 011 010
+0xe		111 001 110 110 010
+0xf		010 011 010 010 111

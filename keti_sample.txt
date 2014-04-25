@@ -1,0 +1,9 @@
+humidity in four diff rooms
+http://www.openbms.org/plot/?streamids=727c58bc-b089-5fb4-9c01-383c1fe7e5c0,559f45e2-1db7-51cb-a173-fe4f567ce00f,dc96bb0b-3253-537e-bdad-2ca74f9148e9,314abd67-e24a-5fa5-9d02-a99dabb2c9c7&start=1364800500000&end=1373613300000&stack=false&tree=0&axes=1,1,1,1
+
+luminisity in four diff rooms
+http://www.openbms.org/plot/?streamids=b7379dca-b239-508c-9e4f-4773068680ae,f54e33fe-b850-5201-93f5-9fdde1c4aef6,dbf8f798-40bd-59b5-a486-b93a8e6f08cd,39e78174-6855-59dd-a2af-ab595d4bc501&start=1371936600000&end=1373664600000&stack=false&tree=0&axes=1,1,1,1
+
+co2 in two diff rooms
+http://www.openbms.org/plot/?streamids=9d522d50-d9da-5f40-982e-aad682202155,c0ab49de-b610-514c-9891-056676965fb5&start=1371937380000&end=1373665380000&stack=false&tree=0&axes=1,1
+
