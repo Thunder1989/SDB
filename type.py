@@ -4,7 +4,7 @@ from sklearn.metrics import confusion_matrix as CM
 import numpy as np
 import pylab as pl
 
-input = np.genfromtxt('rice', delimiter=',')
+input = np.genfromtxt('sdh', delimiter=',')
 data = input[:,0:-1]
 label = input[:,-1]
 
@@ -38,9 +38,24 @@ print '%d wrongly predicted'%ctr, 'err rate:', float(ctr)/len(data)
 
 cm = CM(label,preds)
 cm = cm/cm.astype(np.float).sum(axis=1)
-pl.matshow(cm)
+fig = pl.figure()
+ax = fig.add_subplot(111)
+cax = ax.matshow(cm)
+fig.colorbar(cax)
+
+for x in xrange(len(cm)):
+    for y in xrange(len(cm)):
+        ax.annotate(str(cm[x][y])[:4], xy=(y,x), 
+                    horizontalalignment='center',
+                    verticalalignment='center')
+
+
+cls = ['co2','humidity','rmt','stpt','flow','other_t']
+pl.xticks(range(len(cm)),cls)
+pl.yticks(range(len(cm)),cls)
 pl.title('Confusion matrix')
-pl.colorbar()
+#pl.colorbar()
 pl.ylabel('True label')
 pl.xlabel('Predicted label')
 pl.show()
+
