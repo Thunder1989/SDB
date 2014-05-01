@@ -5,7 +5,7 @@ from sklearn.preprocessing import normalize
 import numpy as np
 import pylab as pl
 
-input = np.genfromtxt('rice', delimiter=',')
+input = np.genfromtxt('sdh', delimiter=',')
 data = input[:,0:-1]
 label = input[:,-1]
 
@@ -32,15 +32,16 @@ while i<len(data):
     preds.append(pred)
     if pred != test_label:
         ctr += 1
-        #print 'inst', i+1, 'test label:', test_label, 'predicted label:', pred
+        print 'inst', i+1, '%d:%d'%(test_label,pred), test_data
     i+=1
 
 print '%d wrongly predicted'%ctr, 'err rate:', float(ctr)/len(data)
 
+'''
 cm = CM(label,preds)
-print cm
+#print cm
 cm = normalize(cm.astype(np.float), axis=1, norm='l1')
-print cm
+#print cm
 #cm /= cm.astype(np.float).sum(axis=1)
 fig = pl.figure()
 ax = fig.add_subplot(111)
@@ -49,7 +50,7 @@ fig.colorbar(cax)
 
 for x in xrange(len(cm)):
     for y in xrange(len(cm)):
-        ax.annotate(str("%.2f"%cm[x][y]), xy=(y,x),
+        ax.annotate(str("%.3f"%cm[x][y]), xy=(y,x),
                     horizontalalignment='center',
                     verticalalignment='center')
 
@@ -62,4 +63,4 @@ pl.title('Confusion matrix')
 pl.ylabel('True label')
 pl.xlabel('Predicted label')
 pl.show()
-
+'''
