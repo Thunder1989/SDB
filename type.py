@@ -6,7 +6,7 @@ from sklearn.preprocessing import normalize
 import numpy as np
 import pylab as pl
 
-input = np.genfromtxt('rice_30min', delimiter=',')
+input = np.genfromtxt('sdh_30min', delimiter=',')
 data = input[:,0:-1]
 label = input[:,-1]
 
