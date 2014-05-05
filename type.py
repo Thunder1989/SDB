@@ -29,7 +29,7 @@ while i<len(data):
     test_label = label[i]
     clf = DT(criterion='entropy', random_state=0)
     clf.fit(train_data, train_label)
-    out = tree.export_graphviz(clf, out_file='tree.dot')
+    #out = tree.export_graphviz(clf, out_file='tree.dot')
     pred = clf.predict(test_data)
     preds.append(pred)
     if pred != test_label:
