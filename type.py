@@ -1,11 +1,12 @@
 from sklearn.cross_validation import LeaveOneOut
+from sklearn import tree
 from sklearn.tree import DecisionTreeClassifier as DT
 from sklearn.metrics import confusion_matrix as CM
 from sklearn.preprocessing import normalize
 import numpy as np
 import pylab as pl
 
-input = np.genfromtxt('rice', delimiter=',')
+input = np.genfromtxt('rice_30min', delimiter=',')
 data = input[:,0:-1]
 label = input[:,-1]
 
@@ -28,16 +29,16 @@ while i<len(data):
     test_label = label[i]
     clf = DT(criterion='entropy', random_state=0)
     clf.fit(train_data, train_label)
+    out = tree.export_graphviz(clf, out_file='tree.dot')
     pred = clf.predict(test_data)
     preds.append(pred)
     if pred != test_label:
         ctr += 1
-        print 'inst', i+1, '%d:%d'%(test_label,pred), test_data
+        print 'inst', i+1, '%d:%d'%(test_label,pred)#, test_data
     i+=1
 
 print '%d wrongly predicted'%ctr, 'err rate:', float(ctr)/len(data)
 
-'''
 cm = CM(label,preds)
 #print cm
 cm = normalize(cm.astype(np.float), axis=1, norm='l1')
@@ -63,4 +64,3 @@ pl.title('Confusion matrix')
 pl.ylabel('True label')
 pl.xlabel('Predicted label')
 pl.show()
-'''
