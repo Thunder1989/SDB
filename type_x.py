@@ -5,10 +5,10 @@ from sklearn.preprocessing import normalize
 import numpy as np
 import pylab as pl
 
-input1 = np.genfromtxt('sdh', delimiter=',')
+input1 = np.genfromtxt('rice_15min', delimiter=',')
 data1 = input1[:,0:-1]
 label1 = input1[:,-1]
-input2 = np.genfromtxt('rice', delimiter=',')
+input2 = np.genfromtxt('sdh_15min', delimiter=',')
 data2 = input2[:,0:-1]
 label2 = input2[:,-1]
 
@@ -30,9 +30,9 @@ print '%d testing instancs'%len(data2)
 print '%d wrongly predictedi at err rate %.3f'%(ctr, float(ctr)/len(data2))
 
 cm = CM(label2,preds)
-print cm
+#print cm
 cm = normalize(cm.astype(np.float), axis=1, norm='l1')
-print cm
+#print cm
 #cm /= cm.astype(np.float).sum(axis=1)
 fig = pl.figure()
 ax = fig.add_subplot(111)
