@@ -6,9 +6,9 @@ from sklearn.preprocessing import normalize
 import numpy as np
 import pylab as pl
 
-input = np.genfromtxt('rice_30min', delimiter=',')
-data = input[:,0:-1]
-label = input[:,-1]
+input = np.genfromtxt('sdh_45min_sorted', delimiter=',')
+data = input[0:-1:2,0:-1]
+label = input[0:-1:2,-1]
 
 '''
 loo = LeaveOneOut(len(data))
@@ -36,8 +36,8 @@ while i<len(data):
         ctr += 1
         print 'inst', i+1, '%d:%d'%(test_label,pred)#, test_data
     i+=1
-
-print '%d wrongly predicted'%ctr, 'err rate:', float(ctr)/len(data)
+print '# of instances', len(data)
+print '%d wrongly predicted,'%ctr, 'err rate:', float(ctr)/len(data)
 
 cm = CM(label,preds)
 #print cm
