@@ -6,13 +6,13 @@ import numpy as np
 import pylab as pl
 
 input1 = np.genfromtxt('rice_45min', delimiter=',')
-data1 = input1[:,0:-1]
-label1 = input1[:,-1]
+data2 = input1[:,0:-1]
+label2 = input1[:,-1]
 input2 = np.genfromtxt('sdh_45min_sorted', delimiter=',')
 #data2 = input2[:,0:-1]
 #label2 = input2[:,-1]
-data2 = input2[0:-1:2,0:-1]
-label2 = input2[0:-1:2,-1]
+data1 = input2[0:-1:2,0:-1]
+label1 = input2[0:-1:2,-1]
 
 
 preds = []
