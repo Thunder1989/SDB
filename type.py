@@ -1,14 +1,15 @@
 from sklearn.cross_validation import LeaveOneOut
 from sklearn import tree
 from sklearn.tree import DecisionTreeClassifier as DT
+from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.metrics import confusion_matrix as CM
 from sklearn.preprocessing import normalize
 import numpy as np
 import pylab as pl
 
-input = np.genfromtxt('sdh_45min_sorted', delimiter=',')
-data = input[0:-1:2,0:-1]
-label = input[0:-1:2,-1]
+input = np.genfromtxt('rice_45min', delimiter=',')
+data = input[:,0:-1]
+label = input[:,-1]
 
 '''
 loo = LeaveOneOut(len(data))
@@ -27,9 +28,10 @@ while i<len(data):
     train_label = label[idx]
     test_data = data[i]
     test_label = label[i]
-    clf = DT(criterion='entropy', random_state=0)
+    #clf = DT(criterion='entropy', random_state=0)
+    clf = RFC(n_estimators=6, criterion='entropy')
     clf.fit(train_data, train_label)
-    #out = tree.export_graphviz(clf, out_file='tree.dot')
+    #out = tree.export_graphviz(clf, out_file='tree33.dot')
     pred = clf.predict(test_data)
     preds.append(pred)
     if pred != test_label:
