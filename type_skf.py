@@ -1,5 +1,8 @@
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.tree import DecisionTreeClassifier as DT
+from sklearn.ensemble import RandomForestClassifier as RFC
+from sklearn.ensemble import ExtraTreesClassifier as ETC
+from sklearn.ensemble import AdaBoostClassifier as Ada
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix as CM
 from sklearn import tree
@@ -37,7 +40,10 @@ for train_idx, test_idx in skf:
     #test_label = label[train_idx]
     test_data = data2
     test_label = label2
-    clf = DT(criterion='entropy', random_state=0)
+    #clf = ETC(n_estimators=10, criterion='entropy')
+    clf = RFC(n_estimators=100, criterion='entropy')
+    #clf = DT(criterion='entropy', random_state=0)
+    #clf = Ada(n_estimators=100)
     clf.fit(train_data, train_label)
     #out = tree.export_graphviz(clf, out_file='tree.dot')
     preds = clf.predict(test_data)
@@ -45,8 +51,8 @@ for train_idx, test_idx in skf:
     sum.append(acc)
     print acc
 
-print 'ave acc', np.mean(sum)
-print 'acc std', np.std(sum)
+print 'ave acc:', np.mean(sum)
+print 'std:', np.std(sum)
 
 cm = CM(test_label,preds)
 #print cm
