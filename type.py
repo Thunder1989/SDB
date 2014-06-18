@@ -7,8 +7,9 @@ from sklearn.metrics import confusion_matrix as CM
 from sklearn.preprocessing import normalize
 import numpy as np
 import pylab as pl
+import logging
 
-input = np.genfromtxt('rice_45min', delimiter=',')
+input = np.genfromtxt('sdh_45min', delimiter=',')
 data = input[:,0:-1]
 label = input[:,-1]
 
@@ -17,6 +18,7 @@ preds = []
 idx = LeaveOneOut(len(data))
 #clf = DT(criterion='entropy', random_state=5)
 clf = RFC(n_estimators=50, criterion='entropy')
+log = open('log_','w')
 for train, test in idx:
     train_data = data[train]
     train_label = label[train]
@@ -26,10 +28,13 @@ for train, test in idx:
     #out = tree.export_graphviz(clf, out_file='tree33.dot')
     pred = clf.predict(test_data)
     preds.append(pred)
+    #print 'inst', test+1, '%d:%d'%(test_label,pred)#, test_data
+    log.write('inst[%d]-%d:%d'%(test+1,test_label,pred))
+    log.write('>>>%s\n'%clf.predict_proba(test_data))
     if pred != test_label:
-    #    print 'inst', test+1, '%d:%d'%(test_label,pred)#, test_data
         ctr += 1
 
+log.close()
 acc = accuracy_score(label, preds)
 print ctr, 'wrong out of', len(data), 'instances'
 print 'err rate:', 1-acc

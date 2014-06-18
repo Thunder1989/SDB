@@ -26,11 +26,11 @@ for train_idx, test_idx in loo:
 
 ctr = 0
 preds = []
-fold = 3
+fold = 5
 skf = StratifiedKFold(label1, n_folds=fold)
-sum = []
+acc_sum = []
 #clf = ETC(n_estimators=10, criterion='entropy')
-#clf = RFC(n_estimators=50, criterion='entropy')
+clf = RFC(n_estimators=50, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = Ada(n_estimators=100)
 #clf = SVC(kernel='linear')
@@ -46,17 +46,16 @@ for train_idx, test_idx in skf:
     #test_label = label[train_idx]
     test_data = data2
     test_label = label2
-    print 'here'
     clf.fit(train_data, train_label)
     #out = tree.export_graphviz(clf, out_file='tree.dot')
-    print 'there'
     preds = clf.predict(test_data)
+    #print clf.predict_proba(test_data)
     acc = accuracy_score(test_label, preds)
-    sum.append(acc)
+    acc_sum.append(acc)
     print acc
 
-print 'ave acc:', np.mean(sum)
-print 'std:', np.std(sum)
+print 'ave acc:', np.mean(acc_sum)
+print 'std:', np.std(acc_sum)
 
 cm = CM(test_label,preds)
 #print cm
