@@ -2,6 +2,7 @@ from sklearn.cross_validation import LeaveOneOut
 from sklearn import tree
 from sklearn.tree import DecisionTreeClassifier as DT
 from sklearn.ensemble import RandomForestClassifier as RFC
+from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix as CM
 from sklearn.preprocessing import normalize
 import numpy as np
@@ -11,35 +12,27 @@ input = np.genfromtxt('rice_45min', delimiter=',')
 data = input[:,0:-1]
 label = input[:,-1]
 
-'''
-loo = LeaveOneOut(len(data))
-for train_idx, test_idx in loo:
-    pass
-'''
-
-i=0
 ctr = 0
 preds = []
-while i<len(data):
-    idx = range(len(data))
-    idx.remove(i)
-
-    train_data = data[idx]
-    train_label = label[idx]
-    test_data = data[i]
-    test_label = label[i]
-    #clf = DT(criterion='entropy', random_state=0)
-    clf = RFC(n_estimators=6, criterion='entropy')
+idx = LeaveOneOut(len(data))
+#clf = DT(criterion='entropy', random_state=5)
+clf = RFC(n_estimators=50, criterion='entropy')
+for train, test in idx:
+    train_data = data[train]
+    train_label = label[train]
+    test_data = data[test]
+    test_label = label[test]
     clf.fit(train_data, train_label)
     #out = tree.export_graphviz(clf, out_file='tree33.dot')
     pred = clf.predict(test_data)
     preds.append(pred)
     if pred != test_label:
+    #    print 'inst', test+1, '%d:%d'%(test_label,pred)#, test_data
         ctr += 1
-        print 'inst', i+1, '%d:%d'%(test_label,pred)#, test_data
-    i+=1
-print '# of instances', len(data)
-print '%d wrongly predicted,'%ctr, 'err rate:', float(ctr)/len(data)
+
+acc = accuracy_score(label, preds)
+print ctr, 'wrong out of', len(data), 'instances'
+print 'err rate:', 1-acc
 
 cm = CM(label,preds)
 #print cm

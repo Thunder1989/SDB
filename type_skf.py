@@ -3,6 +3,7 @@ from sklearn.tree import DecisionTreeClassifier as DT
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.ensemble import ExtraTreesClassifier as ETC
 from sklearn.ensemble import AdaBoostClassifier as Ada
+from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix as CM
 from sklearn import tree
@@ -25,9 +26,14 @@ for train_idx, test_idx in loo:
 
 ctr = 0
 preds = []
-fold = 2
+fold = 3
 skf = StratifiedKFold(label1, n_folds=fold)
 sum = []
+#clf = ETC(n_estimators=10, criterion='entropy')
+#clf = RFC(n_estimators=50, criterion='entropy')
+#clf = DT(criterion='entropy', random_state=0)
+#clf = Ada(n_estimators=100)
+#clf = SVC(kernel='linear')
 for train_idx, test_idx in skf:
     '''
     because we want to do inverse k-fold XV
@@ -40,12 +46,10 @@ for train_idx, test_idx in skf:
     #test_label = label[train_idx]
     test_data = data2
     test_label = label2
-    #clf = ETC(n_estimators=10, criterion='entropy')
-    clf = RFC(n_estimators=100, criterion='entropy')
-    #clf = DT(criterion='entropy', random_state=0)
-    #clf = Ada(n_estimators=100)
+    print 'here'
     clf.fit(train_data, train_label)
     #out = tree.export_graphviz(clf, out_file='tree.dot')
+    print 'there'
     preds = clf.predict(test_data)
     acc = accuracy_score(test_label, preds)
     sum.append(acc)
