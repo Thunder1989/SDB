@@ -6,6 +6,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix as CM
 from sklearn.preprocessing import normalize
 import numpy as np
+import math
 import pylab as pl
 import logging
 
@@ -27,10 +28,13 @@ for train, test in idx:
     clf.fit(train_data, train_label)
     #out = tree.export_graphviz(clf, out_file='tree33.dot')
     pred = clf.predict(test_data)
+    pr = clf.predict_proba(test_data)
     preds.append(pred)
+    entropy = np.sum(-p*math.log(p,6) for p in pr[0] if p!=0)
     #print 'inst', test+1, '%d:%d'%(test_label,pred)#, test_data
-    log.write('inst[%d]-%d:%d'%(test+1,test_label,pred))
-    log.write('>>>%s\n'%clf.predict_proba(test_data))
+    log.write('[%d]-%d:%d'%(test+1,test_label,pred))
+    log.write('-%s'%clf.predict_proba(test_data))
+    log.write('-%.3f\n'%entropy)
     if pred != test_label:
         ctr += 1
 
