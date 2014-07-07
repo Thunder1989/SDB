@@ -10,7 +10,7 @@ import math
 import pylab as pl
 import logging
 
-input = np.genfromtxt('sdh_30min', delimiter=',')
+input = np.genfromtxt('sdh_bsln', delimiter=',')
 data = input[:,0:-1]
 label = input[:,-1]
 

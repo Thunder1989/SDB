@@ -12,10 +12,10 @@ import numpy as np
 import math
 import pylab as pl
 
-input1 = np.genfromtxt('rice_30min', delimiter=',')
+input1 = np.genfromtxt('rice_bsln', delimiter=',')
 data2 = input1[:,0:-1]
 label2 = input1[:,-1]
-input2 = np.genfromtxt('sdh_30min', delimiter=',')
+input2 = np.genfromtxt('sdh_bsln', delimiter=',')
 data1 = input2[:,0:-1]
 label1 = input2[:,-1]
 
@@ -27,7 +27,7 @@ for train_idx, test_idx in loo:
 
 ctr = 0
 preds = []
-fold = 3
+fold = 2
 skf = StratifiedKFold(label1, n_folds=fold)
 acc_sum = []
 indi_acc =[[] for i in range(6)]
@@ -44,10 +44,10 @@ for train_idx, test_idx in skf:
     '''
     train_data = data1[test_idx]
     train_label = label1[test_idx]
-    #test_data = data1[train_idx]
-    #test_label = label1[train_idx]
-    test_data = data2
-    test_label = label2
+    test_data = data1[train_idx]
+    test_label = label1[train_idx]
+    #test_data = data2
+    #test_label = label2
     clf.fit(train_data, train_label)
     #out = tree.export_graphviz(clf, out_file='tree.dot')
     preds = clf.predict(test_data)
@@ -63,9 +63,9 @@ for train_idx, test_idx in skf:
         k += 1
 
 indi_ave_acc = [np.mean(i) for i in indi_acc]
-indi_ave_acc_std = [np.std(i) for i in indi_acc]
+#indi_ave_acc_std = [np.std(i) for i in indi_acc]
 print 'ave acc/type:', indi_ave_acc
-print 'acc std/type:', indi_ave_acc_std
+#print 'acc std/type:', indi_ave_acc_std
 
 '''
 log = open('log_r_s','w')
@@ -80,7 +80,7 @@ for i,j,pr in zip(test_label,preds,pr):
 log.close()
 '''
 print 'ave acc:', np.mean(acc_sum)
-print 'std:', np.std(acc_sum)
+#print 'std:', np.std(acc_sum)
 
 cm = CM(test_label,preds)
 #print cm
