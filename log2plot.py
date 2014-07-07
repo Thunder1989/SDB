@@ -1,4 +1,4 @@
-lines = [i.strip('\n').split('-') for i in open('log_','r').readlines()]
+lines = [i.strip('\n').split('-') for i in open('log','r').readlines()]
 correct = []
 wrong = []
 

@@ -10,7 +10,7 @@ import math
 import pylab as pl
 import logging
 
-input = np.genfromtxt('sdh_45min', delimiter=',')
+input = np.genfromtxt('sdh_30min', delimiter=',')
 data = input[:,0:-1]
 label = input[:,-1]
 
@@ -19,7 +19,7 @@ preds = []
 idx = LeaveOneOut(len(data))
 #clf = DT(criterion='entropy', random_state=5)
 clf = RFC(n_estimators=50, criterion='entropy')
-log = open('log_','w')
+#log = open('log_','w')
 for train, test in idx:
     train_data = data[train]
     train_label = label[train]
@@ -30,15 +30,15 @@ for train, test in idx:
     pred = clf.predict(test_data)
     pr = clf.predict_proba(test_data)
     preds.append(pred)
-    entropy = np.sum(-p*math.log(p,6) for p in pr[0] if p!=0)
+    #entropy = np.sum(-p*math.log(p,6) for p in pr[0] if p!=0)
     #print 'inst', test+1, '%d:%d'%(test_label,pred)#, test_data
-    log.write('[%d]-%d:%d'%(test+1,test_label,pred))
-    log.write('-%s'%clf.predict_proba(test_data))
-    log.write('-%.3f\n'%entropy)
+    #log.write('[%d]-%d:%d'%(test+1,test_label,pred))
+    #log.write('-%s'%clf.predict_proba(test_data))
+    #log.write('-%.3f\n'%entropy)
     if pred != test_label:
         ctr += 1
 
-log.close()
+#log.close()
 acc = accuracy_score(label, preds)
 print ctr, 'wrong out of', len(data), 'instances'
 print 'err rate:', 1-acc
@@ -46,8 +46,8 @@ print 'err rate:', 1-acc
 cm = CM(label,preds)
 #print cm
 cm = normalize(cm.astype(np.float), axis=1, norm='l1')
-#print cm
-#cm /= cm.astype(np.float).sum(axis=1)
+indi_acc = [cm[i][i] for i in range(6)]
+print indi_acc
 fig = pl.figure()
 ax = fig.add_subplot(111)
 cax = ax.matshow(cm)
