@@ -62,26 +62,36 @@ for train_idx, test_idx in skf:
         indi_acc[k].append(cm[k,k])
         k += 1
 
+    #log = open('log_r_s','w')
+    label_pr = clf.predict_proba(test_data)
+    correct = []
+    wrong = []
+    for h,i,j,pr in zip(train_idx,test_label,preds,label_pr):
+        entropy = np.sum(-p*math.log(p,6) for p in pr if p!=0)
+        if i==j:
+            correct.append([h,i,j,entropy])
+        else:
+            wrong.append([h,i,j,entropy])
+        #log.write('[%d]-%d:%d'%(k,i,j))
+        #log.write('-%s'%pr)
+        #log.write('-%.3f\n'%entropy)
+    #log.close()
+
+    wrong = sorted(wrong,key=lambda x: x[3])
+    ele = wrong[0][0]
+    test_idx = np.append(test_idx, ele)
+    trian_idx = train_idx[train_idx!=ele]
+
+
 indi_ave_acc = [np.mean(i) for i in indi_acc]
 #indi_ave_acc_std = [np.std(i) for i in indi_acc]
-print 'ave acc/type:', indi_ave_acc
+print 'ave acc/type:', repr(indi_ave_acc)
 #print 'acc std/type:', indi_ave_acc_std
-
-'''
-log = open('log_r_s','w')
-pr = clf.predict_proba(test_data)
-k=1
-for i,j,pr in zip(test_label,preds,pr):
-    entropy = np.sum(-p*math.log(p,6) for p in pr if p!=0)
-    log.write('[%d]-%d:%d'%(k,i,j))
-    log.write('-%s'%pr)
-    log.write('-%.3f\n'%entropy)
-    k += 1
-log.close()
-'''
 print 'ave acc:', np.mean(acc_sum)
-#print 'std:', np.std(acc_sum)
+#print 'acc std:', np.std(acc_sum)
 
+'''
+%plot confusion matrix
 cm = CM(test_label,preds)
 #print cm
 cm = normalize(cm.astype(np.float), axis=1, norm='l1')
@@ -107,3 +117,4 @@ pl.title('Confusion matrix')
 pl.ylabel('True label')
 pl.xlabel('Predicted label')
 pl.show()
+'''
