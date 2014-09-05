@@ -12,12 +12,12 @@ import numpy as np
 import math
 import pylab as pl
 
-input1 = np.genfromtxt('rice_45min', delimiter=',')
-data2 = input1[:,0:-1]
-label2 = input1[:,-1]
+input1 = np.genfromtxt('rice_bsln', delimiter=',')
+data1 = input1[:,0:-1]
+label1 = input1[:,-1]
 input2 = np.genfromtxt('sdh_45min', delimiter=',')
-data1 = input2[:,0:-1]
-label1 = input2[:,-1]
+data2 = input2[:,0:-1]
+label2 = input2[:,-1]
 
 '''
 loo = LeaveOneOut(len(data))
@@ -82,6 +82,7 @@ log.close()
 print 'ave acc:', np.mean(acc_sum)
 #print 'std:', np.std(acc_sum)
 
+'''
 cm = CM(test_label,preds)
 #print cm
 cm = normalize(cm.astype(np.float), axis=1, norm='l1')
@@ -107,3 +108,4 @@ pl.title('Confusion matrix')
 pl.ylabel('True label')
 pl.xlabel('Predicted label')
 pl.show()
+'''
