@@ -49,7 +49,6 @@ for train_idx, test_idx in skf:
     #test_data = data2
     #test_label = label2
     clf.fit(train_data, train_label)
-    #out = tree.export_graphviz(clf, out_file='tree.dot')
     preds = clf.predict(test_data)
     acc = accuracy_score(test_label, preds)
     acc_sum.append(acc)

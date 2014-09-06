@@ -13,11 +13,11 @@ import math
 import pylab as pl
 
 input1 = np.genfromtxt('rice_bsln', delimiter=',')
-data1 = input1[:,0:-1]
-label1 = input1[:,-1]
-input2 = np.genfromtxt('sdh_45min', delimiter=',')
-data2 = input2[:,0:-1]
-label2 = input2[:,-1]
+data2 = input1[:,0:-1]
+label2 = input1[:,-1]
+input2 = np.genfromtxt('sdh_bsln', delimiter=',')
+data1 = input2[:,0:-1]
+label1 = input2[:,-1]
 
 '''
 loo = LeaveOneOut(len(data))
@@ -27,41 +27,43 @@ for train_idx, test_idx in loo:
 
 ctr = 0
 preds = []
-fold = 10
-skf = StratifiedKFold(label1, n_folds=fold)
+fold = 20
+skf = StratifiedKFold(label2, n_folds=fold)
 acc_sum = []
 indi_acc =[[] for i in range(6)]
 #clf = ETC(n_estimators=10, criterion='entropy')
-clf = RFC(n_estimators=50, criterion='entropy')
+#clf = RFC(n_estimators=50, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = Ada(n_estimators=100)
-#clf = SVC(kernel='linear')
-for train_idx, test_idx in skf:
-    '''
-    because we want to do inverse k-fold XV
-    aka, use 1 fold to train, k-1 folds to test
-    so the indexing is inversed
-    '''
-    train_data = data1[test_idx]
-    train_label = label1[test_idx]
-    test_data = data1[train_idx]
-    test_label = label1[train_idx]
-    #test_data = data2
-    #test_label = label2
-    clf.fit(train_data, train_label)
-    #out = tree.export_graphviz(clf, out_file='tree.dot')
-    preds = clf.predict(test_data)
-    acc = accuracy_score(test_label, preds)
-    acc_sum.append(acc)
-    #print acc
+clf = SVC(kernel='linear')
+loop = 0
+while loop<100/fold:
+    for train_idx, test_idx in skf:
+        '''
+        because we want to do inverse k-fold XV
+        aka, use 1 fold to train, k-1 folds to test
+        so the indexing is inversed
+        '''
+        train_data = data2[test_idx]
+        train_label = label2[test_idx]
+        #test_data = data2[train_idx]
+        #test_label = label2[train_idx]
+        test_data = data1
+        test_label = label1
+        clf.fit(train_data, train_label)
+        #out = tree.export_graphviz(clf, out_file='tree.dot')
+        preds = clf.predict(test_data)
+        acc = accuracy_score(test_label, preds)
+        acc_sum.append(acc)
+        #print acc
 
-    cm = CM(test_label,preds)
-    cm = normalize(cm.astype(np.float), axis=1, norm='l1')
-    k=0
-    while k<6:
-        indi_acc[k].append(cm[k,k])
-        k += 1
-
+        cm = CM(test_label,preds)
+        cm = normalize(cm.astype(np.float), axis=1, norm='l1')
+        k=0
+        while k<6:
+            indi_acc[k].append(cm[k,k])
+            k += 1
+    loop+=1
 indi_ave_acc = [np.mean(i) for i in indi_acc]
 #indi_ave_acc_std = [np.std(i) for i in indi_acc]
 print 'ave acc/type:', indi_ave_acc
