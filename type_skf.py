@@ -12,11 +12,11 @@ import numpy as np
 import math
 import pylab as pl
 
-input1 = np.genfromtxt('rice_bsln', delimiter=',')
-data2 = input1[:,0:-1]
+input1 = np.genfromtxt('rice_45min', delimiter=',')
+data2 = input1[:,[0,1,2,3,5,6,7]]
 label2 = input1[:,-1]
-input2 = np.genfromtxt('sdh_bsln', delimiter=',')
-data1 = input2[:,0:-1]
+input2 = np.genfromtxt('sdh_45min', delimiter=',')
+data1 = input2[:,[0,1,2,3,5,6,7]]
 label1 = input2[:,-1]
 
 '''
@@ -27,29 +27,31 @@ for train_idx, test_idx in loo:
 
 ctr = 0
 preds = []
-fold = 20
-skf = StratifiedKFold(label2, n_folds=fold)
+fold = 2
+skf = StratifiedKFold(label1, n_folds=fold)
 acc_sum = []
 indi_acc =[[] for i in range(6)]
 #clf = ETC(n_estimators=10, criterion='entropy')
-#clf = RFC(n_estimators=50, criterion='entropy')
+clf = RFC(n_estimators=50, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = Ada(n_estimators=100)
-clf = SVC(kernel='linear')
+#clf = SVC(kernel='linear')
 loop = 0
-while loop<100/fold:
+run = 100
+importance = np.zeros(data1.shape[1])
+while loop<run/fold:
     for train_idx, test_idx in skf:
         '''
         because we want to do inverse k-fold XV
         aka, use 1 fold to train, k-1 folds to test
         so the indexing is inversed
         '''
-        train_data = data2[test_idx]
-        train_label = label2[test_idx]
-        #test_data = data2[train_idx]
-        #test_label = label2[train_idx]
-        test_data = data1
-        test_label = label1
+        train_data = data1[test_idx]
+        train_label = label1[test_idx]
+        test_data = data1[train_idx]
+        test_label = label1[train_idx]
+        #test_data = data2
+        #test_label = label2
         clf.fit(train_data, train_label)
         #out = tree.export_graphviz(clf, out_file='tree.dot')
         preds = clf.predict(test_data)
@@ -63,7 +65,22 @@ while loop<100/fold:
         while k<6:
             indi_acc[k].append(cm[k,k])
             k += 1
+
+        '''
+        #debug co2 instances
+        print '===================='
+        importance += clf.feature_importances_
+        for i,j in zip(train_label, test_idx):
+            if i==1:
+                    print 'train id:', j+1
+        #for i,j,k in zip(test_label, preds, train_idx):
+        for i,j,k in zip(test_label, preds, range(len(test_label))):
+            if i==1 and i!=j:
+                print '%d-%d'%(k+1,j)
+        '''
+
     loop+=1
+#print importance/run
 indi_ave_acc = [np.mean(i) for i in indi_acc]
 #indi_ave_acc_std = [np.std(i) for i in indi_acc]
 print 'ave acc/type:', indi_ave_acc

@@ -10,7 +10,7 @@ import math
 import pylab as pl
 import logging
 
-input = np.genfromtxt('sdh_bsln', delimiter=',')
+input = np.genfromtxt('rice_45min', delimiter=',')
 data = input[:,0:-1]
 label = input[:,-1]
 
@@ -48,6 +48,7 @@ cm = CM(label,preds)
 cm = normalize(cm.astype(np.float), axis=1, norm='l1')
 indi_acc = [cm[i][i] for i in range(6)]
 print indi_acc
+'''
 fig = pl.figure()
 ax = fig.add_subplot(111)
 cax = ax.matshow(cm)
@@ -68,3 +69,4 @@ pl.title('Confusion matrix')
 pl.ylabel('True label')
 pl.xlabel('Predicted label')
 pl.show()
+'''
