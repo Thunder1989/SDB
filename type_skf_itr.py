@@ -6,6 +6,8 @@ from sklearn.ensemble import ExtraTreesClassifier as ETC
 from sklearn.ensemble import AdaBoostClassifier as Ada
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
 from sklearn.metrics import confusion_matrix as CM
 from sklearn import tree
 from sklearn.preprocessing import normalize
@@ -21,7 +23,6 @@ input2 = np.genfromtxt('sdh_45min', delimiter=',')
 data2 = input2[:,[0,1,2,3,5,6,7]]
 label2 = input2[:,-1]
 
-run = 10
 iteration = 15
 init = 20
 fold = 10
@@ -34,24 +35,26 @@ for train, test in kf:
     folds[i] = test
     i+=1
 
-acc_sum = [[] for i in range(run)]
-indi_acc =[[] for i in range(6)]
+acc_sum = [[] for i in range(iteration)]
+acc_type = [[[] for i in range(iteration)] for i in range(6)]
+precision_type = [[[] for i in range(iteration)] for i in range(6)]
+recall_type = [[[] for i in range(iteration)] for i in range(6)]
 #clf = ETC(n_estimators=10, criterion='entropy')
 clf = RFC(n_estimators=50, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = Ada(n_estimators=100)
 #clf = SVC(kernel='linear')
 
-for itr in range(fold):
-    train = np.hstack((folds[(itr+x)%10] for x in range(3)))
-    validate = np.hstack((folds[(itr+x)%10] for x in range(3,6)))
-    test = np.hstack((folds[(itr+x)%10] for x in range(6,fold)))
+for fd in range(fold):
+    train = np.hstack((folds[(fd+x)%10] for x in range(3)))
+    validate = np.hstack((folds[(fd+x)%10] for x in range(3,6)))
+    test = np.hstack((folds[(fd+x)%10] for x in range(6,fold)))
 
     test_data = data1[test]
     test_label = label1[test]
 
-    for ctr in range(iteration):
-        #print 'running fold %d iter %d'%(itr, ctr)
+    for itr in range(iteration):
+        #print 'running fold %d iter %d'%(fd, itr)
         train_data = data1[train]
         train_label = label1[train]
         validate_data = data1[validate]
@@ -62,16 +65,17 @@ for itr in range(fold):
         acc = accuracy_score(test_label, preds)
         acc_sum[itr].append(acc)
 
-        '''
         #acc by type
-        cm = CM(validate_label,preds)
+        cm = CM(test_label,preds)
         cm = normalize(cm.astype(np.float), axis=1, norm='l1')
-
+        pre = precision_score(test_label, preds, average=None)
+        rec = recall_score(test_label, preds, average=None)
         k=0
         while k<6:
-            indi_acc[k].append(cm[k,k])
+            acc_type[k][itr].append(cm[k,k])
+            precision_type[k][itr].append(pre[k])
+            recall_type[k][itr].append(rec[k])
             k += 1
-        '''
 
         #compute entropy for each instance and rank
         label_pr = clf.predict_proba(validate_data)
@@ -85,7 +89,7 @@ for itr in range(fold):
             else:
                 wrong.append([h,i,j,entropy])
         #print 'preds size', len(preds)
-        print 'worng #', len(wrong)
+        #print 'worng #', len(wrong)
 
         '''
         #sort and pick the 1st one with largest H
@@ -113,17 +117,21 @@ for itr in range(fold):
         #train_idx.append(elmt)
         #test_idx.remove(elmt)
 
-ave_acc = []
-acc_std = []
-for i in range(iteration):
-    l = [acc[i] for acc in acc_sum]
-    ave_acc.append(np.mean(l))
-    acc_std.append(np.std(l))
+ave_acc = [np.mean(acc) for acc in acc_sum]
+acc_std = [np.std(acc) for acc in acc_sum]
+ave_acc_type = [[] for i in range(6)]
+ave_pre = [[] for i in range(6)]
+ave_rec = [[] for i in range(6)]
+for i in range(6):
+    ave_acc_type[i] = [np.mean(a) for a in acc_type[i]]
+    ave_pre[i] = [np.mean(p) for p in precision_type[i]]
+    ave_rec[i] = [np.mean(r) for r in recall_type[i] ]
 
-#indi_ave_acc = [np.mean(i) for i in indi_acc]
-#indi_ave_acc_std = [np.std(i) for i in indi_acc]
-#print 'ave acc/type:', repr(indi_ave_acc)
-#print 'acc std/type:', indi_ave_acc_std
 print 'overall acc:', repr(ave_acc)
-#print 'ave cc :', np.mean(acc_sum)
 print 'acc std:', repr(acc_std)
+print '=================================='
+print 'acc by type:', repr(ave_acc_type)
+print '=================================='
+print 'precision by type:', repr(ave_pre)
+print '=================================='
+print 'recall by type:', repr(ave_rec)
