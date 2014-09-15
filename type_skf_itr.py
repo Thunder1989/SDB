@@ -1,4 +1,5 @@
 from sklearn.cross_validation import StratifiedKFold
+from sklearn.cross_validation import KFold
 from sklearn.tree import DecisionTreeClassifier as DT
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.ensemble import ExtraTreesClassifier as ETC
@@ -20,16 +21,19 @@ input2 = np.genfromtxt('sdh_45min', delimiter=',')
 data2 = input2[:,[0,1,2,3,5,6,7]]
 label2 = input2[:,-1]
 
-'''
-loo = LeaveOneOut(len(data))
-for train_idx, test_idx in loo:
-    pass
-'''
-
 run = 10
-iteration = 20
+iteration = 15
 init = 20
+fold = 10
+#loo = LeaveOneOut(len(data))
 #skf = StratifiedKFold(label1, n_folds=fold)
+kf = KFold(len(label1), n_folds=fold, shuffle=True)
+folds = [[] for i in range(fold)]
+i = 0
+for train, test in kf:
+    folds[i] = test
+    i+=1
+
 acc_sum = [[] for i in range(run)]
 indi_acc =[[] for i in range(6)]
 #clf = ETC(n_estimators=10, criterion='entropy')
@@ -37,35 +41,32 @@ clf = RFC(n_estimators=50, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = Ada(n_estimators=100)
 #clf = SVC(kernel='linear')
-preds = []
 
-itr = 0
-for itr in range(run):
-    train_idx = []
-    test_idx = range(len(data1))
-    for i in range(init):
-        tmp = random.randint(0,len(test_idx)-1)
-        idx = test_idx[tmp]
-        train_idx.append(idx)
-        test_idx.remove(idx)
+for itr in range(fold):
+    train = np.hstack((folds[(itr+x)%10] for x in range(3)))
+    validate = np.hstack((folds[(itr+x)%10] for x in range(3,6)))
+    test = np.hstack((folds[(itr+x)%10] for x in range(6,fold)))
+
+    test_data = data1[test]
+    test_label = label1[test]
 
     for ctr in range(iteration):
-        train_data = data1[train_idx]
-        train_label = label1[train_idx]
-        test_data = data1[test_idx]
-        test_label = label1[test_idx]
+        #print 'running fold %d iter %d'%(itr, ctr)
+        train_data = data1[train]
+        train_label = label1[train]
+        validate_data = data1[validate]
+        validate_label = label1[validate]
+
         clf.fit(train_data, train_label)
         preds = clf.predict(test_data)
-
-        #overall acc
         acc = accuracy_score(test_label, preds)
         acc_sum[itr].append(acc)
-        #print acc
 
-        #acc by type
-        cm = CM(test_label,preds)
-        cm = normalize(cm.astype(np.float), axis=1, norm='l1')
         '''
+        #acc by type
+        cm = CM(validate_label,preds)
+        cm = normalize(cm.astype(np.float), axis=1, norm='l1')
+
         k=0
         while k<6:
             indi_acc[k].append(cm[k,k])
@@ -73,22 +74,25 @@ for itr in range(run):
         '''
 
         #compute entropy for each instance and rank
-        label_pr = clf.predict_proba(test_data)
+        label_pr = clf.predict_proba(validate_data)
+        preds = clf.predict(validate_data)
         correct = []
         wrong = []
-        for h,i,j,pr in zip(test_idx,test_label,preds,label_pr):
+        for h,i,j,pr in zip(validate,validate_label,preds,label_pr):
             entropy = np.sum(-p*math.log(p,6) for p in pr if p!=0)
             if i==j:
                 correct.append([h,i,j,entropy])
             else:
                 wrong.append([h,i,j,entropy])
+        #print 'preds size', len(preds)
+        print 'worng #', len(wrong)
 
         '''
         #sort and pick the 1st one with largest H
         wrong = sorted(wrong, key=lambda x: x[3], reverse=True)
         idx = 0
 
-
+        '''
         #randomly pick one
         idx = random.randint(0,len(wrong)-1)
 
@@ -98,21 +102,23 @@ for itr in range(run):
             i[-1] = abs(i[-1]-0.5)
         wrong = sorted(wrong, key=lambda x: x[3])
         idx = 0
-
+        '''
 
         elmt = wrong[idx][0]
         #print 'ex H:', wrong[idx][-1]
         #remove the item on the top of the ranked wrong list from the training set
         #add it to test set
-        train_idx.append(elmt)
-        test_idx.remove(elmt)
-
-    itr+=1
+        train = np.append(train, elmt)
+        validate = validate[validate!=elmt]
+        #train_idx.append(elmt)
+        #test_idx.remove(elmt)
 
 ave_acc = []
+acc_std = []
 for i in range(iteration):
     l = [acc[i] for acc in acc_sum]
     ave_acc.append(np.mean(l))
+    acc_std.append(np.std(l))
 
 #indi_ave_acc = [np.mean(i) for i in indi_acc]
 #indi_ave_acc_std = [np.std(i) for i in indi_acc]
@@ -120,4 +126,4 @@ for i in range(iteration):
 #print 'acc std/type:', indi_ave_acc_std
 print 'overall acc:', repr(ave_acc)
 #print 'ave cc :', np.mean(acc_sum)
-#print 'acc std:', np.std(acc_sum)
+print 'acc std:', repr(acc_std)
