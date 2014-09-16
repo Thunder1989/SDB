@@ -23,9 +23,9 @@ input2 = np.genfromtxt('sdh_45min', delimiter=',')
 data2 = input2[:,[0,1,2,3,5,6,7]]
 label2 = input2[:,-1]
 
-iteration = 15
+iteration = 50
 init = 20
-fold = 10
+fold = 60
 #loo = LeaveOneOut(len(data))
 #skf = StratifiedKFold(label1, n_folds=fold)
 kf = KFold(len(label1), n_folds=fold, shuffle=True)
@@ -46,10 +46,9 @@ clf = RFC(n_estimators=50, criterion='entropy')
 #clf = SVC(kernel='linear')
 
 for fd in range(fold):
-    train = np.hstack((folds[(fd+x)%10] for x in range(3)))
-    validate = np.hstack((folds[(fd+x)%10] for x in range(3,6)))
-    test = np.hstack((folds[(fd+x)%10] for x in range(6,fold)))
-
+    train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
+    validate = np.hstack((folds[(fd+x)%fold] for x in range(1,30)))
+    test = np.hstack((folds[(fd+x)%fold] for x in range(30,fold)))
     test_data = data1[test]
     test_label = label1[test]
 
@@ -66,8 +65,38 @@ for fd in range(fold):
         acc_sum[itr].append(acc)
 
         #acc by type
-        cm = CM(test_label,preds)
-        cm = normalize(cm.astype(np.float), axis=1, norm='l1')
+        cm_ = CM(test_label,preds)
+        cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
+
+        '''
+        #for debugging
+        if itr==0 or itr==iteration-1:
+            print cm_
+            pre = precision_score(test_label, preds, average=None)
+            rec = recall_score(test_label, preds, average=None)
+            print pre
+            print rec
+            fig = pl.figure()
+            ax = fig.add_subplot(111)
+            cax = ax.matshow(cm)
+            fig.colorbar(cax)
+
+            for x in xrange(len(cm)):
+                for y in xrange(len(cm)):
+                    ax.annotate(str("%.3f(%d)"%(cm[x][y],cm_[x][y])), xy=(y,x),
+                                horizontalalignment='center',
+                                verticalalignment='center')
+
+
+            cls = ['co2','humidity','rmt','stpt','flow','other_t']
+            pl.xticks(range(len(cm)),cls)
+            pl.yticks(range(len(cm)),cls)
+            pl.title('Confusion matrix (%.3f)'%acc)
+            pl.ylabel('True label')
+            pl.xlabel('Predicted label')
+            pl.show()
+        '''
+
         pre = precision_score(test_label, preds, average=None)
         rec = recall_score(test_label, preds, average=None)
         k=0
@@ -89,19 +118,19 @@ for fd in range(fold):
             else:
                 wrong.append([h,i,j,entropy])
         #print 'preds size', len(preds)
-        #print 'worng #', len(wrong)
+        #print 'iter', itr, 'wrong #', len(wrong)
 
-        '''
-        #sort and pick the 1st one with largest H
+
+        #H-based, sort and pick the 1st one with largest H
         wrong = sorted(wrong, key=lambda x: x[3], reverse=True)
         idx = 0
-
         '''
+
         #randomly pick one
         idx = random.randint(0,len(wrong)-1)
 
-        '''
-        #pick the one with H most close to 0.5
+
+        #E-based, pick the one with H most close to 0.5
         for i in wrong:
             i[-1] = abs(i[-1]-0.5)
         wrong = sorted(wrong, key=lambda x: x[3])
@@ -135,28 +164,3 @@ print '=================================='
 print 'precision by type:', repr(ave_pre)
 print '=================================='
 print 'recall by type:', repr(ave_rec)
-
-#plot confusion matrix
-preds = clf.predict(test_data)
-cm = CM(test_label, preds)
-cm = normalize(cm.astype(np.float), axis=1, norm='l1')
-fig = pl.figure()
-ax = fig.add_subplot(111)
-cax = ax.matshow(cm)
-fig.colorbar(cax)
-
-for x in xrange(len(cm)):
-    for y in xrange(len(cm)):
-        ax.annotate(str("%.3f"%cm[x][y]), xy=(y,x),
-                    horizontalalignment='center',
-                    verticalalignment='center')
-
-
-cls = ['co2','humidity','rmt','stpt','flow','other_t']
-pl.xticks(range(len(cm)),cls)
-pl.yticks(range(len(cm)),cls)
-pl.title('Confusion matrix')
-#pl.colorbar()
-pl.ylabel('True label')
-pl.xlabel('Predicted label')
-pl.show()
