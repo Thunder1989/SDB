@@ -135,3 +135,28 @@ print '=================================='
 print 'precision by type:', repr(ave_pre)
 print '=================================='
 print 'recall by type:', repr(ave_rec)
+
+#plot confusion matrix
+preds = clf.predict(test_data)
+cm = CM(test_label, preds)
+cm = normalize(cm.astype(np.float), axis=1, norm='l1')
+fig = pl.figure()
+ax = fig.add_subplot(111)
+cax = ax.matshow(cm)
+fig.colorbar(cax)
+
+for x in xrange(len(cm)):
+    for y in xrange(len(cm)):
+        ax.annotate(str("%.3f"%cm[x][y]), xy=(y,x),
+                    horizontalalignment='center',
+                    verticalalignment='center')
+
+
+cls = ['co2','humidity','rmt','stpt','flow','other_t']
+pl.xticks(range(len(cm)),cls)
+pl.yticks(range(len(cm)),cls)
+pl.title('Confusion matrix')
+#pl.colorbar()
+pl.ylabel('True label')
+pl.xlabel('Predicted label')
+pl.show()
