@@ -107,37 +107,38 @@ for fd in range(fold):
             k += 1
 
         #compute entropy for each instance and rank
-        label_pr = clf.predict_proba(validate_data)
+        label_pr = np.sort(clf.predict_proba(validate_data)) #sort in ascending order
         preds = clf.predict(validate_data)
-        correct = []
-        wrong = []
+        res = []
         for h,i,j,pr in zip(validate,validate_label,preds,label_pr):
             entropy = np.sum(-p*math.log(p,6) for p in pr if p!=0)
-            if i==j:
-                correct.append([h,i,j,entropy])
-            else:
-                wrong.append([h,i,j,entropy])
-        #print 'preds size', len(preds)
+            margin = pr[-1]-pr[-2]
+            res.append([h,i,j,entropy,margin])
         #print 'iter', itr, 'wrong #', len(wrong)
 
+        '''
+        #Entropy-based, sort and pick the one with largest H
+        res = sorted(res, key=lambda x: x[-2], reverse=True)
+        idx = 0
 
-        #H-based, sort and pick the 1st one with largest H
-        wrong = sorted(wrong, key=lambda x: x[3], reverse=True)
+
+        #Margin-based, sort and pick the one with least margin
+        res = sorted(res, key=lambda x: x[-1])
+        idx = 0
+
+
+        #Expectation-based, pick the one with H most close to 0.5
+        for i in res:
+            i[-2] = abs(i[-1]-0.5)
+        res = sorted(res, key=lambda x: x[3])
         idx = 0
         '''
 
         #randomly pick one
-        idx = random.randint(0,len(wrong)-1)
+        idx = random.randint(0,len(res)-1)
 
 
-        #E-based, pick the one with H most close to 0.5
-        for i in wrong:
-            i[-1] = abs(i[-1]-0.5)
-        wrong = sorted(wrong, key=lambda x: x[3])
-        idx = 0
-        '''
-
-        elmt = wrong[idx][0]
+        elmt = res[idx][0]
         #print 'ex H:', wrong[idx][-1]
         #remove the item on the top of the ranked wrong list from the training set
         #add it to test set
