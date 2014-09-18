@@ -5,7 +5,6 @@ from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.ensemble import ExtraTreesClassifier as ETC
 from sklearn.ensemble import AdaBoostClassifier as Ada
 from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import confusion_matrix as CM
@@ -61,8 +60,9 @@ for fd in range(fold):
 
         clf.fit(train_data, train_label)
         preds = clf.predict(test_data)
-        acc = accuracy_score(test_label, preds)
+        acc = clf.score(test_data, test_label)
         acc_sum[itr].append(acc)
+        print clf.estimators_
 
         #acc by type
         cm_ = CM(test_label,preds)
