@@ -21,9 +21,9 @@ label1 = input1[:,-1]
 input2 = np.genfromtxt('sdh_45min', delimiter=',')
 data2 = input2[:,[0,1,2,3,5,6,7]]
 label2 = input2[:,-1]
+label = [1,2,4,6,7,8]
 
 iteration = 50
-init = 20
 fold = 60
 #loo = LeaveOneOut(len(data))
 #skf = StratifiedKFold(label1, n_folds=fold)
@@ -62,14 +62,9 @@ for fd in range(fold):
         preds = clf.predict(test_data)
         acc = clf.score(test_data, test_label)
         acc_sum[itr].append(acc)
-        print clf.estimators_
-
-        #acc by type
-        cm_ = CM(test_label,preds)
-        cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
 
         '''
-        #for debugging
+        #plot confusion matrix, for debugging
         if itr==0 or itr==iteration-1:
             print cm_
             pre = precision_score(test_label, preds, average=None)
@@ -97,6 +92,9 @@ for fd in range(fold):
             pl.show()
         '''
 
+        #statistics by type
+        cm_ = CM(test_label,preds)
+        cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
         pre = precision_score(test_label, preds, average=None)
         rec = recall_score(test_label, preds, average=None)
         k=0
@@ -106,6 +104,8 @@ for fd in range(fold):
             recall_type[k][itr].append(rec[k])
             k += 1
 
+        '''
+        #entropy based example selection block
         #compute entropy for each instance and rank
         label_pr = np.sort(clf.predict_proba(validate_data)) #sort in ascending order
         preds = clf.predict(validate_data)
@@ -116,7 +116,7 @@ for fd in range(fold):
             res.append([h,i,j,entropy,margin])
         #print 'iter', itr, 'wrong #', len(wrong)
 
-        '''
+
         #Entropy-based, sort and pick the one with largest H
         res = sorted(res, key=lambda x: x[-2], reverse=True)
         idx = 0
@@ -132,16 +132,50 @@ for fd in range(fold):
             i[-2] = abs(i[-1]-0.5)
         res = sorted(res, key=lambda x: x[3])
         idx = 0
-        '''
+
 
         #randomly pick one
         idx = random.randint(0,len(res)-1)
 
 
         elmt = res[idx][0]
-        #print 'ex H:', wrong[idx][-1]
-        #remove the item on the top of the ranked wrong list from the training set
-        #add it to test set
+        '''
+
+        #minimal future expected error
+        loss = []
+        label_pr = clf.predict_proba(validate_data)
+        for i, pr in zip(validate, label_pr):
+            #print 'validate ex#', i
+            #print 'pr vector', pr
+            new_train = np.append(train,i)
+            new_validate = validate[validate!=i]
+            new_train_data = data1[new_train]
+            new_train_label = label1[new_train]
+            new_validate_data = data1[new_validate]
+            new_validate_label = label1[new_validate]
+
+            err = 0
+            for j in range(len(pr)):
+                '''
+                compute the sum of confidence for the rest of examples in validate set
+                on the new re-trained model after each possbile labeling (x,y_i) of i is added to the train set
+                '''
+                if pr[j]==0:
+                    continue
+
+                new_train_label[-1] = label[j]
+                clf.fit(new_train_data, new_train_label)
+                confidence_sum = np.sum(1-np.sort(clf.predict_proba(new_validate_data))[:,-1])
+                err += pr[j]*confidence_sum
+
+            loss.append([i,err])
+
+        loss = sorted(loss, key=lambda x: x[-1])
+        #print loss
+
+        elmt = loss[0][0]
+        #remove the item from validate set
+        #add it to train set
         train = np.append(train, elmt)
         validate = validate[validate!=elmt]
         #train_idx.append(elmt)
