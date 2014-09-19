@@ -21,9 +21,9 @@ label1 = input1[:,-1]
 input2 = np.genfromtxt('sdh_45min', delimiter=',')
 data2 = input2[:,[0,1,2,3,5,6,7]]
 label2 = input2[:,-1]
-label = [1,2,4,6,7,8]
+#label = [1,2,4,6,7,8]
 
-iteration = 50
+iteration = 80
 fold = 60
 #loo = LeaveOneOut(len(data))
 #skf = StratifiedKFold(label1, n_folds=fold)
@@ -47,12 +47,17 @@ clf = RFC(n_estimators=50, criterion='entropy')
 for fd in range(fold):
     train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
     validate = np.hstack((folds[(fd+x)%fold] for x in range(1,30)))
+    #cut train to one example
+    validate = np.append(validate,train[2:])
+    train = train[:2]
+
     test = np.hstack((folds[(fd+x)%fold] for x in range(30,fold)))
     test_data = data1[test]
     test_label = label1[test]
 
     for itr in range(iteration):
-        #print 'running fold %d iter %d'%(fd, itr)
+        #if itr%10==0:
+        #    print 'running fold %d iter %d'%(fd, itr)
         train_data = data1[train]
         train_label = label1[train]
         validate_data = data1[validate]
@@ -104,7 +109,7 @@ for fd in range(fold):
             recall_type[k][itr].append(rec[k])
             k += 1
 
-        '''
+
         #entropy based example selection block
         #compute entropy for each instance and rank
         label_pr = np.sort(clf.predict_proba(validate_data)) #sort in ascending order
@@ -112,11 +117,14 @@ for fd in range(fold):
         res = []
         for h,i,j,pr in zip(validate,validate_label,preds,label_pr):
             entropy = np.sum(-p*math.log(p,6) for p in pr if p!=0)
-            margin = pr[-1]-pr[-2]
+            if len(pr)<2:
+                margin = 0
+            else:
+                margin = pr[-1]-pr[-2]
             res.append([h,i,j,entropy,margin])
         #print 'iter', itr, 'wrong #', len(wrong)
 
-
+        '''
         #Entropy-based, sort and pick the one with largest H
         res = sorted(res, key=lambda x: x[-2], reverse=True)
         idx = 0
@@ -127,28 +135,35 @@ for fd in range(fold):
         idx = 0
 
 
-        #Expectation-based, pick the one with H most close to 0.5
-        for i in res:
-            i[-2] = abs(i[-1]-0.5)
-        res = sorted(res, key=lambda x: x[3])
+        #least confidence based
+        tmp = sorted(label_pr, key=lambda x: x[-1])
         idx = 0
 
 
+        #Expectation-based, pick the one with H most close to 0.5
+        for i in res:
+            i[-2] = abs(i[-2]-0.5)
+        res = sorted(res, key=lambda x: x[3])
+        idx = 0
+
+        '''
         #randomly pick one
         idx = random.randint(0,len(res)-1)
 
 
         elmt = res[idx][0]
-        '''
 
+        '''
         #minimal future expected error
         loss = []
         label_pr = clf.predict_proba(validate_data)
+        clx = clf.classes_
         for i, pr in zip(validate, label_pr):
             #print 'validate ex#', i
             #print 'pr vector', pr
             new_train = np.append(train,i)
             new_validate = validate[validate!=i]
+
             new_train_data = data1[new_train]
             new_train_label = label1[new_train]
             new_validate_data = data1[new_validate]
@@ -156,14 +171,12 @@ for fd in range(fold):
 
             err = 0
             for j in range(len(pr)):
-                '''
-                compute the sum of confidence for the rest of examples in validate set
-                on the new re-trained model after each possbile labeling (x,y_i) of i is added to the train set
-                '''
+                #compute the sum of confidence for the rest of examples in validate set
+                #on the new re-trained model after each possbile labeling (x,y_i) of i is added to the train set
                 if pr[j]==0:
                     continue
 
-                new_train_label[-1] = label[j]
+                new_train_label[-1] = clx[j]
                 clf.fit(new_train_data, new_train_label)
                 confidence_sum = np.sum(1-np.sort(clf.predict_proba(new_validate_data))[:,-1])
                 err += pr[j]*confidence_sum
@@ -174,6 +187,8 @@ for fd in range(fold):
         #print loss
 
         elmt = loss[0][0]
+        '''
+
         #remove the item from validate set
         #add it to train set
         train = np.append(train, elmt)
@@ -193,9 +208,11 @@ for i in range(6):
 
 print 'overall acc:', repr(ave_acc)
 print 'acc std:', repr(acc_std)
+'''
 print '=================================='
 print 'acc by type:', repr(ave_acc_type)
 print '=================================='
 print 'precision by type:', repr(ave_pre)
 print '=================================='
 print 'recall by type:', repr(ave_rec)
+'''
