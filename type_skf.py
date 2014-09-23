@@ -13,11 +13,11 @@ import math
 import pylab as pl
 
 input1 = np.genfromtxt('rice_45min', delimiter=',')
-data2 = input1[:,[0,1,2,3,5,6,7]]
-label2 = input1[:,-1]
+data1 = input1[:,[0,1,2,3,5,6,7]]
+label1 = input1[:,-1]
 input2 = np.genfromtxt('sdh_45min', delimiter=',')
-data1 = input2[:,[0,1,2,3,5,6,7]]
-label1 = input2[:,-1]
+data2 = input2[:,[0,1,2,3,5,6,7]]
+label2 = input2[:,-1]
 
 '''
 loo = LeaveOneOut(len(data))
@@ -59,8 +59,8 @@ while loop<run/fold:
         acc_sum.append(acc)
         #print acc
 
-        cm = CM(test_label,preds)
-        cm = normalize(cm.astype(np.float), axis=1, norm='l1')
+        cm_ = CM(test_label,preds)
+        cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
         k=0
         while k<6:
             indi_acc[k].append(cm[k,k])
@@ -77,6 +77,26 @@ while loop<run/fold:
         for i,j,k in zip(test_label, preds, range(len(test_label))):
             if i==1 and i!=j:
                 print '%d-%d'%(k+1,j)
+
+        fig = pl.figure()
+        ax = fig.add_subplot(111)
+        cax = ax.matshow(cm)
+        fig.colorbar(cax)
+
+        for x in xrange(len(cm)):
+            for y in xrange(len(cm)):
+                ax.annotate(str("%.3f(%d)"%(cm[x][y],cm_[x][y])), xy=(y,x),
+                            horizontalalignment='center',
+                            verticalalignment='center')
+
+
+        cls = ['co2','humidity','rmt','stpt','flow','other_t']
+        pl.xticks(range(len(cm)),cls)
+        pl.yticks(range(len(cm)),cls)
+        pl.title('Confusion matrix (%.3f)'%acc)
+        pl.ylabel('True label')
+        pl.xlabel('Predicted label')
+        pl.show()
         '''
 
     loop+=1
@@ -119,7 +139,7 @@ for x in xrange(len(cm)):
                     verticalalignment='center')
 
 
-cls = ['co2','humidity','rmt','stpt','flow','other_t']
+cls = ['co2','humidity','rmt','stpt','flow','water T','air T']
 pl.xticks(range(len(cm)),cls)
 pl.yticks(range(len(cm)),cls)
 pl.title('Confusion matrix')
