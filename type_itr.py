@@ -23,7 +23,7 @@ data2 = input2[:,[0,1,2,3,5,6,7]]
 label2 = input2[:,-1]
 #label = [1,2,4,6,7,8]
 
-iteration = 180
+iteration = 80
 fold = 60
 #loo = LeaveOneOut(len(data))
 #skf = StratifiedKFold(label1, n_folds=fold)
@@ -68,14 +68,13 @@ for fd in range(fold):
         acc = clf.score(test_data, test_label)
         acc_sum[itr].append(acc)
 
-        '''
         #plot confusion matrix, for debugging
-        if itr==0 or itr==iteration-1:
-            print cm_
+        cm_ = CM(test_label,preds)
+        cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
+        #if itr==0 or itr==iteration-1:
+        if True:
             pre = precision_score(test_label, preds, average=None)
             rec = recall_score(test_label, preds, average=None)
-            print pre
-            print rec
             fig = pl.figure()
             ax = fig.add_subplot(111)
             cax = ax.matshow(cm)
@@ -95,11 +94,8 @@ for fd in range(fold):
             pl.ylabel('True label')
             pl.xlabel('Predicted label')
             pl.show()
-        '''
 
         #statistics by type
-        cm_ = CM(test_label,preds)
-        cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
         pre = precision_score(test_label, preds, average=None)
         rec = recall_score(test_label, preds, average=None)
         k=0
@@ -128,13 +124,13 @@ for fd in range(fold):
         #Entropy-based, sort and pick the one with largest H
         res = sorted(res, key=lambda x: x[-2], reverse=True)
         idx = 0
-        '''
 
+        '''
         #Margin-based, sort and pick the one with least margin
         res = sorted(res, key=lambda x: x[-1])
         idx = 0
-
         '''
+
         #least confidence based
         tmp = sorted(label_pr, key=lambda x: x[-1])
         idx = 0
@@ -152,6 +148,8 @@ for fd in range(fold):
         '''
 
         elmt = res[idx][0]
+        print 'running fold %d iter %d'%(fd, itr)
+        print label1[elmt]
 
         '''
         #minimal future expected error
