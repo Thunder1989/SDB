@@ -32,12 +32,12 @@ skf = StratifiedKFold(label1, n_folds=fold)
 acc_sum = []
 indi_acc =[[] for i in range(6)]
 #clf = ETC(n_estimators=10, criterion='entropy')
-clf = RFC(n_estimators=50, criterion='entropy')
+#clf = RFC(n_estimators=50, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = Ada(n_estimators=100)
-#clf = SVC(kernel='linear')
+clf = SVC(kernel='linear')
 loop = 0
-run = 100
+run = 10
 importance = np.zeros(data1.shape[1])
 while loop<run/fold:
     for train_idx, test_idx in skf:
