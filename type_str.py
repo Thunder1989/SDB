@@ -19,13 +19,15 @@ import numpy as np
 import math
 import pylab as pl
 
-#input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
-input1 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_name').readlines()]
-input2 = np.genfromtxt('rice_45min', delimiter=',')
-label = input2[:,-1]
+input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
+input2 = np.genfromtxt('sdh_45min', delimiter=',')
+input3 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_name').readlines()]
+input4 = np.genfromtxt('rice_45min', delimiter=',')
+label1 = input2[:,-1]
+label2 = input4[:,-1]
 
-fold = 2
-skf = StratifiedKFold(label, n_folds=fold)
+fold = 5
+skf = StratifiedKFold(label2, n_folds=fold)
 acc_sum = []
 indi_acc =[[] for i in range(6)]
 #clf = ETC(n_estimators=10, criterion='entropy')
@@ -38,17 +40,22 @@ clf = SVC(kernel='linear')
 #vc = CV(token_pattern='[a-z]{2,}')
 #vc = TV(token_pattern='[a-z]{2,}')
 vc = CV(analyzer='char_wb', ngram_range=(2,4), min_df=1, token_pattern='[a-z]{2,}')
-data = vc.fit_transform(input1).toarray()
+#data1 = vc.fit_transform(input1).toarray()
+vc.fit(input1)
+data1 = vc.transform(input1).toarray()
+data2 = vc.transform(input3).toarray()
 for train_idx, test_idx in skf:
     '''
     because we want to do inverse k-fold XV
     aka, use 1 fold to train, k-1 folds to test
     so the indexing is inversed
     '''
-    train_data = data[test_idx]
-    train_label = label[test_idx]
-    test_data = data[train_idx]
-    test_label = label[train_idx]
+    train_data = data1[test_idx]
+    train_label = label1[test_idx]
+    #test_data = data1[train_idx]
+    #test_label = label1[train_idx]
+    test_data = data2
+    test_label = label2
     clf.fit(train_data, train_label)
     preds = clf.predict(test_data)
     acc = accuracy_score(test_label, preds)
@@ -116,7 +123,7 @@ print 'ave acc:', np.mean(acc_sum)
 #print 'std:', np.std(acc_sum)
 
 
-cm = CM(test_label,preds)
+cm_ = CM(test_label,preds)
 #print cm
 cm = normalize(cm.astype(np.float), axis=1, norm='l1')
 #print cm
@@ -128,7 +135,7 @@ fig.colorbar(cax)
 
 for x in xrange(len(cm)):
     for y in xrange(len(cm)):
-        ax.annotate(str("%.3f"%cm[x][y]), xy=(y,x),
+        ax.annotate(str("%.3f(%d)"%(cm[x][y],cm_[x][y])), xy=(y,x),
                     horizontalalignment='center',
                     verticalalignment='center')
 
@@ -136,7 +143,7 @@ for x in xrange(len(cm)):
 cls = ['co2','humidity','rmt','stpt','flow','other T']
 pl.xticks(range(len(cm)),cls)
 pl.yticks(range(len(cm)),cls)
-pl.title('Confusion matrix')
+pl.title('Confusion matrix (%.3f)'%acc)
 #pl.colorbar()
 pl.ylabel('True label')
 pl.xlabel('Predicted label')
