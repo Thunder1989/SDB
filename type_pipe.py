@@ -26,17 +26,20 @@ label2 = input2[:,-1]
 #label = [1,2,4,6,7,8]
 '''
 
-input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
+#input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 #input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
-input2 = np.genfromtxt('sdh_45min', delimiter=',')
-input3 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_name').readlines()]
-input4 = np.genfromtxt('rice_45min', delimiter=',')
+#input2 = np.genfromtxt('sdh_45min', delimiter=',')
+input1 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_name').readlines()]
+input2 = np.genfromtxt('rice_45min', delimiter=',')
 label1 = input2[:,-1]
-label2 = input4[:,-1]
+#label2 = input4[:,-1]
 
-iteration = 80
+'''
+first do AL using string features to generate labels
+and train a data feature model on the generated labels
+'''
+iteration = 70
 fold = 60
-#loo = LeaveOneOut(len(data))
 #skf = StratifiedKFold(label1, n_folds=fold)
 kf = KFold(len(label1), n_folds=fold, shuffle=True)
 folds = [[] for i in range(fold)]
@@ -56,8 +59,11 @@ clf = RFC(n_estimators=50, criterion='entropy')
 #clf = SVC(kernel='linear')
 
 vc = CV(analyzer='char_wb', ngram_range=(2,4), min_df=1, token_pattern='[a-z]{2,}')
+#vc = CV(token_pattern='[a-z]{2,}')
 data1 = vc.fit_transform(input1).toarray()
-for fd in range(fold):
+model_id = []
+model_label = []
+for fd in range(1):
     train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
     validate = np.hstack((folds[(fd+x)%fold] for x in range(1,30)))
     #cut train to one example
@@ -79,13 +85,17 @@ for fd in range(fold):
         clf.fit(train_data, train_label)
         preds = clf.predict(test_data)
         acc = clf.score(test_data, test_label)
-        acc_sum[itr].append(acc)
+        #acc_sum[itr].append(acc)
 
+        #for predicting on another bldg
+        model_id = test
+        model_label = clf.predict(test_data)
 
+        '''
         #plot confusion matrix, for debugging
         cm_ = CM(test_label,preds)
         cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
-        '''
+
         #if itr==0 or itr==iteration-1:
         if True:
             pre = precision_score(test_label, preds, average=None)
@@ -109,7 +119,7 @@ for fd in range(fold):
             pl.ylabel('True label')
             pl.xlabel('Predicted label')
             pl.show()
-        '''
+
 
         #statistics by type
         pre = precision_score(test_label, preds, average=None)
@@ -120,7 +130,7 @@ for fd in range(fold):
             precision_type[k][itr].append(pre[k])
             recall_type[k][itr].append(rec[k])
             k += 1
-
+        '''
 
         #entropy based example selection block
         #compute entropy for each instance and rank
@@ -209,6 +219,122 @@ for fd in range(fold):
         validate = validate[validate!=elmt]
         #train_idx.append(elmt)
         #test_idx.remove(elmt)
+print 'acc on string prediciton is', acc
+
+'''
+second apply the trained data model on another bldg to predict the labels
+'''
+input1 = np.genfromtxt('rice_45min', delimiter=',')
+data1 = input1[:,[0,1,2,3,5,6,7]]
+label1 = input1[:,-1]
+input2 = np.genfromtxt('sdh_45min', delimiter=',')
+data2 = input2[:,[0,1,2,3,5,6,7]]
+label2 = input2[:,-1]
+train_data = data1[model_id]
+train_label = model_label
+test_data = data2
+test_label = label2
+clf = RFC(n_estimators=50, criterion='entropy')
+clf.fit(train_data, train_label)
+new_label = clf.predict(test_data)
+print 'acc', clf.score(test_data, test_label)
+
+'''
+third, again, run AL on string feature for the new bldg
+'''
+#input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
+input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
+input2 = np.genfromtxt('sdh_45min', delimiter=',')
+label_gt = input2[:,-1]
+label1 = new_label
+
+iteration = 70
+fold = 60
+kf = KFold(len(label1), n_folds=fold, shuffle=True)
+folds = [[] for i in range(fold)]
+i = 0
+for train, test in kf:
+    folds[i] = test
+    i+=1
+
+acc_sum = [[] for i in range(iteration)]
+acc_type = [[[] for i in range(iteration)] for i in range(6)]
+precision_type = [[[] for i in range(iteration)] for i in range(6)]
+recall_type = [[[] for i in range(iteration)] for i in range(6)]
+clf = RFC(n_estimators=50, criterion='entropy')
+#clf = DT(criterion='entropy', random_state=0)
+#clf = SVC(kernel='linear')
+
+vc = CV(analyzer='char_wb', ngram_range=(2,4), min_df=1, token_pattern='[a-z]{2,}')
+#vc = CV(token_pattern='[a-z]{2,}')
+data1 = vc.fit_transform(input1).toarray()
+for fd in range(fold):
+    print 'running AL on new bldg - fold', fd
+    train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
+    validate = np.hstack((folds[(fd+x)%fold] for x in range(1,30)))
+    #cut train to one example
+    validate = np.append(validate,train[2:])
+    train = train[:2]
+
+    test = np.hstack((folds[(fd+x)%fold] for x in range(30,fold)))
+    test_data = data1[test]
+    test_label = label1[test]
+
+    for itr in range(iteration):
+        train_data = data1[train]
+        train_label = label1[train]
+        validate_data = data1[validate]
+        validate_label = label1[validate]
+
+        clf.fit(train_data, train_label)
+        preds = clf.predict(test_data)
+        acc = clf.score(test_data, label_gt[test])
+        acc_sum[itr].append(acc)
+
+        #entropy based example selection block
+        #compute entropy for each instance and rank
+        label_pr = np.sort(clf.predict_proba(validate_data)) #sort in ascending order
+        preds = clf.predict(validate_data)
+        res = []
+        for h,i,j,pr in zip(validate,validate_label,preds,label_pr):
+            entropy = np.sum(-p*math.log(p,6) for p in pr if p!=0)
+            if len(pr)<2:
+                margin = 1
+            else:
+                margin = pr[-1]-pr[-2]
+            res.append([h,i,j,entropy,margin])
+        #print 'iter', itr, 'wrong #', len(wrong)
+
+        '''
+        #Entropy-based, sort and pick the one with largest H
+        res = sorted(res, key=lambda x: x[-2], reverse=True)
+        idx = 0
+
+        '''
+        #Margin-based, sort and pick the one with least margin
+        res = sorted(res, key=lambda x: x[-1])
+        idx = 0
+        '''
+
+        #least confidence based
+        tmp = sorted(label_pr, key=lambda x: x[-1])
+        idx = 0
+
+
+        #Expectation-based, pick the one with H most close to 0.5
+        for i in res:
+            i[-2] = abs(i[-2]-0.5)
+        res = sorted(res, key=lambda x: x[3])
+        idx = 0
+
+
+        #randomly pick one
+        idx = random.randint(0,len(res)-1)
+        '''
+
+        elmt = res[idx][0]
+        train = np.append(train, elmt)
+        validate = validate[validate!=elmt]
 
 ave_acc = [np.mean(acc) for acc in acc_sum]
 acc_std = [np.std(acc) for acc in acc_sum]
