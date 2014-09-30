@@ -19,17 +19,19 @@ import numpy as np
 import math
 import pylab as pl
 
-input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
+#input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
+input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 input2 = np.genfromtxt('sdh_45min', delimiter=',')
 input3 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_name').readlines()]
-input4 = np.genfromtxt('rice_45min', delimiter=',')
+input4 = np.genfromtxt('rice_45min_', delimiter=',')
 label1 = input2[:,-1]
 label2 = input4[:,-1]
 
-fold = 5
+fold = 2
+clx = 18
 skf = StratifiedKFold(label2, n_folds=fold)
 acc_sum = []
-indi_acc =[[] for i in range(6)]
+indi_acc =[[] for i in range(clx)]
 #clf = ETC(n_estimators=10, criterion='entropy')
 #clf = RFC(n_estimators=50, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
@@ -40,10 +42,10 @@ clf = SVC(kernel='linear')
 #vc = CV(token_pattern='[a-z]{2,}')
 #vc = TV(token_pattern='[a-z]{2,}')
 vc = CV(analyzer='char_wb', ngram_range=(2,4), min_df=1, token_pattern='[a-z]{2,}')
-#data1 = vc.fit_transform(input1).toarray()
-vc.fit(input1)
-data1 = vc.transform(input1).toarray()
-data2 = vc.transform(input3).toarray()
+data1 = vc.fit_transform(input3).toarray()
+#vc.fit(input1)
+#data1 = vc.transform(input1).toarray()
+#data2 = vc.transform(input3).toarray()
 for train_idx, test_idx in skf:
     '''
     because we want to do inverse k-fold XV
@@ -51,11 +53,11 @@ for train_idx, test_idx in skf:
     so the indexing is inversed
     '''
     train_data = data1[test_idx]
-    train_label = label1[test_idx]
-    #test_data = data1[train_idx]
-    #test_label = label1[train_idx]
-    test_data = data2
-    test_label = label2
+    train_label = label2[test_idx]
+    test_data = data1[train_idx]
+    test_label = label2[train_idx]
+    #test_data = data2
+    #test_label = label2
     clf.fit(train_data, train_label)
     preds = clf.predict(test_data)
     acc = accuracy_score(test_label, preds)
@@ -64,7 +66,7 @@ for train_idx, test_idx in skf:
     cm_ = CM(test_label,preds)
     cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
     k=0
-    while k<6:
+    while k<clx:
         indi_acc[k].append(cm[k,k])
         k += 1
 
