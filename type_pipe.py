@@ -48,14 +48,9 @@ for train, test in kf:
     folds[i] = test
     i+=1
 
-acc_sum = [[] for i in range(iteration)]
-acc_type = [[[] for i in range(iteration)] for i in range(6)]
-precision_type = [[[] for i in range(iteration)] for i in range(6)]
-recall_type = [[[] for i in range(iteration)] for i in range(6)]
 #clf = ETC(n_estimators=10, criterion='entropy')
 clf = RFC(n_estimators=50, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
-#clf = Ada(n_estimators=100)
 #clf = SVC(kernel='linear')
 
 vc = CV(analyzer='char_wb', ngram_range=(2,4), min_df=1, token_pattern='[a-z]{2,}')
@@ -239,8 +234,89 @@ clf.fit(train_data, train_label)
 new_label = clf.predict(test_data)
 print 'acc', clf.score(test_data, test_label)
 
+#pick top k confident examples from prediction using data_model_1
+label_pr = np.sort(clf.predict_proba(test_data)) #sort each prob vector in ascending order
+preds = new_label
+res = []
+for h,i,j,pr in zip(validate,validate_label,preds,label_pr):
+    entropy = np.sum(-p*math.log(p,6) for p in pr if p!=0)
+    if len(pr)<2:
+        margin = 1
+    else:
+        margin = pr[-1]-pr[-2]
+    res.append([h,i,j,entropy,margin])
+res = sorted(res, key=lambda x: x[-1], reverse=True)
+#res = sorted(res, key=lambda x: x[-2])
+
+#input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
+input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
+input2 = np.genfromtxt('sdh_45min', delimiter=',')
+label_gt = input2[:,-1]
+label1 = new_label
+
+iteration = 20
+fold = 10
+ex_id = []
+for i in range(100):
+    ex_id.append(res[i][0])
+
+acc_sum = [[] for i in range(iteration)]
+#clf = RFC(n_estimators=50, criterion='entropy')
+#clf = DT(criterion='entropy', random_state=0)
+clf = SVC(kernel='linear')
+
+vc = CV(analyzer='char_wb', ngram_range=(2,4), min_df=1, token_pattern='[a-z]{2,}')
+#vc = CV(token_pattern='[a-z]{2,}')
+data1 = vc.fit_transform(input1).toarray()
+for fd in range(fold):
+    #print 'running AL on new bldg - fold', fd
+    test = []
+    for i in range(100,len(res)):
+        test.append(res[i][0])
+    random.shuffle(test)
+    test = test[-len(res)/2:]
+    test_data = data1[test]
+    test_label = label1[test]
+
+    for itr in range(iteration):
+        train = ex_id[:(itr+1)*5]
+        train_data = data1[train]
+        train_label = label1[train]
+
+        clf.fit(train_data, train_label)
+        acc = clf.score(test_data, label_gt[test])
+        acc_sum[itr].append(acc)
+
+preds = clf.predict(test_data)
+cm_ = CM(label_gt[test],preds)
+cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
+fig = pl.figure()
+ax = fig.add_subplot(111)
+cax = ax.matshow(cm)
+fig.colorbar(cax)
+for x in xrange(len(cm)):
+    for y in xrange(len(cm)):
+        ax.annotate(str("%.3f(%d)"%(cm[x][y],cm_[x][y])), xy=(y,x),
+                    horizontalalignment='center',
+                    verticalalignment='center')
+cls = ['co2','humidity','rmt','stpt','flow','other_t']
+pl.xticks(range(len(cm)),cls)
+pl.yticks(range(len(cm)),cls)
+pl.title('Confusion matrix (%.3f)'%acc)
+pl.ylabel('True label')
+pl.xlabel('Predicted label')
+pl.show()
+
+ave_acc = [np.mean(acc) for acc in acc_sum]
+acc_std = [np.std(acc) for acc in acc_sum]
+
+print 'overall acc:', repr(ave_acc)
+print 'acc std:', repr(acc_std)
+
+
 '''
 third, again, run AL on string feature for the new bldg
+'''
 '''
 #input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
@@ -248,7 +324,7 @@ input2 = np.genfromtxt('sdh_45min', delimiter=',')
 label_gt = input2[:,-1]
 label1 = new_label
 
-iteration = 70
+iteration = 8
 fold = 60
 kf = KFold(len(label1), n_folds=fold, shuffle=True)
 folds = [[] for i in range(fold)]
@@ -305,16 +381,16 @@ for fd in range(fold):
             res.append([h,i,j,entropy,margin])
         #print 'iter', itr, 'wrong #', len(wrong)
 
-        '''
+
         #Entropy-based, sort and pick the one with largest H
         res = sorted(res, key=lambda x: x[-2], reverse=True)
         idx = 0
 
-        '''
+
         #Margin-based, sort and pick the one with least margin
         res = sorted(res, key=lambda x: x[-1])
         idx = 0
-        '''
+
 
         #least confidence based
         tmp = sorted(label_pr, key=lambda x: x[-1])
@@ -330,11 +406,17 @@ for fd in range(fold):
 
         #randomly pick one
         idx = random.randint(0,len(res)-1)
-        '''
+
 
         elmt = res[idx][0]
-        train = np.append(train, elmt)
-        validate = validate[validate!=elmt]
+
+
+        res = sorted(res, key=lambda x: x[-1], reverse=True)
+        print res[:10]
+        for i in range(10):
+            ex = res[i][0]
+            train = np.append(train, ex)
+            validate = validate[validate!=ex]
 
 ave_acc = [np.mean(acc) for acc in acc_sum]
 acc_std = [np.std(acc) for acc in acc_sum]
@@ -348,7 +430,8 @@ for i in range(6):
 
 print 'overall acc:', repr(ave_acc)
 print 'acc std:', repr(acc_std)
-'''
+
+
 print '=================================='
 print 'acc by type:', repr(ave_acc_type)
 print '=================================='
