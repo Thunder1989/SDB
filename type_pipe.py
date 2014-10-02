@@ -198,9 +198,6 @@ for h,i,j,pr in zip(range(len(test_data)),test_label,preds,label_pr):
         margin = pr[-1]-pr[-2]
     res.append([h,i,j,entropy,margin])
 res = sorted(res, key=lambda x:(x[2],x[-1]), reverse=True)
-#res = sorted(res, key=lambda x: x[-1], reverse=True)
-#res = sorted(res, key=lambda x: x[-2])
-print res[:][2]
 
 #input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
@@ -211,8 +208,20 @@ label1 = preds
 iteration = 20
 fold = 10
 ex_id = []
+'''
+#pick top k among all classes
+res = sorted(res, key=lambda x: x[-1], reverse=True)
 for i in range(100):
     ex_id.append(res[i][0])
+'''
+#pick k from each class
+res = sorted(res, key=lambda x:(x[2],x[-1]), reverse=True)
+mapping = {}
+
+
+
+
+
 #print 'class in training', np.unique(label1[ex_id])
 
 acc_sum = [[] for i in range(iteration)]
