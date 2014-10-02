@@ -56,8 +56,6 @@ clf = RFC(n_estimators=50, criterion='entropy')
 vc = CV(analyzer='char_wb', ngram_range=(2,4), min_df=1, token_pattern='[a-z]{2,}')
 #vc = CV(token_pattern='[a-z]{2,}')
 data1 = vc.fit_transform(input1).toarray()
-model_id = []
-model_label = []
 for fd in range(1):
     train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
     validate = np.hstack((folds[(fd+x)%fold] for x in range(1,30)))
@@ -77,55 +75,10 @@ for fd in range(1):
         validate_data = data1[validate]
         validate_label = label1[validate]
 
+        #for building a data based model to predict another bldg
         clf.fit(train_data, train_label)
-        preds = clf.predict(test_data)
         acc = clf.score(test_data, test_label)
-        #acc_sum[itr].append(acc)
-
-        #for predicting on another bldg
-        model_id = test
         model_label = clf.predict(test_data)
-
-        '''
-        #plot confusion matrix, for debugging
-        cm_ = CM(test_label,preds)
-        cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
-
-        #if itr==0 or itr==iteration-1:
-        if True:
-            pre = precision_score(test_label, preds, average=None)
-            rec = recall_score(test_label, preds, average=None)
-            fig = pl.figure()
-            ax = fig.add_subplot(111)
-            cax = ax.matshow(cm)
-            fig.colorbar(cax)
-
-            for x in xrange(len(cm)):
-                for y in xrange(len(cm)):
-                    ax.annotate(str("%.3f(%d)"%(cm[x][y],cm_[x][y])), xy=(y,x),
-                                horizontalalignment='center',
-                                verticalalignment='center')
-
-
-            cls = ['co2','humidity','rmt','stpt','flow','other_t']
-            pl.xticks(range(len(cm)),cls)
-            pl.yticks(range(len(cm)),cls)
-            pl.title('Confusion matrix (%.3f)'%acc)
-            pl.ylabel('True label')
-            pl.xlabel('Predicted label')
-            pl.show()
-
-
-        #statistics by type
-        pre = precision_score(test_label, preds, average=None)
-        rec = recall_score(test_label, preds, average=None)
-        k=0
-        while k<6:
-            acc_type[k][itr].append(cm[k,k])
-            precision_type[k][itr].append(pre[k])
-            recall_type[k][itr].append(rec[k])
-            k += 1
-        '''
 
         #entropy based example selection block
         #compute entropy for each instance and rank
@@ -225,40 +178,42 @@ label1 = input1[:,-1]
 input2 = np.genfromtxt('sdh_45min', delimiter=',')
 data2 = input2[:,[0,1,2,3,5,6,7]]
 label2 = input2[:,-1]
-train_data = data1[model_id]
+train_data = data1[test]
 train_label = model_label
 test_data = data2
 test_label = label2
 clf = RFC(n_estimators=50, criterion='entropy')
 clf.fit(train_data, train_label)
-new_label = clf.predict(test_data)
-print 'acc', clf.score(test_data, test_label)
+preds = clf.predict(test_data)
+print 'acc by data model', clf.score(test_data, test_label)
 
 #pick top k confident examples from prediction using data_model_1
 label_pr = np.sort(clf.predict_proba(test_data)) #sort each prob vector in ascending order
-preds = new_label
 res = []
-for h,i,j,pr in zip(validate,validate_label,preds,label_pr):
+for h,i,j,pr in zip(range(len(test_data)),test_label,preds,label_pr):
     entropy = np.sum(-p*math.log(p,6) for p in pr if p!=0)
     if len(pr)<2:
         margin = 1
     else:
         margin = pr[-1]-pr[-2]
     res.append([h,i,j,entropy,margin])
-res = sorted(res, key=lambda x: x[-1], reverse=True)
+res = sorted(res, key=lambda x:(x[2],x[-1]), reverse=True)
+#res = sorted(res, key=lambda x: x[-1], reverse=True)
 #res = sorted(res, key=lambda x: x[-2])
+print res[:][2]
 
 #input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 input2 = np.genfromtxt('sdh_45min', delimiter=',')
 label_gt = input2[:,-1]
-label1 = new_label
+label1 = preds
 
 iteration = 20
 fold = 10
 ex_id = []
 for i in range(100):
     ex_id.append(res[i][0])
+#print 'class in training', np.unique(label1[ex_id])
 
 acc_sum = [[] for i in range(iteration)]
 #clf = RFC(n_estimators=50, criterion='entropy')
@@ -276,7 +231,7 @@ for fd in range(fold):
     random.shuffle(test)
     test = test[-len(res)/2:]
     test_data = data1[test]
-    test_label = label1[test]
+    test_label = label_gt[test]
 
     for itr in range(iteration):
         train = ex_id[:(itr+1)*5]
@@ -284,11 +239,11 @@ for fd in range(fold):
         train_label = label1[train]
 
         clf.fit(train_data, train_label)
-        acc = clf.score(test_data, label_gt[test])
+        acc = clf.score(test_data, test_label)
         acc_sum[itr].append(acc)
 
 preds = clf.predict(test_data)
-cm_ = CM(label_gt[test],preds)
+cm_ = CM(test_label,preds)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
 fig = pl.figure()
 ax = fig.add_subplot(111)
