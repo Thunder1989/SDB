@@ -11,6 +11,7 @@ from sklearn.metrics import recall_score
 from sklearn.metrics import confusion_matrix as CM
 from sklearn import tree
 from sklearn.preprocessing import normalize
+from collections import defaultdict
 import numpy as np
 import math
 import random
@@ -68,8 +69,6 @@ for fd in range(1):
     test_label = label1[test]
 
     for itr in range(iteration):
-        #if itr%10==0:
-        #    print 'running fold %d iter %d'%(fd, itr)
         train_data = data1[train]
         train_label = label1[train]
         validate_data = data1[validate]
@@ -205,22 +204,25 @@ input2 = np.genfromtxt('sdh_45min', delimiter=',')
 label_gt = input2[:,-1]
 label1 = preds
 
-iteration = 20
+iteration = 8
 fold = 10
-ex_id = []
 '''
 #pick top k among all classes
+ex_id = []
 res = sorted(res, key=lambda x: x[-1], reverse=True)
 for i in range(100):
     ex_id.append(res[i][0])
 '''
 #pick k from each class
 res = sorted(res, key=lambda x:(x[2],x[-1]), reverse=True)
-mapping = {}
+class_ex = defaultdict(list)
+debug = defaultdict(list)
+for i in res:
+    class_ex[i[2]].append(i[0])
+    debug[i[2]].append(i)
 
-
-
-
+for c in class_ex.keys():
+    print c, '--', debug[c][:20]
 
 #print 'class in training', np.unique(label1[ex_id])
 
@@ -243,7 +245,16 @@ for fd in range(fold):
     test_label = label_gt[test]
 
     for itr in range(iteration):
+        '''
+        #pick top k from all classes
         train = ex_id[:(itr+1)*5]
+        '''
+
+        #pick k from each class
+        train = []
+        for c in class_ex.keys():
+            train = np.hstack((train, class_ex[c][:(itr+1)*5]))
+        train = train.astype(int)
         train_data = data1[train]
         train_label = label1[train]
 
