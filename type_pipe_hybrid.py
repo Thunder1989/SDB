@@ -186,17 +186,20 @@ clf.fit(train_data, train_label)
 preds = clf.predict(test_data)
 print 'acc by data model', clf.score(test_data, test_label)
 
-#pick top k confident examples from prediction using data_model_1
+#compute 'confidence' for each example in the new bldg
 label_pr = np.sort(clf.predict_proba(test_data)) #sort each prob vector in ascending order
-res = []
-for h,i,j,pr in zip(range(len(test_data)),test_label,preds,label_pr):
+res = defaultdict(list)
+for h,i,pr in zip(range(len(test_data)),preds,label_pr):
     entropy = np.sum(-p*math.log(p,6) for p in pr if p!=0)
     if len(pr)<2:
         margin = 1
     else:
         margin = pr[-1]-pr[-2]
-    res.append([h,i,j,entropy,margin])
+    res[h].append([i,entropy,margin])
 
+'''
+third, again, run AL on string feature for the new bldg
+'''
 #input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 input2 = np.genfromtxt('sdh_45min', delimiter=',')
@@ -205,30 +208,13 @@ label1 = preds
 
 iteration = 8
 fold = 10
-'''
-#pick top k among all classes
-ex_id = []
-res = sorted(res, key=lambda x: x[-1], reverse=True)
-for i in range(100):
-    ex_id.append(res[i][0])
-'''
-#pick k from each class
-res = sorted(res, key=lambda x:(x[2],x[-1]), reverse=True)
-class_ex = defaultdict(list)
-debug = defaultdict(list)
-for i in res:
-    class_ex[i[2]].append(i[0])
-    debug[i[2]].append(i)
-
-for c in class_ex.keys():
-    print c, '--', debug[c][:iteration*5]
 
 #print 'class in training', np.unique(label1[ex_id])
 
 acc_sum = [[] for i in range(iteration)]
-#clf = RFC(n_estimators=50, criterion='entropy')
+clf = RFC(n_estimators=50, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
-clf = SVC(kernel='linear')
+#clf = SVC(kernel='linear')
 
 vc = CV(analyzer='char_wb', ngram_range=(2,4), min_df=1, token_pattern='[a-z]{2,}')
 #vc = CV(token_pattern='[a-z]{2,}')
@@ -236,20 +222,10 @@ data1 = vc.fit_transform(input1).toarray()
 for fd in range(fold):
     #print 'running AL on new bldg - fold', fd
     test = []
-    '''
-    #test for picking top k
     for i in range(100,len(res)):
         test.append(res[i][0])
     random.shuffle(test)
     test = test[-len(res)/2:]
-    '''
-
-    for c in class_ex.keys():
-        test = np.hstack((test, class_ex[c][iteration*5:]))
-    test = test.astype(int)
-    random.shuffle(test)
-    test = test[-len(res)/2:]
-
     test_data = data1[test]
     test_label = label_gt[test]
 
