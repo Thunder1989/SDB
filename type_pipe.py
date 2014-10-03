@@ -219,11 +219,8 @@ debug = defaultdict(list)
 for i in res:
     class_ex[i[2]].append(i[0])
     debug[i[2]].append(i)
-
 for c in class_ex.keys():
     print c, '--', debug[c][:iteration*5]
-
-#print 'class in training', np.unique(label1[ex_id])
 
 acc_sum = [[] for i in range(iteration)]
 #clf = RFC(n_estimators=50, criterion='entropy')
@@ -237,13 +234,14 @@ for fd in range(fold):
     #print 'running AL on new bldg - fold', fd
     test = []
     '''
-    #test for picking top k
+    #test indice for picking top k
     for i in range(100,len(res)):
         test.append(res[i][0])
     random.shuffle(test)
     test = test[-len(res)/2:]
     '''
 
+    #test indice for picking k in each class
     for c in class_ex.keys():
         test = np.hstack((test, class_ex[c][iteration*5:]))
     test = test.astype(int)
