@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.ensemble import ExtraTreesClassifier as ETC
 from sklearn.ensemble import AdaBoostClassifier as Ada
 from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import confusion_matrix as CM
@@ -196,8 +197,8 @@ input2 = np.genfromtxt('sdh_45min', delimiter=',')
 label_gt = input2[:,-1]
 label1 = preds
 
-iteration = 8
-fold = 10
+iteration = 120
+fold = 20
 kf = KFold(len(label1), n_folds=fold, shuffle=True)
 folds = [[] for i in range(fold)]
 i = 0
@@ -206,6 +207,7 @@ for train, test in kf:
     i+=1
 
 acc_sum = [[] for i in range(iteration)]
+acc_Md = []
 clf = RFC(n_estimators=50, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = SVC(kernel='linear')
@@ -216,14 +218,15 @@ data1 = vc.fit_transform(input1).toarray()
 for fd in range(fold):
     print 'running AL on new bldg - fold', fd
     train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
-    validate = np.hstack((folds[(fd+x)%fold] for x in range(1,5)))
+    validate = np.hstack((folds[(fd+x)%fold] for x in range(1,10)))
     #cut train to one example
     validate = np.append(validate,train[2:])
     train = train[:2]
 
-    test = np.hstack((folds[(fd+x)%fold] for x in range(5,fold)))
+    test = np.hstack((folds[(fd+x)%fold] for x in range(10,fold)))
     test_data = data1[test]
     test_label = label_gt[test]
+    acc_Md.append(accuracy_score(test_label, label1[test]))
 
     for itr in range(iteration):
         train_data = data1[train]
@@ -246,64 +249,57 @@ for fd in range(fold):
                 margin = 1
             else:
                 margin = pr[-1]-pr[-2]
-            cfdn = cfdn_d[h][-1]
-            res.append([h,i,entropy,margin])
-
-        '''
-        #Entropy-based, sort and pick the one with largest H
-        res = sorted(res, key=lambda x: x[-2], reverse=True)
-        idx = 0
-        '''
-
-        #Margin-based, sort and pick the one with least margin
-        res = sorted(res, key=lambda x: x[-1])
-        idx = 0
-
-        '''
-        #least confidence based
-        tmp = sorted(label_pr, key=lambda x: x[-1])
-        idx = 0
-
-
-        #Expectation-based, pick the one with H most close to 0.5
-        for i in res:
-            i[-2] = abs(i[-2]-0.5)
-        res = sorted(res, key=lambda x: x[3])
-        idx = 0
-
-
-        #randomly pick one
-        idx = random.randint(0,len(res)-1)
-        '''
-
-        elmt = res[idx][0]
-
+            cfdn = cfdn_d[h][0][-1]
+            res.append([h,i,entropy,cfdn/(margin+1)])
 
         res = sorted(res, key=lambda x: x[-1], reverse=True)
-        print res[:10]
-        for i in range(10):
-            ex = res[i][0]
-            train = np.append(train, ex)
-            validate = validate[validate!=ex]
+        elmt = res[idx][0]
+        train = np.append(train, elmt)
+        validate = validate[validate!=elmt]
 
+print 'acc from Md', np.mean(acc_Md)
 ave_acc = [np.mean(acc) for acc in acc_sum]
 acc_std = [np.std(acc) for acc in acc_sum]
-ave_acc_type = [[] for i in range(6)]
-ave_pre = [[] for i in range(6)]
-ave_rec = [[] for i in range(6)]
-for i in range(6):
-    ave_acc_type[i] = [np.mean(a) for a in acc_type[i]]
-    ave_pre[i] = [np.mean(p) for p in precision_type[i]]
-    ave_rec[i] = [np.mean(r) for r in recall_type[i] ]
 
 print 'overall acc:', repr(ave_acc)
 print 'acc std:', repr(acc_std)
 
 
-print '=================================='
-print 'acc by type:', repr(ave_acc_type)
-print '=================================='
-print 'precision by type:', repr(ave_pre)
-print '=================================='
-print 'recall by type:', repr(ave_rec)
-'''
+preds = clf.predict(test_data)
+cm_ = CM(test_label,preds)
+cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
+fig = pl.figure()
+ax = fig.add_subplot(111)
+cax = ax.matshow(cm)
+fig.colorbar(cax)
+for x in xrange(len(cm)):
+    for y in xrange(len(cm)):
+        ax.annotate(str("%.3f(%d)"%(cm[x][y],cm_[x][y])), xy=(y,x),
+                    horizontalalignment='center',
+                    verticalalignment='center')
+cls = ['co2','humidity','rmt','stpt','flow','other_t']
+pl.xticks(range(len(cm)),cls)
+pl.yticks(range(len(cm)),cls)
+pl.title('Confusion matrix (%.3f)'%clf.score(test_data, test_label))
+pl.ylabel('True label')
+pl.xlabel('Predicted label')
+pl.show()
+
+cm_ = CM(test_label, label1[test])
+cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
+fig = pl.figure()
+ax = fig.add_subplot(111)
+cax = ax.matshow(cm)
+fig.colorbar(cax)
+for x in xrange(len(cm)):
+    for y in xrange(len(cm)):
+        ax.annotate(str("%.3f(%d)"%(cm[x][y],cm_[x][y])), xy=(y,x),
+                    horizontalalignment='center',
+                    verticalalignment='center')
+cls = ['co2','humidity','rmt','stpt','flow','other_t']
+pl.xticks(range(len(cm)),cls)
+pl.yticks(range(len(cm)),cls)
+pl.title('Confusion matrix (%.3f)'%accuracy_score(test_label, label1[test]))
+pl.ylabel('True label')
+pl.xlabel('Predicted label')
+pl.show()

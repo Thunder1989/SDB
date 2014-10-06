@@ -203,7 +203,7 @@ input2 = np.genfromtxt('sdh_45min', delimiter=',')
 label_gt = input2[:,-1]
 label1 = preds
 
-iteration = 8
+iteration = 4
 fold = 10
 '''
 #pick top k among all classes
