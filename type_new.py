@@ -208,8 +208,6 @@ for train, test in kf:
 
 acc_sum = [[] for i in range(iteration)]
 acc_Md = []
-acc_type = [[] for i in range(6)]
-#acc_type = [[[] for i in range(iteration)] for i in range(6)]
 clf = RFC(n_estimators=50, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = SVC(kernel='linear')
@@ -217,7 +215,7 @@ clf = RFC(n_estimators=50, criterion='entropy')
 vc = CV(analyzer='char_wb', ngram_range=(2,4), min_df=1, token_pattern='[a-z]{2,}')
 #vc = CV(token_pattern='[a-z]{2,}')
 data1 = vc.fit_transform(input1).toarray()
-for fd in range(1):
+for fd in range(fold):
     print 'running AL on new bldg - fold', fd
     train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
     validate = np.hstack((folds[(fd+x)%fold] for x in range(1,10)))
@@ -239,14 +237,6 @@ for fd in range(1):
         clf.fit(train_data, train_label)
         acc = clf.score(test_data, test_label)
         acc_sum[itr].append(acc)
-
-        preds = clf.predict(test_data)
-        cm = CM(test_label,preds)
-        cm = normalize(cm.astype(np.float), axis=1, norm='l1')
-        k=0
-        while k<6:
-            acc_type[k].append(cm[k,k])
-            k += 1
 
         #entropy based example selection block
         #compute entropy for each instance and rank
@@ -273,7 +263,7 @@ acc_std = [np.std(acc) for acc in acc_sum]
 
 print 'overall acc:', repr(ave_acc)
 print 'acc std:', repr(acc_std)
-print 'acc by type', repr(acc_type)
+
 
 preds = clf.predict(test_data)
 cm_ = CM(test_label,preds)
@@ -290,7 +280,7 @@ for x in xrange(len(cm)):
 cls = ['co2','humidity','rmt','stpt','flow','other_t']
 pl.xticks(range(len(cm)),cls)
 pl.yticks(range(len(cm)),cls)
-pl.title('Mn Confusion matrix (%.3f)'%clf.score(test_data, test_label))
+pl.title('Confusion matrix (%.3f)'%clf.score(test_data, test_label))
 pl.ylabel('True label')
 pl.xlabel('Predicted label')
 pl.show()
@@ -309,7 +299,7 @@ for x in xrange(len(cm)):
 cls = ['co2','humidity','rmt','stpt','flow','other_t']
 pl.xticks(range(len(cm)),cls)
 pl.yticks(range(len(cm)),cls)
-pl.title('Md Confusion matrix (%.3f)'%accuracy_score(test_label, label1[test]))
+pl.title('Confusion matrix (%.3f)'%accuracy_score(test_label, label1[test]))
 pl.ylabel('True label')
 pl.xlabel('Predicted label')
 pl.show()
