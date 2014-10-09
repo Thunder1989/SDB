@@ -217,6 +217,7 @@ clf = RFC(n_estimators=50, criterion='entropy')
 vc = CV(analyzer='char_wb', ngram_range=(2,4), min_df=1, token_pattern='[a-z]{2,}')
 #vc = CV(token_pattern='[a-z]{2,}')
 data1 = vc.fit_transform(input1).toarray()
+ex = []
 for fd in range(1):
     print 'running AL on new bldg - fold', fd
     train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
@@ -264,6 +265,7 @@ for fd in range(1):
 
         res = sorted(res, key=lambda x: x[-1], reverse=True)
         elmt = res[idx][0]
+        ex.append((label1[elmt],label_gt[elmt]))
         train = np.append(train, elmt)
         validate = validate[validate!=elmt]
 
@@ -272,8 +274,9 @@ ave_acc = [np.mean(acc) for acc in acc_sum]
 acc_std = [np.std(acc) for acc in acc_sum]
 
 print 'overall acc:', repr(ave_acc)
-print 'acc std:', repr(acc_std)
+#print 'acc std:', repr(acc_std)
 print 'acc by type', repr(acc_type)
+print repr(ex)
 
 preds = clf.predict(test_data)
 cm_ = CM(test_label,preds)
