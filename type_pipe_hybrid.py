@@ -275,7 +275,9 @@ acc_std = [np.std(acc) for acc in acc_sum]
 
 print 'overall acc:', repr(ave_acc)
 #print 'acc std:', repr(acc_std)
-print 'acc by type', repr(acc_type)
+#print 'acc by type', repr(acc_type)
+for i in acc_type:
+    print 'a = ', repr(i), '; plot(a\');'
 print repr(ex)
 
 preds = clf.predict(test_data)
