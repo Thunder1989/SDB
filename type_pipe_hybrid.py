@@ -265,7 +265,7 @@ for fd in range(1):
 
         res = sorted(res, key=lambda x: x[-1], reverse=True)
         elmt = res[idx][0]
-        ex.append((itr+1, elmt, label1[elmt],label_gt[elmt]))
+        ex.extend([itr+1, elmt, label1[elmt], label_gt[elmt]])
         train = np.append(train, elmt)
         validate = validate[validate!=elmt]
 
