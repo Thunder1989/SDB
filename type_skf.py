@@ -12,10 +12,10 @@ import numpy as np
 import math
 import pylab as pl
 
-input1 = np.genfromtxt('rice_45min_', delimiter=',')
+input1 = np.genfromtxt('soda_45min_new', delimiter=',')
 data1 = input1[:,[0,1,2,3,5,6,7]]
 label1 = input1[:,-1]
-input2 = np.genfromtxt('sdh_45min', delimiter=',')
+input2 = np.genfromtxt('sdh_45min_new', delimiter=',')
 data2 = input2[:,[0,1,2,3,5,6,7]]
 label2 = input2[:,-1]
 
@@ -27,17 +27,17 @@ for train_idx, test_idx in loo:
 
 ctr = 0
 fold = 2
-clx = 17
+clx = 10
 skf = StratifiedKFold(label1, n_folds=fold)
 acc_sum = []
 indi_acc =[[] for i in range(clx)]
 #clf = ETC(n_estimators=10, criterion='entropy')
-clf = RFC(n_estimators=50, criterion='entropy')
+clf = RFC(n_estimators=100, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = Ada(n_estimators=100)
 #clf = SVC(kernel='linear')
 loop = 0
-run = 10
+run = 20
 importance = np.zeros(data1.shape[1])
 while loop<run/fold:
     for train_idx, test_idx in skf:
@@ -53,6 +53,7 @@ while loop<run/fold:
         #test_data = data2
         #test_label = label2
         clf.fit(train_data, train_label)
+        #print clf.feature_importances_
         preds = clf.predict(test_data)
         acc = accuracy_score(test_label, preds)
         acc_sum.append(acc)
@@ -137,7 +138,8 @@ for x in xrange(len(cm)):
                     verticalalignment='center')
 
 
-cls = ['co2','humidity','rmt','stpt','flow','water T','air T']
+cls = ['rmt','pos','stpt','flow','other_t','ctrl','spd','sta','pressure','tmr'] #soda
+#cls = ['rmt','pos','stpt','flow','other_t','pwr','ctrl','occu','spd','sta'] #sdh
 pl.xticks(range(len(cm)),cls)
 pl.yticks(range(len(cm)),cls)
 pl.title('Confusion matrix (%.3f)'%acc)
