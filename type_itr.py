@@ -16,16 +16,16 @@ import math
 import random
 import pylab as pl
 
-'''
-input1 = np.genfromtxt('rice_45min', delimiter=',')
+
+input1 = np.genfromtxt('soda_45min_new', delimiter=',')
 data1 = input1[:,[0,1,2,3,5,6,7]]
 label1 = input1[:,-1]
 input2 = np.genfromtxt('sdh_45min', delimiter=',')
 data2 = input2[:,[0,1,2,3,5,6,7]]
 label2 = input2[:,-1]
 #label = [1,2,4,6,7,8]
-'''
 
+'''
 input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 #input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 input2 = np.genfromtxt('sdh_45min', delimiter=',')
@@ -33,9 +33,10 @@ input3 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_name').readlines
 input4 = np.genfromtxt('rice_45min', delimiter=',')
 label1 = input2[:,-1]
 label2 = input4[:,-1]
+'''
 
-iteration = 80
-fold = 60
+iteration = 50
+fold = 20
 #loo = LeaveOneOut(len(data))
 #skf = StratifiedKFold(label1, n_folds=fold)
 kf = KFold(len(label1), n_folds=fold, shuffle=True)
@@ -55,16 +56,16 @@ clf = RFC(n_estimators=50, criterion='entropy')
 #clf = Ada(n_estimators=100)
 #clf = SVC(kernel='linear')
 
-vc = CV(analyzer='char_wb', ngram_range=(2,4), min_df=1, token_pattern='[a-z]{2,}')
-data1 = vc.fit_transform(input1).toarray()
+#vc = CV(analyzer='char_wb', ngram_range=(2,4), min_df=1, token_pattern='[a-z]{2,}')
+#data1 = vc.fit_transform(input1).toarray()
 for fd in range(fold):
     train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
-    validate = np.hstack((folds[(fd+x)%fold] for x in range(1,30)))
+    validate = np.hstack((folds[(fd+x)%fold] for x in range(1,3)))
     #cut train to one example
     validate = np.append(validate,train[2:])
     train = train[:2]
 
-    test = np.hstack((folds[(fd+x)%fold] for x in range(30,fold)))
+    test = np.hstack((folds[(fd+x)%fold] for x in range(3,fold)))
     test_data = data1[test]
     test_label = label1[test]
 
@@ -141,11 +142,11 @@ for fd in range(fold):
         res = sorted(res, key=lambda x: x[-2], reverse=True)
         idx = 0
 
-        '''
+
         #Margin-based, sort and pick the one with least margin
         res = sorted(res, key=lambda x: x[-1])
         idx = 0
-        '''
+
 
         #least confidence based
         tmp = sorted(label_pr, key=lambda x: x[-1])
@@ -158,10 +159,10 @@ for fd in range(fold):
         res = sorted(res, key=lambda x: x[3])
         idx = 0
 
-
+        '''
         #randomly pick one
         idx = random.randint(0,len(res)-1)
-        '''
+
 
         elmt = res[idx][0]
         #print 'running fold %d iter %d'%(fd, itr)
@@ -219,9 +220,8 @@ for i in range(6):
     ave_acc_type[i] = [np.mean(a) for a in acc_type[i]]
     ave_pre[i] = [np.mean(p) for p in precision_type[i]]
     ave_rec[i] = [np.mean(r) for r in recall_type[i] ]
-
 print 'overall acc:', repr(ave_acc)
-print 'acc std:', repr(acc_std)
+#print 'acc std:', repr(acc_std)
 '''
 print '=================================='
 print 'acc by type:', repr(ave_acc_type)
