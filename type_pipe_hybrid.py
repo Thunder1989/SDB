@@ -19,10 +19,14 @@ import random
 import pylab as pl
 
 #input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
-#input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
-#input2 = np.genfromtxt('sdh_45min', delimiter=',')
-input1 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_name').readlines()]
-input2 = np.genfromtxt('rice_45min', delimiter=',')
+input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
+input2 = np.genfromtxt('sdh_45min', delimiter=',')
+#input1 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_name').readlines()]
+#input2 = np.genfromtxt('rice_45min', delimiter=',')
+#input1 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_part').readlines()]
+#input2 = np.genfromtxt('sdh_45min_part', delimiter=',')
+#input1 = [i.strip().split('_')[-1][:-4] for i in open('soda_pt_part').readlines()]
+#input2 = np.genfromtxt('soda_45min_part', delimiter=',')
 label1 = input2[:,-1]
 #label2 = input4[:,-1]
 
@@ -160,14 +164,14 @@ for fd in range(1):
 print 'acc on string prediciton is', acc
 
 '''
-second apply the trained data model on another bldg to predict the labels
+second apply the data model on another bldg to predict labels
 '''
 input1 = np.genfromtxt('rice_45min', delimiter=',')
-data1 = input1[:,[0,1,2,3,5,6,7]]
-label1 = input1[:,-1]
+data2 = input1[:,[0,1,2,3,5,6,7]]
+label2 = input1[:,-1]
 input2 = np.genfromtxt('sdh_45min', delimiter=',')
-data2 = input2[:,[0,1,2,3,5,6,7]]
-label2 = input2[:,-1]
+data1 = input2[:,[0,1,2,3,5,6,7]]
+label1 = input2[:,-1]
 train_data = data1[test]
 train_label = model_label
 test_data = data2
@@ -192,13 +196,18 @@ for h,i,pr in zip(range(len(test_data)),preds,label_pr):
 third, again, run AL on string feature for the new bldg
 '''
 #input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
-input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
-input2 = np.genfromtxt('sdh_45min', delimiter=',')
+#input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
+#input2 = np.genfromtxt('sdh_45min', delimiter=',')
+input1 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_name').readlines()]
+input2 = np.genfromtxt('rice_45min', delimiter=',')
+#input1 = [i.strip().split('_')[-1][:-4] for i in open('sdh_pt_new_part').readlines()]
+#input2 = np.genfromtxt('sdh_45min_part', delimiter=',')
 label_gt = input2[:,-1]
 label1 = preds
 
 iteration = 120
 fold = 20
+clx = 6
 kf = KFold(len(label1), n_folds=fold, shuffle=True)
 folds = [[] for i in range(fold)]
 i = 0
@@ -208,7 +217,7 @@ for train, test in kf:
 
 acc_sum = [[] for i in range(iteration)]
 acc_Md = []
-acc_type = [[] for i in range(6)]
+acc_type = [[] for i in range(clx)]
 #acc_type = [[[] for i in range(iteration)] for i in range(6)]
 clf = RFC(n_estimators=50, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
@@ -245,7 +254,7 @@ for fd in range(1):
         cm = CM(test_label,preds)
         cm = normalize(cm.astype(np.float), axis=1, norm='l1')
         k=0
-        while k<6:
+        while k<clx:
             acc_type[k].append(cm[k,k])
             k += 1
 
@@ -255,7 +264,7 @@ for fd in range(1):
         preds = clf.predict(validate_data)
         res = []
         for h,i,pr in zip(validate,preds,label_pr):
-            entropy = np.sum(-p*math.log(p,6) for p in pr if p!=0)
+            entropy = np.sum(-p*math.log(p,clx) for p in pr if p!=0)
             if len(pr)<2:
                 margin = 1
             else:
@@ -276,9 +285,9 @@ acc_std = [np.std(acc) for acc in acc_sum]
 print 'overall acc:', repr(ave_acc)
 #print 'acc std:', repr(acc_std)
 #print 'acc by type', repr(acc_type)
-for i in acc_type:
-    print 'a = ', repr(i), '; plot(a\');'
-print repr(ex)
+#for i in acc_type:
+#    print 'a = ', repr(i), '; plot(a\');'
+#print repr(ex)
 
 preds = clf.predict(test_data)
 cm_ = CM(test_label,preds)
@@ -293,6 +302,7 @@ for x in xrange(len(cm)):
                     horizontalalignment='center',
                     verticalalignment='center')
 cls = ['co2','humidity','rmt','stpt','flow','other_t']
+#cls = ['rmt','pos','stpt','flow','other_t','ctrl','spd','sta']
 pl.xticks(range(len(cm)),cls)
 pl.yticks(range(len(cm)),cls)
 pl.title('Mn Confusion matrix (%.3f)'%clf.score(test_data, test_label))
@@ -312,6 +322,7 @@ for x in xrange(len(cm)):
                     horizontalalignment='center',
                     verticalalignment='center')
 cls = ['co2','humidity','rmt','stpt','flow','other_t']
+#cls = ['rmt','pos','stpt','flow','other_t','ctrl','spd','sta']
 pl.xticks(range(len(cm)),cls)
 pl.yticks(range(len(cm)),cls)
 pl.title('Md Confusion matrix (%.3f)'%accuracy_score(test_label, label1[test]))
