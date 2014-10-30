@@ -1,0 +1,38 @@
+--------
+Rice & SDH
+--------
+1 co2
+2 humidity 
+4 rmt
+6 stpt
+7 flow 
+
+HW supply 8
+HW return 9
+CW supply 10
+CW return 11
+Air supply 12 
+Air return 13
+Air mix 17
+Heater enter 14
+Heater leaving 15
+Heater med 16
+Ice Tank enter 18
+Ice Tank leave 19
+Dew point 20
+
+--------
+Soda & SDH
+--------
+
+5 pos
+6 stpt 
+7 flow
+8 other_t
+9 power
+10 ctrl
+11 occupancy
+12 fan speed
+13 status
+14 air pressure
+15 timer
