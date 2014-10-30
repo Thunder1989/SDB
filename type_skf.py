@@ -12,8 +12,10 @@ import numpy as np
 import math
 import pylab as pl
 
-input1 = np.genfromtxt('soda_45min_p', delimiter=',')
+input1 = np.genfromtxt('rice_45min_q', delimiter=',')
+#data1 = input1[:,[0,1,2,3,5,6,7,9,10,11]]
 data1 = input1[:,[0,1,2,3,5,6,7]]
+#data1 = input1[:,0:-1]
 label1 = input1[:,-1]
 input2 = np.genfromtxt('sdh_45min_new', delimiter=',')
 data2 = input2[:,[0,1,2,3,5,6,7]]
@@ -27,7 +29,7 @@ for train_idx, test_idx in loo:
 
 ctr = 0
 fold = 2
-clx = 7
+clx = 6
 skf = StratifiedKFold(label1, n_folds=fold)
 acc_sum = []
 indi_acc =[[] for i in range(clx)]
