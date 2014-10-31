@@ -12,14 +12,14 @@ import numpy as np
 import math
 import pylab as pl
 
-input1 = np.genfromtxt('rice_45min_q', delimiter=',')
+input1 = np.genfromtxt('rice_45min', delimiter=',')
 #data1 = input1[:,[0,1,2,3,5,6,7,9,10,11]]
 data1 = input1[:,[0,1,2,3,5,6,7]]
 #data1 = input1[:,0:-1]
 label1 = input1[:,-1]
-input2 = np.genfromtxt('sdh_45min_new', delimiter=',')
-data2 = input2[:,[0,1,2,3,5,6,7]]
-label2 = input2[:,-1]
+input2 = np.genfromtxt('sdh_45min_part', delimiter=',')
+data1 = input2[:,[0,1,2,3,5,6,7]]
+label1 = input2[:,-1]
 
 '''
 loo = LeaveOneOut(len(data))
@@ -29,7 +29,7 @@ for train_idx, test_idx in loo:
 
 ctr = 0
 fold = 2
-clx = 6
+clx = 8
 skf = StratifiedKFold(label1, n_folds=fold)
 acc_sum = []
 indi_acc =[[] for i in range(clx)]
@@ -140,8 +140,8 @@ for x in xrange(len(cm)):
                     verticalalignment='center')
 
 
-cls = ['rmt','pos','stpt','flow','other_t','ctrl','spd','sta','pressure','tmr'] #soda
-#cls = ['rmt','pos','stpt','flow','other_t','pwr','ctrl','occu','spd','sta'] #sdh
+#cls = ['rmt','pos','stpt','flow','other_t','ctrl','spd','sta','pressure','tmr'] #soda
+cls = ['rmt','pos','stpt','flow','other_t','pwr','ctrl','occu','spd','sta'] #sdh
 pl.xticks(range(len(cm)),cls)
 pl.yticks(range(len(cm)),cls)
 pl.title('Confusion matrix (%.3f)'%acc)
