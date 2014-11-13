@@ -19,8 +19,8 @@ import random
 import pylab as pl
 
 #input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
-input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
-input2 = np.genfromtxt('sdh_45min', delimiter=',')
+input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_new_forrice').readlines()]
+input2 = np.genfromtxt('sdh_45mini_forrice', delimiter=',')
 #input1 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_name').readlines()]
 #input2 = np.genfromtxt('rice_45min', delimiter=',')
 #input1 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_part').readlines()]
