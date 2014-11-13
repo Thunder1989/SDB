@@ -20,7 +20,7 @@ import pylab as pl
 
 #input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_new_forrice').readlines()]
-input2 = np.genfromtxt('sdh_45mini_forrice', delimiter=',')
+input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
 #input1 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_name').readlines()]
 #input2 = np.genfromtxt('rice_45min', delimiter=',')
 #input1 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_part').readlines()]
@@ -166,10 +166,10 @@ print 'acc on string prediciton is', acc
 '''
 second apply the data model on another bldg to predict labels
 '''
-input1 = np.genfromtxt('rice_45min', delimiter=',')
+input1 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 data2 = input1[:,[0,1,2,3,5,6,7]]
 label2 = input1[:,-1]
-input2 = np.genfromtxt('sdh_45min', delimiter=',')
+input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
 data1 = input2[:,[0,1,2,3,5,6,7]]
 label1 = input2[:,-1]
 train_data = data1[test]
@@ -185,7 +185,7 @@ print 'acc by data model', clf.score(test_data, test_label)
 label_pr = np.sort(clf.predict_proba(test_data)) #sort each prob vector in ascending order
 cfdn_d = defaultdict(list)
 for h,i,pr in zip(range(len(test_data)),preds,label_pr):
-    entropy = np.sum(-p*math.log(p,6) for p in pr if p!=0)
+    entropy = np.sum(-p*math.log(p,2) for p in pr if p!=0)
     if len(pr)<2:
         margin = 1
     else:
@@ -198,8 +198,8 @@ third, again, run AL on string feature for the new bldg
 #input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 #input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 #input2 = np.genfromtxt('sdh_45min', delimiter=',')
-input1 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_name').readlines()]
-input2 = np.genfromtxt('rice_45min', delimiter=',')
+input1 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_forsdh').readlines()]
+input2 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 #input1 = [i.strip().split('_')[-1][:-4] for i in open('sdh_pt_new_part').readlines()]
 #input2 = np.genfromtxt('sdh_45min_part', delimiter=',')
 label_gt = input2[:,-1]
@@ -207,7 +207,7 @@ label1 = preds
 
 iteration = 120
 fold = 20
-clx = 6
+clx = 15
 kf = KFold(len(label1), n_folds=fold, shuffle=True)
 folds = [[] for i in range(fold)]
 i = 0

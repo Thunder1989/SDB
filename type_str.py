@@ -20,15 +20,15 @@ import math
 import pylab as pl
 
 #input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
-input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
-input2 = np.genfromtxt('sdh_45min', delimiter=',')
-input3 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_name').readlines()]
-input4 = np.genfromtxt('rice_45min', delimiter=',')
+input1 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_forrice').readlines()]
+input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
+input3 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_forsdh').readlines()]
+input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 label1 = input2[:,-1]
 label2 = input4[:,-1]
 
 fold = 2
-clx = 6
+clx =  15
 skf = StratifiedKFold(label1, n_folds=fold)
 acc_sum = []
 indi_acc =[[] for i in range(clx)]
@@ -142,7 +142,8 @@ for x in xrange(len(cm)):
                     verticalalignment='center')
 
 
-cls = ['co2','humidity','rmt','stpt','flow','other T']
+cls = ['co2','humidity','rmt','status','stpt','flow','HW sup','HW ret','CW sup','CW ret','SAT','RAT','MAT','C enter','C leave','occu']
+#cls = ['co2','humidity','rmt','stpt','flow','other T']
 pl.xticks(range(len(cm)),cls)
 pl.yticks(range(len(cm)),cls)
 pl.title('Confusion matrix (%.3f)'%acc)

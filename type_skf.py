@@ -17,7 +17,7 @@ input1 = np.genfromtxt('rice_45min', delimiter=',')
 data1 = input1[:,[0,1,2,3,5,6,7]]
 #data1 = input1[:,0:-1]
 label1 = input1[:,-1]
-input2 = np.genfromtxt('sdh_45min_part', delimiter=',')
+input2 = np.genfromtxt('sdh_45min_new', delimiter=',')
 data1 = input2[:,[0,1,2,3,5,6,7]]
 label1 = input2[:,-1]
 
@@ -29,7 +29,7 @@ for train_idx, test_idx in loo:
 
 ctr = 0
 fold = 2
-clx = 8
+clx = 9
 skf = StratifiedKFold(label1, n_folds=fold)
 acc_sum = []
 indi_acc =[[] for i in range(clx)]
@@ -140,8 +140,10 @@ for x in xrange(len(cm)):
                     verticalalignment='center')
 
 
+#cls = ['co2','humidity','pressure','rmt','status','stpt','flow','other T','occu']
 #cls = ['rmt','pos','stpt','flow','other_t','ctrl','spd','sta','pressure','tmr'] #soda
 cls = ['rmt','pos','stpt','flow','other_t','pwr','ctrl','occu','spd','sta'] #sdh
+#cls = ['co2','humidity','rmt','status','stpt','flow','HW sup','HW ret','CW sup','CW ret','SAT','RAT','MAT','C enter','C leave','occu']
 pl.xticks(range(len(cm)),cls)
 pl.yticks(range(len(cm)),cls)
 pl.title('Confusion matrix (%.3f)'%acc)
