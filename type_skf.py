@@ -12,12 +12,12 @@ import numpy as np
 import math
 import pylab as pl
 
-input1 = np.genfromtxt('rice_45min', delimiter=',')
+input1 = np.genfromtxt('rice_45min_woOT', delimiter=',')
 #data1 = input1[:,[0,1,2,3,5,6,7,9,10,11]]
 data1 = input1[:,[0,1,2,3,5,6,7]]
 #data1 = input1[:,0:-1]
 label1 = input1[:,-1]
-input2 = np.genfromtxt('sdh_45min_new', delimiter=',')
+input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
 data1 = input2[:,[0,1,2,3,5,6,7]]
 label1 = input2[:,-1]
 
@@ -29,7 +29,7 @@ for train_idx, test_idx in loo:
 
 ctr = 0
 fold = 2
-clx = 9
+clx = 15
 skf = StratifiedKFold(label1, n_folds=fold)
 acc_sum = []
 indi_acc =[[] for i in range(clx)]

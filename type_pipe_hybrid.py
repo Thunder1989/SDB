@@ -71,6 +71,7 @@ for fd in range(1):
 
         #for building a data based model to predict another bldg
         clf.fit(train_data, train_label)
+        print clf.classes_
         acc = clf.score(test_data, test_label)
         model_label = clf.predict(test_data)
 
@@ -178,6 +179,7 @@ test_data = data2
 test_label = label2
 clf = RFC(n_estimators=50, criterion='entropy')
 clf.fit(train_data, train_label)
+print clf.classes_
 preds = clf.predict(test_data)
 print 'acc by data model', clf.score(test_data, test_label)
 
@@ -207,7 +209,7 @@ label1 = preds
 
 iteration = 120
 fold = 20
-clx = 12
+clx = 13
 kf = KFold(len(label1), n_folds=fold, shuffle=True)
 folds = [[] for i in range(fold)]
 i = 0
@@ -223,7 +225,7 @@ clf = RFC(n_estimators=50, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = SVC(kernel='linear')
 
-vc = CV(analyzer='char_wb', ngram_range=(2,4), min_df=1, token_pattern='[a-z]{2,}')
+vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
 #vc = CV(token_pattern='[a-z]{2,}')
 data1 = vc.fit_transform(input1).toarray()
 ex = []
@@ -247,6 +249,7 @@ for fd in range(1):
         validate_label = label1[validate]
 
         clf.fit(train_data, train_label)
+        print clf.classes_
         acc = clf.score(test_data, test_label)
         acc_sum[itr].append(acc)
 
@@ -289,6 +292,8 @@ print 'overall acc:', repr(ave_acc)
 #    print 'a = ', repr(i), '; plot(a\');'
 #print repr(ex)
 
+mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
+
 preds = clf.predict(test_data)
 cm_ = CM(test_label,preds)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
@@ -301,7 +306,10 @@ for x in xrange(len(cm)):
         ax.annotate(str("%.3f(%d)"%(cm[x][y],cm_[x][y])), xy=(y,x),
                     horizontalalignment='center',
                     verticalalignment='center')
-cls = ['co2','humidity','rmt','status','stpt','flow','HW sup','HW ret','CW sup','CW ret','SAT','RAT','MAT','C enter','C leave','occu']
+cls_id =np.unique(test_label)
+cls = []
+for c in cls_id:
+    cls.append(mapping[c])
 #cls = ['co2','humidity','rmt','stpt','flow','other_t']
 #cls = ['rmt','pos','stpt','flow','other_t','ctrl','spd','sta']
 pl.xticks(range(len(cm)),cls)
@@ -322,7 +330,6 @@ for x in xrange(len(cm)):
         ax.annotate(str("%.3f(%d)"%(cm[x][y],cm_[x][y])), xy=(y,x),
                     horizontalalignment='center',
                     verticalalignment='center')
-cls = ['co2','humidity','rmt','status','stpt','flow','HW sup','HW ret','CW sup','CW ret','SAT','RAT','MAT','C enter','C leave','occu']
 #cls = ['co2','humidity','rmt','stpt','flow','other_t']
 #cls = ['rmt','pos','stpt','flow','other_t','ctrl','spd','sta']
 pl.xticks(range(len(cm)),cls)

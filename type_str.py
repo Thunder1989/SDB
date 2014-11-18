@@ -22,13 +22,13 @@ import pylab as pl
 #input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 input1 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_forrice').readlines()]
 input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
-input3 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_forsdh').readlines()]
+input3 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt').readlines()]
 input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 label1 = input2[:,-1]
-label2 = input4[:,-1]
+label1 = input4[:,-1]
 
 fold = 2
-clx =  15
+clx = 15
 skf = StratifiedKFold(label1, n_folds=fold)
 acc_sum = []
 indi_acc =[[] for i in range(clx)]
@@ -41,8 +41,8 @@ clf = SVC(kernel='linear')
 
 #vc = CV(token_pattern='[a-z]{2,}')
 #vc = TV(token_pattern='[a-z]{2,}')
-vc = CV(analyzer='char_wb', ngram_range=(2,4), min_df=1, token_pattern='[a-z]{2,}')
-data1 = vc.fit_transform(input1).toarray()
+vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
+data1 = vc.fit_transform(input3).toarray()
 #vc.fit(input1)
 #data1 = vc.transform(input1).toarray()
 #data2 = vc.transform(input3).toarray()
@@ -62,6 +62,11 @@ for train_idx, test_idx in skf:
     preds = clf.predict(test_data)
     acc = accuracy_score(test_label, preds)
     acc_sum.append(acc)
+
+    #for debugging
+    for i,j,k in zip(test_label, preds, train_idx):
+        if i==12:
+            print k,j
 
     cm_ = CM(test_label,preds)
     cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
