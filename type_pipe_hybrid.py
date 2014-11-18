@@ -34,7 +34,7 @@ label1 = input2[:,-1]
 first do AL using string features to generate labels
 and train a data feature model on the generated labels
 '''
-iteration = 70
+iteration = 120
 fold = 60
 #skf = StratifiedKFold(label1, n_folds=fold)
 kf = KFold(len(label1), n_folds=fold, shuffle=True)
@@ -73,6 +73,7 @@ for fd in range(1):
         clf.fit(train_data, train_label)
         print clf.classes_
         acc = clf.score(test_data, test_label)
+        print 'itr', itr, 'acc', acc
         model_label = clf.predict(test_data)
 
         #entropy based example selection block

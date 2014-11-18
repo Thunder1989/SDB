@@ -22,7 +22,7 @@ import pylab as pl
 #input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 input1 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_forrice').readlines()]
 input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
-input3 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt').readlines()]
+input3 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_forsdh').readlines()]
 input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 label1 = input2[:,-1]
 label1 = input4[:,-1]
@@ -146,6 +146,11 @@ for x in xrange(len(cm)):
                     horizontalalignment='center',
                     verticalalignment='center')
 
+#mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
+#cls_id =np.unique(test_label)
+#cls = []
+#for c in cls_id:
+#   cls.append(mapping[c])
 
 cls = ['co2','humidity','rmt','status','stpt','flow','HW sup','HW ret','CW sup','CW ret','SAT','RAT','MAT','C enter','C leave','occu']
 #cls = ['co2','humidity','rmt','stpt','flow','other T']
