@@ -25,7 +25,7 @@ input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
 input3 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_forsdh').readlines()]
 input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 label1 = input2[:,-1]
-label1 = input4[:,-1]
+label2 = input4[:,-1]
 
 fold = 2
 clx = 15
@@ -42,7 +42,7 @@ clf = SVC(kernel='linear')
 #vc = CV(token_pattern='[a-z]{2,}')
 #vc = TV(token_pattern='[a-z]{2,}')
 vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
-data1 = vc.fit_transform(input3).toarray()
+data1 = vc.fit_transform(input1).toarray()
 #vc.fit(input1)
 #data1 = vc.transform(input1).toarray()
 #data2 = vc.transform(input3).toarray()
@@ -144,7 +144,8 @@ for x in xrange(len(cm)):
     for y in xrange(len(cm)):
         ax.annotate(str("%.3f(%d)"%(cm[x][y],cm_[x][y])), xy=(y,x),
                     horizontalalignment='center',
-                    verticalalignment='center')
+                    verticalalignment='center',
+                    fontsize=10)
 
 #mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
 #cls_id =np.unique(test_label)

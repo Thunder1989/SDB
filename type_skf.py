@@ -12,14 +12,14 @@ import numpy as np
 import math
 import pylab as pl
 
-input1 = np.genfromtxt('rice_45min', delimiter=',')
+input1 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 #data1 = input1[:,[0,1,2,3,5,6,7,9,10,11]]
-data1 = input1[:,[0,1,2,3,5,6,7]]
+data2 = input1[:,[0,1,2,3,5,6,7]]
 #data1 = input1[:,0:-1]
-label1 = input1[:,-1]
+label2 = input1[:,-1]
 input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
-data2 = input2[:,[0,1,2,3,5,6,7]]
-label2 = input2[:,-1]
+data1 = input2[:,[0,1,2,3,5,6,7]]
+label1 = input2[:,-1]
 
 '''
 loo = LeaveOneOut(len(data))
@@ -29,7 +29,7 @@ for train_idx, test_idx in loo:
 
 ctr = 0
 fold = 2
-clx = 9
+clx = 15
 skf = StratifiedKFold(label1, n_folds=fold)
 acc_sum = []
 indi_acc =[[] for i in range(clx)]
@@ -50,12 +50,12 @@ while loop<run/fold:
         '''
         train_data = data1[test_idx]
         train_label = label1[test_idx]
-        test_data = data1[train_idx]
-        test_label = label1[train_idx]
-        #test_data = data2
-        #test_label = label2
+        #test_data = data1[train_idx]
+        #test_label = label1[train_idx]
+        test_data = data2
+        test_label = label2
         clf.fit(train_data, train_label)
-        print clf.classes_
+        #print clf.classes_
         #print clf.feature_importances_
         preds = clf.predict(test_data)
         acc = accuracy_score(test_label, preds)
@@ -138,17 +138,18 @@ for x in xrange(len(cm)):
     for y in xrange(len(cm)):
         ax.annotate(str("%.3f(%d)"%(cm[x][y],cm_[x][y])), xy=(y,x),
                     horizontalalignment='center',
-                    verticalalignment='center')
+                    verticalalignment='center',
+                    fontsize=10)
 
-#mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
-#cls_id =np.unique(test_label)
-#cls = []
-#for c in cls_id:
-#    cls.append(mapping[c])
+mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
+cls_id =np.unique(test_label)
+cls = []
+for c in cls_id:
+    cls.append(mapping[c])
 #cls = ['co2','humidity','pressure','rmt','status','stpt','flow','other T','occu']
 #cls = ['rmt','pos','stpt','flow','other_t','ctrl','spd','sta','pressure','tmr'] #soda
 #cls = ['rmt','pos','stpt','flow','other_t','pwr','ctrl','occu','spd','sta'] #sdh
-cls = ['co2','humidity','rmt','status','stpt','flow','HW sup','HW ret','CW sup','CW ret','SAT','RAT','MAT','C enter','C leave','occu']
+#cls = ['co2','humidity','rmt','status','stpt','flow','HW sup','HW ret','CW sup','CW ret','SAT','RAT','MAT','C enter','C leave','occu']
 pl.xticks(range(len(cm)),cls)
 pl.yticks(range(len(cm)),cls)
 pl.title('Confusion matrix (%.3f)'%acc)
