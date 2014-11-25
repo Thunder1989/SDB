@@ -49,7 +49,7 @@ clf = RFC(n_estimators=50, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = SVC(kernel='linear')
 
-vc = CV(analyzer='char_wb', ngram_range=(2,4), min_df=1, token_pattern='[a-z]{2,}')
+vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
 #vc = CV(token_pattern='[a-z]{2,}')
 data1 = vc.fit_transform(input1).toarray()
 for fd in range(1):
@@ -71,9 +71,9 @@ for fd in range(1):
 
         #for building a data based model to predict another bldg
         clf.fit(train_data, train_label)
-        print clf.classes_
+        #print clf.classes_
         acc = clf.score(test_data, test_label)
-        print 'itr', itr, 'acc', acc
+        #print 'itr', itr, 'acc', acc
         model_label = clf.predict(test_data)
 
         #entropy based example selection block
@@ -180,7 +180,7 @@ test_data = data2
 test_label = label2
 clf = RFC(n_estimators=50, criterion='entropy')
 clf.fit(train_data, train_label)
-print clf.classes_
+print 'class in Md as training:\n', clf.classes_
 preds = clf.predict(test_data)
 print 'acc by data model', clf.score(test_data, test_label)
 
@@ -209,7 +209,7 @@ label_gt = input2[:,-1]
 label1 = preds
 
 iteration = 120
-fold = 20
+fold = 5
 clx = 13
 kf = KFold(len(label1), n_folds=fold, shuffle=True)
 folds = [[] for i in range(fold)]
@@ -233,12 +233,12 @@ ex = []
 for fd in range(1):
     print 'running AL on new bldg - fold', fd
     train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
-    validate = np.hstack((folds[(fd+x)%fold] for x in range(1,10)))
+    validate = np.hstack((folds[(fd+x)%fold] for x in range(1,fold/2)))
     #cut train to one example
     validate = np.append(validate,train[2:])
     train = train[:2]
 
-    test = np.hstack((folds[(fd+x)%fold] for x in range(10,fold)))
+    test = np.hstack((folds[(fd+x)%fold] for x in range(fold/2,fold)))
     test_data = data1[test]
     test_label = label_gt[test]
     acc_Md.append(accuracy_score(test_label, label1[test]))
@@ -289,8 +289,13 @@ acc_std = [np.std(acc) for acc in acc_sum]
 print 'overall acc:', repr(ave_acc)
 #print 'acc std:', repr(acc_std)
 #print 'acc by type', repr(acc_type)
+f = open('pipe_out','w')
+f.writelines('%s;\n'%repr(i) for i in acc_type)
+f.write('ex in each itr:'+repr(ex)+'\n')
+f.write(repr(np.unique(test_label)))
+f.close()
 #for i in acc_type:
-#    print 'a = ', repr(i), '; plot(a\');'
+    #print 'a = ', repr(i), '; plot(a\');'
 #print repr(ex)
 
 mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}

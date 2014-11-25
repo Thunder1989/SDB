@@ -14,12 +14,12 @@ import pylab as pl
 
 input1 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 #data1 = input1[:,[0,1,2,3,5,6,7,9,10,11]]
-data2 = input1[:,[0,1,2,3,5,6,7]]
+data1 = input1[:,[0,1,2,3,5,6,7]]
 #data1 = input1[:,0:-1]
-label2 = input1[:,-1]
+label1 = input1[:,-1]
 input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
-data1 = input2[:,[0,1,2,3,5,6,7]]
-label1 = input2[:,-1]
+data2 = input2[:,[0,1,2,3,5,6,7]]
+label2 = input2[:,-1]
 
 '''
 loo = LeaveOneOut(len(data))
@@ -50,10 +50,10 @@ while loop<run/fold:
         '''
         train_data = data1[test_idx]
         train_label = label1[test_idx]
-        #test_data = data1[train_idx]
-        #test_label = label1[train_idx]
-        test_data = data2
-        test_label = label2
+        test_data = data1[train_idx]
+        test_label = label1[train_idx]
+        #test_data = data2
+        #test_label = label2
         clf.fit(train_data, train_label)
         #print clf.classes_
         #print clf.feature_importances_
@@ -103,6 +103,11 @@ while loop<run/fold:
         '''
 
     loop+=1
+
+for i,j,k in zip(test_label, preds, train_idx):
+    if j==4 and i!=j:
+        print '%d-%d'%(k+1,i)
+
 #print importance/run
 indi_ave_acc = [np.mean(i) for i in indi_acc]
 #indi_ave_acc_std = [np.std(i) for i in indi_acc]
