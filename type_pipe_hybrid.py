@@ -82,7 +82,7 @@ for fd in range(1):
         preds = clf.predict(validate_data)
         res = []
         for h,i,j,pr in zip(validate,validate_label,preds,label_pr):
-            entropy = np.sum(-p*math.log(p,6) for p in pr if p!=0)
+            entropy = np.sum(-p*math.log(p,2) for p in pr if p!=0)
             if len(pr)<2:
                 margin = 1
             else:
@@ -311,7 +311,8 @@ for x in xrange(len(cm)):
     for y in xrange(len(cm)):
         ax.annotate(str("%.3f(%d)"%(cm[x][y],cm_[x][y])), xy=(y,x),
                     horizontalalignment='center',
-                    verticalalignment='center')
+                    verticalalignment='center',
+                    fontsize=10)
 cls_id =np.unique(test_label)
 cls = []
 for c in cls_id:
@@ -335,7 +336,8 @@ for x in xrange(len(cm)):
     for y in xrange(len(cm)):
         ax.annotate(str("%.3f(%d)"%(cm[x][y],cm_[x][y])), xy=(y,x),
                     horizontalalignment='center',
-                    verticalalignment='center')
+                    verticalalignment='center',
+                    fontsize=10)
 #cls = ['co2','humidity','rmt','stpt','flow','other_t']
 #cls = ['rmt','pos','stpt','flow','other_t','ctrl','spd','sta']
 pl.xticks(range(len(cm)),cls)
