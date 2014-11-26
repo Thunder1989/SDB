@@ -18,8 +18,8 @@ data1 = input1[:,[0,1,2,3,5,6,7]]
 #data1 = input1[:,0:-1]
 label1 = input1[:,-1]
 input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
-data2 = input2[:,[0,1,2,3,5,6,7]]
-label2 = input2[:,-1]
+data1 = input2[:,[0,1,2,3,5,6,7]]
+label1 = input2[:,-1]
 
 '''
 loo = LeaveOneOut(len(data))
@@ -28,8 +28,8 @@ for train_idx, test_idx in loo:
 '''
 
 ctr = 0
-fold = 2
-clx = 15
+fold = 10
+clx = 10
 skf = StratifiedKFold(label1, n_folds=fold)
 acc_sum = []
 indi_acc =[[] for i in range(clx)]
@@ -146,7 +146,7 @@ for x in xrange(len(cm)):
                     verticalalignment='center',
                     fontsize=10)
 
-mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
+        mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',14:'pressure',15:'timer',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
 cls_id =np.unique(test_label)
 cls = []
 for c in cls_id:
