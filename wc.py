@@ -16,7 +16,9 @@ for i,j in zip(label,input1):
 out = open('wc_out','w')
 for i,j in data.items():
     v = vc.fit_transform(j).toarray()
+    print v
     f = v.sum(axis=0)
+    print f
     t = vc.get_feature_names()
     count = zip(t, f)
     count = sorted(count, key=operator.itemgetter(1))
