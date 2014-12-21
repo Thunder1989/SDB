@@ -12,12 +12,15 @@ import numpy as np
 import math
 import pylab as pl
 
-input1 = np.genfromtxt('rice_norm', delimiter=',')
-#data1 = input1[:,[0,1,2,3,6,7,8,14,15]]
-data1 = input1[:,[0,1,2,3,6,7]]
-#data1 = input1[:,0:-1]
+input1 = np.genfromtxt('rice_45min_raw_sliding', delimiter=',')
+#input1 = np.genfromtxt('rice_45min', delimiter=',')
+#data1 = input1[:,[0,1,2,3,5,6,7,9,10,11]]
+#data1 = input1[:,[0,1,2,3,5,6,7]]
+data1 = input1[:,0:-1]
+index = data1.shape[1]*2/3
+data1 = input1[:,0:index]
 label1 = input1[:,-1]
-input2 = np.genfromtxt('sdh_45min_new', delimiter=',')
+input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
 data2 = input2[:,[0,1,2,3,5,6,7]]
 label2 = input2[:,-1]
 
@@ -147,7 +150,7 @@ for x in xrange(len(cm)):
                     verticalalignment='center',
                     fontsize=10)
 
-mapping = {1:'co2',2:'humidity',3:'pressure',4:'rmt',5:'status',6:'stpt',7:'flow',8:'other T',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',14:'pressure',15:'timer',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
+mapping = {1:'co2',2:'humidity',3:'pressure',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',14:'pressure',15:'timer',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
 cls_id =np.unique(test_label)
 cls = []
 for c in cls_id:
