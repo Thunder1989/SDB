@@ -235,8 +235,8 @@ for fd in range(1):
     train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
     validate = np.hstack((folds[(fd+x)%fold] for x in range(1,fold/2)))
     #cut train to one example
-    validate = np.append(validate,train[2:])
-    train = train[:2]
+    validate = np.append(validate,train[1:])
+    train = train[:1]
 
     test = np.hstack((folds[(fd+x)%fold] for x in range(fold/2,fold)))
     test_data = data1[test]
