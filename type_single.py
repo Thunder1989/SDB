@@ -19,10 +19,11 @@ import random
 import pylab as pl
 
 # input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_new_forrice').readlines()]
-input1 = np.genfromtxt('sdh_45min_new', delimiter=',')
-# input1 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_forsdh').readlines()]
+#input1 = np.genfromtxt('sdh_45min_new', delimiter=',')
+input1 = np.genfromtxt('rice_45min', delimiter=',')
 # input2 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
-input2 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_all').readlines()]
+#input2 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_all').readlines()]
+input2 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt').readlines()]
 # input2 = np.genfromtxt('sdh_45min_new', delimiter=',')
 # input1 = [i.strip().split('_')[-1][:-4] for i in open('soda_pt_part').readlines()]
 # input2 = np.genfromtxt('soda_45min_part', delimiter=',')
@@ -33,7 +34,7 @@ label1 = input1[:,-1]
 '''
 first, split the examples into several folds
 '''
-fold = 10
+fold = 5
 #skf = StratifiedKFold(label1, n_folds=fold)
 kf = KFold(len(label1), n_folds=fold, shuffle=True)
 folds = [[] for i in range(fold)]
@@ -43,7 +44,7 @@ for train, test in kf:
     i+=1
 
 iteration = 100
-clx = 10 #number of classes
+clx = 9 #number of classes
 
 acc_sum = [[] for i in range(iteration)] #log overall acc over iterations
 acc_type = [[] for i in range(clx)]
@@ -131,9 +132,11 @@ for fd in range(fold):
             else:
                 margin = pr[-1]-pr[-2]
             cfdn = cfdn_d[h][0][-1] #confidence of the same example from data model
-            res.append([h,i,cfdn/(margin+1)])
+            #res.append([h,i,cfdn/(margin+1)])
+            res.append([h,i,margin])
 
-        res = sorted(res, key=lambda x: x[-1], reverse=True)
+        #res = sorted(res, key=lambda x: x[-1], reverse=True)
+        res = sorted(res, key=lambda x: x[-1])
         # pick the first example on the list, which data model is most confident while str model least confident
         idx = 0
 
