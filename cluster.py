@@ -8,6 +8,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import scale
 
 from sklearn.feature_extraction.text import CountVectorizer as CV
+from sklearn.feature_extraction.text import TfidfVectorizer as TV
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.tree import DecisionTreeClassifier as DT
 from sklearn.ensemble import RandomForestClassifier as RFC
@@ -33,6 +34,7 @@ label2 = input4[:,-1]
 n_class = len(np.unique(labels))
 print n_class, 'classes'
 vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
+#vc = TV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
 data = vc.fit_transform(input1).toarray()
 sample_size, feature_size = data.shape
 

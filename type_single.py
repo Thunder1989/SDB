@@ -22,10 +22,11 @@ import pylab as pl
 input1 = np.genfromtxt('sdh_45min_new', delimiter=',')
 # input1 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_forsdh').readlines()]
 # input2 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
-# input1 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_all').readlines()]
+input2 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_all').readlines()]
 # input2 = np.genfromtxt('sdh_45min_new', delimiter=',')
 # input1 = [i.strip().split('_')[-1][:-4] for i in open('soda_pt_part').readlines()]
 # input2 = np.genfromtxt('soda_45min_part', delimiter=',')
+data1 = input1[:,[0,1,2,3,5,6,7]]
 label1 = input1[:,-1]
 # label2 = input4[:,-1]
 
@@ -40,65 +41,60 @@ i = 0
 for train, test in kf:
     folds[i] = test
     i+=1
-#use 1 fold to train, the rest to test
-train = np.hstack((folds[x] for x in range(1)))
-# validate = np.hstack((folds[(fd+x)%fold] for x in range(1,30)))
-# #cut train to one example
-# validate = np.append(validate,train[2:])
-# train = train[:2]
-# test = np.hstack((folds[x] for x in range(fold)))
 
-'''
-second, run the data model to predict labels
-'''
-input1 = np.genfromtxt('sdh_45min_new', delimiter=',')
-data1 = input1[:,[0,1,2,3,5,6,7]]
-label1 = input1[:,-1]
-train_data = data1[train]
-train_label = label1[train]
-test_data = data1
-test_label = label1
-clf = RFC(n_estimators=50, criterion='entropy')
-clf.fit(train_data, train_label)
-print 'training class in data model:\n', clf.classes_
-preds = clf.predict(test_data)
-print 'acc of data model', clf.score(test_data, test_label)
-
-#compute confidence for each example in the data model
-label_pr = np.sort(clf.predict_proba(test_data)) #sort each prob vector in ascending order
-cfdn_d = defaultdict(list) #confidence list
-for h,i,pr in zip(range(len(test_data)),preds,label_pr):
-    # entropy = np.sum(-p*math.log(p,2) for p in pr if p!=0)
-    if len(pr)<2:
-        margin = 1
-    else:
-        margin = pr[-1]-pr[-2]
-    cfdn_d[h].append([i,margin])
-
-'''
-third, run active learning on string model of the same bldg
-'''
-input2 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_all').readlines()]
 iteration = 100
 clx = 10 #number of classes
 
 acc_sum = [[] for i in range(iteration)] #log overall acc over iterations
 acc_type = [[] for i in range(clx)]
-clf = RFC(n_estimators=50, criterion='entropy')
-#clf = DT(criterion='entropy', random_state=0)
-#clf = SVC(kernel='linear')
-
-vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
-#vc = CV(token_pattern='[a-z]{2,}')
-data2 = vc.fit_transform(input2).toarray() #feature vector of string model
-label2 = label1
-# ex = []
-for fd in range(1):
+for fd in range(fold):
     print 'running AL on new bldg - fold', fd
     train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
     validate = np.hstack((folds[(fd+x)%fold] for x in range(1,fold/2)))
-    validate = np.append(validate,train[1:])
-    train = train[:1] #training set starts from size of 1
+    # validate = np.append(validate,train[2:])
+    # train = train[:2]
+    test = np.hstack((folds[(fd+x)%fold] for x in range(fold/2,fold)))
+
+    '''
+    second, run the data model to predict labels
+    '''
+    test_ = np.append(test,validate)
+    train_data = data1[train]
+    train_label = label1[train]
+    test_data = data1[test_]
+    test_label = label1[test_]
+    clf = RFC(n_estimators=50, criterion='entropy')
+    clf.fit(train_data, train_label)
+    #print 'training class in data model:\n', clf.classes_
+    preds = clf.predict(test_data)
+    md_acc = clf.score(test_data, test_label)
+    print 'acc of data model', clf.score(test_data, test_label)
+
+    #compute confidence for each example in the data model
+    label_pr = np.sort(clf.predict_proba(test_data)) #sort each prob vector in ascending order
+    cfdn_d = defaultdict(list) #confidence list
+    for h,i,pr in zip(test_,preds,label_pr):
+        # entropy = np.sum(-p*math.log(p,2) for p in pr if p!=0)
+        if len(pr)<2:
+            margin = 1
+        else:
+            margin = pr[-1]-pr[-2]
+        cfdn_d[h].append([i,margin])
+
+    '''
+    third, run active learning on string model of the same bldg
+    '''
+    vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
+    #vc = CV(token_pattern='[a-z]{2,}')
+    data2 = vc.fit_transform(input2).toarray() #feature vector of string model
+    label2 = label1
+    # ex = []
+
+    # train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
+    # validate = np.hstack((folds[(fd+x)%fold] for x in range(1,fold/2)))
+    # validate = np.append(validate,train[1:])
+    train = validate[:1] #training set starts from size 1
+    validate = validate[1:]
 
     # test = np.hstack((folds[(fd+x)%fold] for x in range(fold/2,fold)))
     test_data = data2
@@ -123,7 +119,7 @@ for fd in range(1):
             acc_type[k].append(cm[k,k])
             k += 1
 
-        #entropy based example selection
+        #example selection
         #compute entropy for each instance and rank
         label_pr = np.sort(clf.predict_proba(validate_data)) #sort in ascending order, same as data model
         preds = clf.predict(validate_data)
@@ -140,6 +136,10 @@ for fd in range(1):
         res = sorted(res, key=lambda x: x[-1], reverse=True)
         # pick the first example on the list, which data model is most confident while str model least confident
         idx = 0
+
+        # randomly pick one example
+        #idx = random.randint(0,len(res)-1)
+
         elmt = res[idx][0] # get example id
         # ex.extend([itr+1, elmt, label1[elmt], label_gt[elmt]])
         train = np.append(train, elmt)
@@ -175,7 +175,7 @@ for x in xrange(len(cm)):
                     horizontalalignment='center',
                     verticalalignment='center',
                     fontsize=10)
-cls_id =np.unique(test_label)
+cls_id = np.unique(test_label)
 cls = []
 for c in cls_id:
     cls.append(mapping[c])
@@ -188,7 +188,7 @@ pl.ylabel('True label')
 pl.xlabel('Predicted label')
 pl.show()
 
-cm_ = CM(test_label, label1[test])
+cm_ = CM(test_label, label1)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
 fig = pl.figure()
 ax = fig.add_subplot(111)
@@ -204,7 +204,7 @@ for x in xrange(len(cm)):
 #cls = ['rmt','pos','stpt','flow','other_t','ctrl','spd','sta']
 pl.xticks(range(len(cm)),cls)
 pl.yticks(range(len(cm)),cls)
-pl.title('Md Confusion matrix (%.3f)'%accuracy_score(test_label, label1[test]))
+pl.title('Md Confusion matrix (%.3f)'%md_acc)
 pl.ylabel('True label')
 pl.xlabel('Predicted label')
 pl.show()
