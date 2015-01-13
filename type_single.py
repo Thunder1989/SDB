@@ -19,11 +19,11 @@ import random
 import pylab as pl
 
 # input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_new_forrice').readlines()]
-#input1 = np.genfromtxt('sdh_45min_new', delimiter=',')
-input1 = np.genfromtxt('rice_45min', delimiter=',')
+input1 = np.genfromtxt('sdh_45min_new', delimiter=',')
+#input1 = np.genfromtxt('rice_45min', delimiter=',')
 # input2 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
-#input2 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_all').readlines()]
-input2 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt').readlines()]
+input2 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_all').readlines()]
+#input2 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt').readlines()]
 # input2 = np.genfromtxt('sdh_45min_new', delimiter=',')
 # input1 = [i.strip().split('_')[-1][:-4] for i in open('soda_pt_part').readlines()]
 # input2 = np.genfromtxt('soda_45min_part', delimiter=',')
@@ -104,11 +104,12 @@ for fd in range(fold):
     for itr in range(iteration):
         train_data = data2[train]
         train_label = label2[train]
+        #print train_label
         validate_data = data2[validate]
         validate_label = label2[validate]
 
         clf.fit(train_data, train_label)
-        # print clf.classes_
+        #print 'itr', itr, '- class in training set:', clf.classes_
         acc = clf.score(test_data, test_label)
         acc_sum[itr].append(acc)
 
@@ -131,12 +132,18 @@ for fd in range(fold):
                 margin = 1
             else:
                 margin = pr[-1]-pr[-2]
-            cfdn = cfdn_d[h][0][-1] #confidence of the same example from data model
-            #res.append([h,i,cfdn/(margin+1)])
-            res.append([h,i,margin])
+            if itr>25:
+                res.append([h,i,label2[int(h)],margin])
+            else:
+                cfdn = cfdn_d[h][0][-1] #confidence of the same example from data model
+                res.append([h,i,cfdn/(margin+1)])
 
-        #res = sorted(res, key=lambda x: x[-1], reverse=True)
-        res = sorted(res, key=lambda x: x[-1])
+        if itr>25:
+            res = sorted(res, key=lambda x: x[-1])
+        else:
+            res = sorted(res, key=lambda x: x[-1], reverse=True)
+
+        #print res[-20:]
         # pick the first example on the list, which data model is most confident while str model least confident
         idx = 0
 

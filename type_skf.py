@@ -37,12 +37,12 @@ skf = StratifiedKFold(label1, n_folds=fold)
 acc_sum = []
 indi_acc =[[] for i in range(clx)]
 #clf = ETC(n_estimators=10, criterion='entropy')
-clf = RFC(n_estimators=100, criterion='entropy')
+#clf = RFC(n_estimators=100, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = Ada(n_estimators=100)
-#clf = SVC(kernel='linear')
+clf = SVC(kernel='linear')
 loop = 0
-run = 100
+run = 10
 importance = np.zeros(data1.shape[1])
 while loop<run/fold:
     for train_idx, test_idx in skf:
@@ -63,7 +63,7 @@ while loop<run/fold:
         preds = clf.predict(test_data)
         acc = accuracy_score(test_label, preds)
         acc_sum.append(acc)
-        importance += clf.feature_importances_
+        #importance += clf.feature_importances_
         #print acc
 
         cm_ = CM(test_label,preds)
@@ -112,7 +112,7 @@ while loop<run/fold:
 #    if j==4 and i!=j:
 #        print '%d-%d'%(k+1,i)
 
-print importance/run
+#print importance/run
 indi_ave_acc = [np.mean(i) for i in indi_acc]
 #indi_ave_acc_std = [np.std(i) for i in indi_acc]
 print 'ave acc/type:', indi_ave_acc
