@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 from sklearn import metrics
 from sklearn.cluster import KMeans
+from sklearn.mixture import GMM
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import scale
 
@@ -12,12 +13,9 @@ from sklearn.feature_extraction.text import TfidfVectorizer as TV
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.tree import DecisionTreeClassifier as DT
 from sklearn.ensemble import RandomForestClassifier as RFC
-from sklearn.ensemble import ExtraTreesClassifier as ETC
-from sklearn.ensemble import AdaBoostClassifier as Ada
 from sklearn.naive_bayes import GaussianNB as GNB
 from sklearn.naive_bayes import MultinomialNB as MNB
 from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix as CM
 from sklearn import tree
 from sklearn.preprocessing import normalize
@@ -29,21 +27,15 @@ input1 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_forrice').read
 input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
 input3 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_forsdh').readlines()]
 input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
-labels = input2[:,-1]
-label2 = input4[:,-1]
-n_class = len(np.unique(labels))
-print n_class, 'classes'
+label2 = input2[:,-1]
+label1 = input4[:,-1]
 vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
 #vc = TV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
-data = vc.fit_transform(input1).toarray()
-sample_size, feature_size = data.shape
-
-print(79 * '_')
-print('% 9s' % 'init'
-      '    time  inertia    homo   compl  v-meas     ARI AMI  silhouette')
-
+#data = vc.fit_transform(input1).toarray()
+data = input4[:,[0,1,2,3,5,6,7]]
 
 def bench_k_means(estimator, name, data):
+    sample_size, feature_size = data.shape
     t0 = time()
     estimator.fit(data)
     print('% 9s   %.2fs    %i   %.3f   %.3f   %.3f   %.3f   %.3f    %.3f'
@@ -57,8 +49,36 @@ def bench_k_means(estimator, name, data):
                                       metric='euclidean',
                                       sample_size=sample_size)))
 
-bench_k_means(KMeans(init='k-means++', n_clusters=n_class, n_init=10),
-              name="k-means++", data=data)
+fold = 5
+skf = StratifiedKFold(label1, n_folds=fold)
+train, test = next(iter(skf))
+x_train = data[train]
+y_train = label1[train]
+x_test = data[test]
+y_test = label1[test]
+n_class = len(np.unique(y_train))
+print n_class, 'classes'
+c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
+c.fit(x_train)
+preds = c.predict(x_test)
+print metrics.homogeneity_completeness_v_measure(y_test,preds)
+print metrics.silhouette_score(x_train, c.labels_, metric='euclidean', sample_size=len(test))
 
-bench_k_means(KMeans(init='random', n_clusters=n_class, n_init=10),
-              name="random", data=data)
+g = GMM(n_components=n_class, covariance_type='tied', init_params='wc', n_iter=100)
+#for i in np.unique(y_train):
+#    print x_train[y_train == i].mean(axis=0)
+g.fit(x_train)
+print g.means_
+g.means_ = np.array([x_train[y_train == i].mean(axis=0) for i in np.unique(y_train)])
+print g.means_
+preds = g.predict(x_test)
+test_acc = np.mean(preds.ravel() == y_test.ravel())
+print 'acc from gmm', test_acc
+
+#print(79 * '_')
+#print('% 9s' % 'init'
+#      '    time  inertia    homo   compl  v-meas     ARI AMI  silhouette')
+
+#bench_k_means(KMeans(init='random', n_clusters=n_class, n_init=10),
+#              name="random", data=data)
+
