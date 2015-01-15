@@ -62,15 +62,21 @@ c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
 c.fit(x_train)
 preds = c.predict(x_test)
 print metrics.homogeneity_completeness_v_measure(y_test,preds)
-print metrics.silhouette_score(x_train, c.labels_, metric='euclidean', sample_size=len(test))
+print 'ARI', metrics.adjusted_rand_score(y_test, preds)
+print 'Sil', metrics.silhouette_score(x_train, c.labels_, metric='euclidean', sample_size=len(test))
+score = metrics.silhouette_samples(x_train, c.labels_)
+rank = zip(train, y_train, c.labels_, score)
+rank = sorted(rank, key=lambda x: x[-1])
+print len(rank)
+print rank[:20]
 
 g = GMM(n_components=n_class, covariance_type='tied', init_params='wc', n_iter=100)
 #for i in np.unique(y_train):
 #    print x_train[y_train == i].mean(axis=0)
 g.fit(x_train)
-print g.means_
+#print g.means_
 g.means_ = np.array([x_train[y_train == i].mean(axis=0) for i in np.unique(y_train)])
-print g.means_
+#print g.means_
 preds = g.predict(x_test)
 test_acc = np.mean(preds.ravel() == y_test.ravel())
 print 'acc from gmm', test_acc
