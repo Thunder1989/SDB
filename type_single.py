@@ -27,43 +27,42 @@ input2 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_all').readline
 # input2 = np.genfromtxt('sdh_45min_new', delimiter=',')
 # input1 = [i.strip().split('_')[-1][:-4] for i in open('soda_pt_part').readlines()]
 # input2 = np.genfromtxt('soda_45min_part', delimiter=',')
-data1 = input1[:,[0,1,2,3,5,6,7]]
-label1 = input1[:,-1]
+fd1 = input1[:,[0,1,2,3,5,6,7]]
+label = input1[:,-1]
 # label2 = input4[:,-1]
 
 '''
 first, split the examples into several folds
 '''
 fold = 5
-#skf = StratifiedKFold(label1, n_folds=fold)
-kf = KFold(len(label1), n_folds=fold, shuffle=True)
+#skf = StratifiedKFold(label, n_folds=fold)
+kf = KFold(len(label), n_folds=fold, shuffle=True)
 folds = [[] for i in range(fold)]
 i = 0
 for train, test in kf:
     folds[i] = test
     i+=1
 
-iteration = 100
+iteration = 10
 clx = 9 #number of classes
-
 acc_sum = [[] for i in range(iteration)] #log overall acc over iterations
 acc_type = [[] for i in range(clx)]
-for fd in range(fold):
-    print 'running AL on new bldg - fold', fd
-    train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
-    validate = np.hstack((folds[(fd+x)%fold] for x in range(1,fold/2)))
+for f in range(fold):
+    print 'running AL on new bldg - fold', f
+    train = np.hstack((folds[(f+x)%fold] for x in range(1)))
+    validate = np.hstack((folds[(f+x)%fold] for x in range(1,fold/2)))
     # validate = np.append(validate,train[2:])
     # train = train[:2]
-    test = np.hstack((folds[(fd+x)%fold] for x in range(fold/2,fold)))
+    test = np.hstack((folds[(f+x)%fold] for x in range(fold/2,fold)))
 
     '''
     second, run the data model to predict labels
     '''
     test_ = np.append(test,validate)
-    train_data = data1[train]
-    train_label = label1[train]
-    test_data = data1[test_]
-    test_label = label1[test_]
+    train_data = fd1[train]
+    train_label = label[train]
+    test_data = fd1[test_]
+    test_label = label[test_]
     clf = RFC(n_estimators=50, criterion='entropy')
     clf.fit(train_data, train_label)
     #print 'training class in data model:\n', clf.classes_
@@ -88,7 +87,7 @@ for fd in range(fold):
     vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
     #vc = CV(token_pattern='[a-z]{2,}')
     data2 = vc.fit_transform(input2).toarray() #feature vector of string model
-    label2 = label1
+    label2 = label
     # ex = []
 
     # train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
@@ -151,7 +150,7 @@ for fd in range(fold):
         #idx = random.randint(0,len(res)-1)
 
         elmt = res[idx][0] # get example id
-        # ex.extend([itr+1, elmt, label1[elmt], label_gt[elmt]])
+        # ex.extend([itr+1, elmt, label[elmt], label_gt[elmt]])
         train = np.append(train, elmt)
         validate = validate[validate!=elmt]
 
@@ -198,7 +197,7 @@ pl.ylabel('True label')
 pl.xlabel('Predicted label')
 pl.show()
 
-cm_ = CM(test_label, label1)
+cm_ = CM(test_label, label)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
 fig = pl.figure()
 ax = fig.add_subplot(111)
