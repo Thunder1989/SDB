@@ -19,11 +19,11 @@ import random
 import pylab as pl
 
 # input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_new_forrice').readlines()]
-input1 = np.genfromtxt('sdh_45min_new', delimiter=',')
+#input1 = np.genfromtxt('sdh_45min_new', delimiter=',')
 #input1 = np.genfromtxt('rice_45min', delimiter=',')
-# input2 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
-input2 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_all').readlines()]
-#input2 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt').readlines()]
+input1 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
+#input2 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_all').readlines()]
+input2 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_forsdh').readlines()]
 # input2 = np.genfromtxt('sdh_45min_new', delimiter=',')
 # input1 = [i.strip().split('_')[-1][:-4] for i in open('soda_pt_part').readlines()]
 # input2 = np.genfromtxt('soda_45min_part', delimiter=',')
@@ -45,74 +45,102 @@ for train, test in kf:
 
 iteration = 10
 clx = 9 #number of classes
-acc_sum = [[] for i in range(iteration)] #log overall acc over iterations
+acc_p1 = [[] for i in range(iteration)] #log overall acc over iterations
+acc_p2 = [[] for i in range(iteration)] #log overall acc over iterations
+acc_p12 = [[] for i in range(iteration)] #log overall acc over iterations
 acc_type = [[] for i in range(clx)]
+clf1 = RFC(n_estimators=50, criterion='entropy')
+clf2 = SVC(kernel='linear')
+
 for f in range(fold):
-    print 'running AL on new bldg - fold', f
+    print 'running fold', f
     train = np.hstack((folds[(f+x)%fold] for x in range(1)))
-    validate = np.hstack((folds[(f+x)%fold] for x in range(1,fold/2)))
+    #validate = np.hstack((folds[(f+x)%fold] for x in range(1,fold/2)))
     # validate = np.append(validate,train[2:])
     # train = train[:2]
-    test = np.hstack((folds[(f+x)%fold] for x in range(fold/2,fold)))
+    test = np.hstack((folds[(f+x)%fold] for x in range(1,fold)))
 
     '''
     second, run the data model to predict labels
     '''
-    test_ = np.append(test,validate)
-    train_data = fd1[train]
-    train_label = label[train]
-    test_data = fd1[test_]
-    test_label = label[test_]
-    clf = RFC(n_estimators=50, criterion='entropy')
-    clf.fit(train_data, train_label)
-    #print 'training class in data model:\n', clf.classes_
-    preds = clf.predict(test_data)
-    md_acc = clf.score(test_data, test_label)
-    print 'acc of data model', clf.score(test_data, test_label)
-
-    #compute confidence for each example in the data model
-    label_pr = np.sort(clf.predict_proba(test_data)) #sort each prob vector in ascending order
-    cfdn_d = defaultdict(list) #confidence list
-    for h,i,pr in zip(test_,preds,label_pr):
-        # entropy = np.sum(-p*math.log(p,2) for p in pr if p!=0)
-        if len(pr)<2:
-            margin = 1
-        else:
-            margin = pr[-1]-pr[-2]
-        cfdn_d[h].append([i,margin])
-
-    '''
-    third, run active learning on string model of the same bldg
-    '''
-    vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
-    #vc = CV(token_pattern='[a-z]{2,}')
-    data2 = vc.fit_transform(input2).toarray() #feature vector of string model
-    label2 = label
-    # ex = []
-
-    # train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
-    # validate = np.hstack((folds[(fd+x)%fold] for x in range(1,fold/2)))
-    # validate = np.append(validate,train[1:])
-    train = validate[:1] #training set starts from size 1
-    validate = validate[1:]
-
-    # test = np.hstack((folds[(fd+x)%fold] for x in range(fold/2,fold)))
-    test_data = data2
-    test_label = label2
-
     for itr in range(iteration):
-        train_data = data2[train]
-        train_label = label2[train]
+        print 'itr...', itr
+        train_ = train[:(itr+1)*10]
+        #test_ = np.append(test,validate)
+        train_fd = fd1[train_]
+        train_label = label[train_]
+        test_fd = fd1[test]
+        test_label = label[test]
+        clf1.fit(train_fd, train_label)
+        #print 'training class in data model:\n', clf.classes_
+        preds = clf1.predict(test_fd)
+        #md_acc = clf.score(test_fd, test_label)
+        #print 'acc of data model', clf.score(test_fd, test_label)
+
+        '''
+        #compute confidence for each example in the data model
+        label_pr = np.sort(clf.predict_proba(test_fd)) #sort each prob vector in ascending order
+        cfdn_d = defaultdict(list) #confidence list
+        for h,i,pr in zip(test_,preds,label_pr):
+            # entropy = np.sum(-p*math.log(p,2) for p in pr if p!=0)
+            if len(pr)<2:
+                margin = 1
+            else:
+                margin = pr[-1]-pr[-2]
+            cfdn_d[h].append([i,margin])
+        '''
+
+        '''
+        third, run active learning on string model of the same bldg
+        '''
+        vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
+        #vc = CV(token_pattern='[a-z]{2,}')
+        fn = vc.fit_transform(input2).toarray() #feature vector of string model
+        #label2 = label
+        # ex = []
+
+        # train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
+        # validate = np.hstack((folds[(fd+x)%fold] for x in range(1,fold/2)))
+        # validate = np.append(validate,train[1:])
+        #train = validate[:1] #training set starts from size 1
+        #validate = validate[1:]
+
+        # test = np.hstack((folds[(fd+x)%fold] for x in range(fold/2,fold)))
+        test_fn = fn
+        test_label = label
+
+    #for itr in range(iteration):
+        train_fn_p1 = fn[train_]
+        train_label_p1 = label[train_]
+        train_fn_p2 = fn[test]
+        train_label_p2 = preds
+        i1 = train_
+        i2 = test
+        train_fn_p12 = fn[np.hstack((i1,i2))]
+        l1 = train_label
+        l2 = preds
+        train_label_p12 = np.hstack((l1,l2))
         #print train_label
-        validate_data = data2[validate]
-        validate_label = label2[validate]
+        #validate_data = data2[validate]
+        #validate_label = label2[validate]
 
-        clf.fit(train_data, train_label)
+        clf2.fit(train_fn_p1, train_label_p1)
         #print 'itr', itr, '- class in training set:', clf.classes_
-        acc = clf.score(test_data, test_label)
-        acc_sum[itr].append(acc)
+        acc = clf2.score(test_fn, test_label)
+        acc_p1[itr].append(acc)
 
-        preds = clf.predict(test_data)
+        clf2.fit(train_fn_p2, train_label_p2)
+        #print 'itr', itr, '- class in training set:', clf.classes_
+        acc = clf2.score(test_fn, test_label)
+        acc_p2[itr].append(acc)
+
+        clf2.fit(train_fn_p12, train_label_p12)
+        #print 'itr', itr, '- class in training set:', clf.classes_
+        acc = clf2.score(test_fn, test_label)
+        acc_p12[itr].append(acc)
+
+        '''
+        preds = clf.predict(test_fd)
         cm = CM(test_label,preds)
         cm = normalize(cm.astype(np.float), axis=1, norm='l1')
         k=0
@@ -153,11 +181,17 @@ for f in range(fold):
         # ex.extend([itr+1, elmt, label[elmt], label_gt[elmt]])
         train = np.append(train, elmt)
         validate = validate[validate!=elmt]
+        '''
+ave_acc_p1 = [np.mean(acc) for acc in acc_p1]
+acc_std_p1 = [np.std(acc) for acc in acc_p1]
+ave_acc_p2 = [np.mean(acc) for acc in acc_p2]
+acc_std_p2 = [np.std(acc) for acc in acc_p2]
+ave_acc_p12 = [np.mean(acc) for acc in acc_p12]
+acc_std_p12 = [np.std(acc) for acc in acc_p12]
 
-ave_acc = [np.mean(acc) for acc in acc_sum]
-acc_std = [np.std(acc) for acc in acc_sum]
-
-print 'overall acc:', repr(ave_acc)
+print 'p1 acc:', repr(ave_acc_p1)
+print 'p2 acc:', repr(ave_acc_p2)
+print 'p12 acc:', repr(ave_acc_p12)
 #print 'acc std:', repr(acc_std)
 #print 'acc by type', repr(acc_type)
 # f = open('pipe_out','w')
@@ -169,9 +203,10 @@ print 'overall acc:', repr(ave_acc)
     #print 'a = ', repr(i), '; plot(a\');'
 #print repr(ex)
 
+'''
 #plot confusion matrice
 mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
-preds = clf.predict(test_data)
+preds = clf.predict(test_fd)
 cm_ = CM(test_label,preds)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
 fig = pl.figure()
@@ -192,7 +227,7 @@ for c in cls_id:
 #cls = ['rmt','pos','stpt','flow','other_t','ctrl','spd','sta']
 pl.xticks(range(len(cm)),cls)
 pl.yticks(range(len(cm)),cls)
-pl.title('Mn Confusion matrix (%.3f)'%clf.score(test_data, test_label))
+pl.title('Mn Confusion matrix (%.3f)'%clf.score(test_fd, test_label))
 pl.ylabel('True label')
 pl.xlabel('Predicted label')
 pl.show()
@@ -217,3 +252,4 @@ pl.title('Md Confusion matrix (%.3f)'%md_acc)
 pl.ylabel('True label')
 pl.xlabel('Predicted label')
 pl.show()
+'''
