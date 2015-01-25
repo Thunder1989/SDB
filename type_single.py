@@ -106,8 +106,8 @@ for f in range(fold):
         #validate = validate[1:]
 
         # test = np.hstack((folds[(fd+x)%fold] for x in range(fold/2,fold)))
-        test_fn = fn
-        test_label = label
+        test_fn = fn[test]
+        test_label = label[test]
 
     #for itr in range(iteration):
         train_fn_p1 = fn[train_]
