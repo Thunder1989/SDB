@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 
 from sklearn.feature_extraction.text import CountVectorizer as CV
 from sklearn.feature_extraction.text import TfidfVectorizer as TV
-from sklearn.cross_validation import StratifiedKFold as skf
+from sklearn.cross_validation import StratifiedKFold
 from sklearn.cross_validation import KFold
 from sklearn.tree import DecisionTreeClassifier as DT
 from sklearn.ensemble import RandomForestClassifier as RFC
@@ -39,7 +39,7 @@ vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,
 #vc = TV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
 fn = vc.fit_transform(input3).toarray()
 fd = input4[:,[0,1,2,3,5,6,7]]
-n_class = len(np.unique(label))
+#n_class = len(np.unique(label))
 #print n_class
 #print np.unique(label)
 print ct(label)
@@ -69,9 +69,10 @@ y_test = label[test]
 n_class = len(np.unique(y_train))
 print n_class, 'classes'
 '''
-fold = 10
-#skf = StratifiedKFold(label, n_folds=fold)
-kf = KFold(len(label), n_folds=fold, shuffle=True)
+
+fold = 2
+kf = StratifiedKFold(label, n_folds=fold)
+#kf = KFold(len(label), n_folds=fold, shuffle=True)
 '''
 folds = [[] for i in range(fold)]
 i = 0
@@ -82,11 +83,13 @@ for train, test in kf:
 
 #clf = SVC(kernel='linear')
 clf = RFC(n_estimators=50, criterion='entropy')
-
+rounds = 1
 acc_sum = []
-g = GMM(n_components=n_class, covariance_type='spherical', init_params='wmc', n_iter=100)
 for train, test in kf:
     train_fd = fd[train]
+    n_class = len(np.unique(label[train]))
+    #print '# of training class', n_class
+    g = GMM(n_components=n_class, covariance_type='spherical', init_params='wmc', n_iter=100)
     g.fit(train_fd)
     #g.means_ = np.array([x_train[y_train == i].mean(axis=0) for i in np.unique(y_train)])
     #print g.means_
@@ -106,9 +109,15 @@ for train, test in kf:
         '''
         ex[i].append([j,k[-1]])
     for i,j in ex.items():
-        print i,j
+        #print i,j
         ex[i] = sorted(j, key=lambda x: x[-1], reverse=True)
-    gmm_idx = [j[k][0] for i,j in ex.items() for k in range(2)]
+    #gmm_idx = [j[k][0] for i,j in ex.items() for k in range(2)]
+    gmm_idx = []
+    for i in range(rounds):
+        for v in ex.values():
+            if len(v)>i:
+                gmm_idx.append(v[i][0])
+    print len(gmm_idx)
 
     test_fn = fn[test]
     test_label = label[test]
@@ -122,7 +131,6 @@ for train, test in kf:
         acc = accuracy_score(test_label, preds_fn)
     acc_sum.append(acc)
 print ct(train_label)
-print len(gmm_idx)
 print 'acc using gmm ex:\n', np.mean(acc_sum), np.std(acc_sum)
 
 acc_sum = []
@@ -144,10 +152,13 @@ print ct(train_label)
 print 'acc using random ex:\n', np.mean(acc_sum), np.std(acc_sum)
 
 #X = StandardScaler().fit_transform(fn)
-c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
 acc_sum = []
 for train, test in kf:
-    c.fit(fn)
+    train_fd = fd[train]
+    n_class = len(np.unique(label[train]))
+    #print '# of training class', n_class
+    c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
+    c.fit(train_fd)
 #preds = c.predict(x_test)
 #print metrics.homogeneity_completeness_v_measure(y_test,preds)
 #print 'ARI', metrics.adjusted_rand_score(y_test, preds)
@@ -157,7 +168,7 @@ for train, test in kf:
 #rank = sorted(rank, key=lambda x: x[-1])
 #print len(rank)
 #print rank[:20]
-    dist = np.sort(c.transform(fn))
+    dist = np.sort(c.transform(train_fd))
     ex = dd(list)
     for i,j,k in zip(c.labels_, train, dist):
         '''
@@ -170,7 +181,13 @@ for train, test in kf:
         ex[i].append([j,k[0]])
     for i,j in ex.items():
         ex[i] = sorted(j, key=lambda x: x[-1])
-    km_idx = [j[k][0] for i,j in ex.items() for k in range(2)]
+    #km_idx = [j[k][0] for i,j in ex.items() for k in range(2)]
+    km_idx = []
+    for i in range(rounds):
+        for v in ex.values():
+            if len(v)>i:
+                km_idx.append(v[i][0])
+    print len(km_idx)
 
     test_fn = fn[test]
     test_label = label[test]
