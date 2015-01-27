@@ -83,10 +83,11 @@ for train, test in kf:
 
 #clf = SVC(kernel='linear')
 clf = RFC(n_estimators=50, criterion='entropy')
-rounds = 1
+rounds = 5
+print 'total rounds of', rounds
 acc_sum = []
 for train, test in kf:
-    train_fd = fd[train]
+    train_fd = fn[train]
     n_class = len(np.unique(label[train]))
     #print '# of training class', n_class
     g = GMM(n_components=n_class, covariance_type='spherical', init_params='wmc', n_iter=100)
@@ -117,7 +118,7 @@ for train, test in kf:
         for v in ex.values():
             if len(v)>i:
                 gmm_idx.append(v[i][0])
-    print len(gmm_idx)
+    #print len(gmm_idx)
 
     test_fn = fn[test]
     test_label = label[test]
@@ -130,8 +131,9 @@ for train, test in kf:
         preds_fn = clf.predict(test_fn)
         acc = accuracy_score(test_label, preds_fn)
     acc_sum.append(acc)
+print len(train_label), 'training examples'
 print ct(train_label)
-print 'acc using gmm ex:\n', np.mean(acc_sum), np.std(acc_sum)
+print 'acc using gmm ex:', np.mean(acc_sum), np.std(acc_sum)
 
 acc_sum = []
 for train, test in kf:
@@ -149,12 +151,12 @@ for train, test in kf:
         acc = accuracy_score(test_label, preds)
     acc_sum.append(acc)
 print ct(train_label)
-print 'acc using random ex:\n', np.mean(acc_sum), np.std(acc_sum)
+print 'acc using random ex:', np.mean(acc_sum), np.std(acc_sum)
 
 #X = StandardScaler().fit_transform(fn)
 acc_sum = []
 for train, test in kf:
-    train_fd = fd[train]
+    train_fd = fn[train]
     n_class = len(np.unique(label[train]))
     #print '# of training class', n_class
     c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
@@ -183,11 +185,13 @@ for train, test in kf:
         ex[i] = sorted(j, key=lambda x: x[-1])
     #km_idx = [j[k][0] for i,j in ex.items() for k in range(2)]
     km_idx = []
-    for i in range(rounds):
+    for i in range(rounds*2):
+        if len(km_idx)>len(gmm_idx):
+            break
         for v in ex.values():
-            if len(v)>i:
+            if len(v)>i and len(km_idx)<len(gmm_idx):
                 km_idx.append(v[i][0])
-    print len(km_idx)
+    #print len(km_idx)
 
     test_fn = fn[test]
     test_label = label[test]
@@ -201,7 +205,7 @@ for train, test in kf:
         acc = accuracy_score(test_label, preds)
     acc_sum.append(acc)
 print ct(train_label)
-print 'acc using km ex:\n', np.mean(acc_sum), np.std(acc_sum)
+print 'acc using km ex:', np.mean(acc_sum), np.std(acc_sum)
 
 #test_acc = np.mean(preds.ravel() == y_train.ravel())
 #test_acc = np.mean(preds.ravel() == y_test.ravel())
