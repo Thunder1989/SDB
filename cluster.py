@@ -21,6 +21,8 @@ from sklearn.naive_bayes import GaussianNB as GNB
 from sklearn.naive_bayes import MultinomialNB as MNB
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
 from sklearn.metrics import confusion_matrix as CM
 from sklearn import tree
 from sklearn.preprocessing import normalize
@@ -85,6 +87,7 @@ for train, test in kf:
 clf = RFC(n_estimators=50, criterion='entropy')
 rounds = 5
 print 'total rounds of', rounds
+f = open('c_out','w')
 acc_sum = []
 for train, test in kf:
     train_fd = fn[train]
@@ -123,6 +126,8 @@ for train, test in kf:
     test_fn = fn[test]
     test_label = label[test]
     train_id = []
+    pre_sum = np.array([])
+    rec_sum = np.array([])
     for i in gmm_idx:
         train_id.append(i)
         train_fn = fn[train_id]
@@ -130,6 +135,18 @@ for train, test in kf:
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
         acc = accuracy_score(test_label, preds_fn)
+        pre = precision_score(test_label, preds_fn, average=None)
+        rec = recall_score(test_label, preds_fn, average=None)
+        pre_sum = np.append(pre_sum, pre)
+        rec_sum = np.append(rec_sum, rec)
+        pre_sum = np.reshape(pre_sum, (n_class, len(pre_sum/n_class)))
+        rec_sum = np.reshape(rec_sum, (n_class, len(rec_sum/n_class)))
+        f.write('-------------gmm-------------\n')
+        f.writelines('%s;\n'%repr(i) for i in pre_sum)
+        f.writelines('%s;\n'%repr(i) for i in rec_sum)
+        f.write('ex in each itr:'+repr(train_label)+'\n')
+        f.write(repr(np.unique(test_label)))
+
     acc_sum.append(acc)
 print len(train_label), 'training examples'
 print ct(train_label)
