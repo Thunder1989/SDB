@@ -85,9 +85,9 @@ for train, test in kf:
 
 #clf = SVC(kernel='linear')
 clf = RFC(n_estimators=50, criterion='entropy')
-rounds = 5
+rounds = 2
 print 'total rounds of', rounds
-f = open('c_out','w')
+f = open('c_out2','w')
 acc_sum = []
 for train, test in kf:
     train_fd = fn[train]
@@ -139,36 +139,61 @@ for train, test in kf:
         rec = recall_score(test_label, preds_fn, average=None)
         pre_sum = np.append(pre_sum, pre)
         rec_sum = np.append(rec_sum, rec)
-        pre_sum = np.reshape(pre_sum, (n_class, len(pre_sum/n_class)))
-        rec_sum = np.reshape(rec_sum, (n_class, len(rec_sum/n_class)))
-        f.write('-------------gmm-------------\n')
-        f.writelines('%s;\n'%repr(i) for i in pre_sum)
-        f.writelines('%s;\n'%repr(i) for i in rec_sum)
-        f.write('ex in each itr:'+repr(train_label)+'\n')
-        f.write(repr(np.unique(test_label)))
-
+    #t_class = len(np.unique(test_label))
+    t_class = len(pre)
+    f.write('-------------gmm-------------\n')
+    pre_sum = np.reshape(pre_sum, (len(pre_sum)/t_class,t_class)).T.tolist()
+    rec_sum = np.reshape(rec_sum, (len(rec_sum)/t_class,t_class)).T.tolist()
+    f.write('-------------precision-------------\n')
+    f.writelines('%s;\n'%repr(i) for i in pre_sum)
+    f.write('-------------recall-------------\n')
+    f.writelines('%s;\n'%repr(i) for i in rec_sum)
+    f.write('ex in each itr:'+repr(train_label)+'\n')
+    f.write(repr(np.unique(test_label))+'\n')
     acc_sum.append(acc)
-print len(train_label), 'training examples'
-print ct(train_label)
+#print len(train_label), 'training examples'
+#print ct(train_label)
 print 'acc using gmm ex:', np.mean(acc_sum), np.std(acc_sum)
+f.write('acc using gmm: %s\n'%(repr(acc_sum)))
+f.write('acc using gmm ex: %s-%s\n'%(str(np.mean(acc_sum)), str(np.std(acc_sum))))
 
 acc_sum = []
 for train, test in kf:
     rand_idx = random.sample(xrange(len(train)), len(gmm_idx))
+    n_class = len(np.unique(label[train]))
 
     test_fn = fn[test]
     test_label = label[test]
     train_id = []
+    pre_sum = np.array([])
+    rec_sum = np.array([])
     for i in rand_idx:
         train_id.append(train[i])
         train_fn = fn[train_id]
         train_label = label[train_id]
         clf.fit(train_fn, train_label)
-        preds = clf.predict(test_fn)
-        acc = accuracy_score(test_label, preds)
+        preds_fn = clf.predict(test_fn)
+        acc = accuracy_score(test_label, preds_fn)
+        pre = precision_score(test_label, preds_fn, average=None)
+        rec = recall_score(test_label, preds_fn, average=None)
+        pre_sum = np.append(pre_sum, pre)
+        rec_sum = np.append(rec_sum, rec)
+    #t_class = len(np.unique(test_label))
+    t_class = len(pre)
+    pre_sum = np.reshape(pre_sum, (len(pre_sum)/t_class,t_class)).T.tolist()
+    rec_sum = np.reshape(rec_sum, (len(rec_sum)/t_class,t_class)).T.tolist()
+    f.write('-------------random-------------\n')
+    f.write('-------------precision-------------\n')
+    f.writelines('%s;\n'%repr(i) for i in pre_sum)
+    f.write('-------------recall-------------\n')
+    f.writelines('%s;\n'%repr(i) for i in rec_sum)
+    f.write('ex in each itr:'+repr(train_label)+'\n')
+    f.write(repr(np.unique(test_label))+'\n')
     acc_sum.append(acc)
-print ct(train_label)
+#print ct(train_label)
 print 'acc using random ex:', np.mean(acc_sum), np.std(acc_sum)
+f.write('acc using random: %s\n'%(repr(acc_sum)))
+f.write('acc using random ex: %s-%s\n'%(str(np.mean(acc_sum)), str(np.std(acc_sum))))
 
 #X = StandardScaler().fit_transform(fn)
 acc_sum = []
@@ -213,17 +238,36 @@ for train, test in kf:
     test_fn = fn[test]
     test_label = label[test]
     train_id = []
+    pre_sum = np.array([])
+    rec_sum = np.array([])
     for i in km_idx:
         train_id.append(i)
         train_fn = fn[train_id]
         train_label = label[train_id]
         clf.fit(train_fn, train_label)
-        preds = clf.predict(test_fn)
-        acc = accuracy_score(test_label, preds)
+        preds_fn = clf.predict(test_fn)
+        acc = accuracy_score(test_label, preds_fn)
+        pre = precision_score(test_label, preds_fn, average=None)
+        rec = recall_score(test_label, preds_fn, average=None)
+        pre_sum = np.append(pre_sum, pre)
+        rec_sum = np.append(rec_sum, rec)
+    #t_class = len(np.unique(test_label))
+    t_class = len(pre)
+    pre_sum = np.reshape(pre_sum, (len(pre_sum)/t_class,t_class)).T.tolist()
+    rec_sum = np.reshape(rec_sum, (len(rec_sum)/t_class,t_class)).T.tolist()
+    f.write('-------------km-------------\n')
+    f.write('-------------precision-------------\n')
+    f.writelines('%s;\n'%repr(i) for i in pre_sum)
+    f.write('-------------recall-------------\n')
+    f.writelines('%s;\n'%repr(i) for i in rec_sum)
+    f.write('ex in each itr:'+repr(train_label)+'\n')
+    f.write(repr(np.unique(test_label))+'\n')
     acc_sum.append(acc)
-print ct(train_label)
+#print ct(train_label)
 print 'acc using km ex:', np.mean(acc_sum), np.std(acc_sum)
-
+f.write('acc using km: %s\n'%(repr(acc_sum)))
+f.write('acc using km ex: %s-%s\n'%(str(np.mean(acc_sum)), str(np.std(acc_sum))))
+f.close()
 #test_acc = np.mean(preds.ravel() == y_train.ravel())
 #test_acc = np.mean(preds.ravel() == y_test.ravel())
 #print 'test acc', test_acc
