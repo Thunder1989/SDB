@@ -85,15 +85,15 @@ for train, test in kf:
 
 #clf = SVC(kernel='linear')
 clf = RFC(n_estimators=50, criterion='entropy')
-rounds = 2
+rounds = 1
 print 'total rounds of', rounds
-f = open('c_out2','w')
+#f = open('c_out2','w')
 acc_sum = []
 for train, test in kf:
     train_fd = fn[train]
     n_class = len(np.unique(label[train]))
     #print '# of training class', n_class
-    g = GMM(n_components=n_class, covariance_type='spherical', init_params='wmc', n_iter=100)
+    g = GMM(n_components=n_class*2, covariance_type='spherical', init_params='wmc', n_iter=100)
     g.fit(train_fd)
     #g.means_ = np.array([x_train[y_train == i].mean(axis=0) for i in np.unique(y_train)])
     #print g.means_
@@ -135,11 +135,11 @@ for train, test in kf:
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
         acc = accuracy_score(test_label, preds_fn)
-        pre = precision_score(test_label, preds_fn, average=None)
-        rec = recall_score(test_label, preds_fn, average=None)
-        pre_sum = np.append(pre_sum, pre)
-        rec_sum = np.append(rec_sum, rec)
-    #t_class = len(np.unique(test_label))
+        #pre = precision_score(test_label, preds_fn, average=None)
+        #rec = recall_score(test_label, preds_fn, average=None)
+        #pre_sum = np.append(pre_sum, pre)
+        #rec_sum = np.append(rec_sum, rec)
+    '''
     t_class = len(pre)
     f.write('-------------gmm-------------\n')
     pre_sum = np.reshape(pre_sum, (len(pre_sum)/t_class,t_class)).T.tolist()
@@ -150,12 +150,38 @@ for train, test in kf:
     f.writelines('%s;\n'%repr(i) for i in rec_sum)
     f.write('ex in each itr:'+repr(train_label)+'\n')
     f.write(repr(np.unique(test_label))+'\n')
+    '''
     acc_sum.append(acc)
 #print len(train_label), 'training examples'
 #print ct(train_label)
 print 'acc using gmm ex:', np.mean(acc_sum), np.std(acc_sum)
-f.write('acc using gmm: %s\n'%(repr(acc_sum)))
-f.write('acc using gmm ex: %s-%s\n'%(str(np.mean(acc_sum)), str(np.std(acc_sum))))
+#f.write('acc using gmm: %s\n'%(repr(acc_sum)))
+#f.write('acc using gmm ex: %s-%s\n'%(str(np.mean(acc_sum)), str(np.std(acc_sum))))
+
+mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
+cm_ = CM(test_label, preds_fn)
+cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
+fig = pl.figure()
+ax = fig.add_subplot(111)
+cax = ax.matshow(cm)
+fig.colorbar(cax)
+for x in xrange(len(cm)):
+    for y in xrange(len(cm)):
+        ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
+                    horizontalalignment='center',
+                    verticalalignment='center',
+                    fontsize=10)
+test_cls =np.unique(np.hstack((train_label, test_label)))
+cls = []
+for c in test_cls:
+    cls.append(mapping[c])
+pl.yticks(range(len(cls)), cls)
+pl.ylabel('True label')
+pl.xticks(range(len(cls)), cls)
+pl.xlabel('Predicted label')
+pl.title('Mn Confusion matrix (%.3f)'%acc)
+pl.show()
+
 
 acc_sum = []
 for train, test in kf:
@@ -174,11 +200,12 @@ for train, test in kf:
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
         acc = accuracy_score(test_label, preds_fn)
-        pre = precision_score(test_label, preds_fn, average=None)
-        rec = recall_score(test_label, preds_fn, average=None)
-        pre_sum = np.append(pre_sum, pre)
-        rec_sum = np.append(rec_sum, rec)
+        #pre = precision_score(test_label, preds_fn, average=None)
+        #rec = recall_score(test_label, preds_fn, average=None)
+        #pre_sum = np.append(pre_sum, pre)
+        #rec_sum = np.append(rec_sum, rec)
     #t_class = len(np.unique(test_label))
+    '''
     t_class = len(pre)
     pre_sum = np.reshape(pre_sum, (len(pre_sum)/t_class,t_class)).T.tolist()
     rec_sum = np.reshape(rec_sum, (len(rec_sum)/t_class,t_class)).T.tolist()
@@ -189,11 +216,34 @@ for train, test in kf:
     f.writelines('%s;\n'%repr(i) for i in rec_sum)
     f.write('ex in each itr:'+repr(train_label)+'\n')
     f.write(repr(np.unique(test_label))+'\n')
+    '''
     acc_sum.append(acc)
 #print ct(train_label)
 print 'acc using random ex:', np.mean(acc_sum), np.std(acc_sum)
-f.write('acc using random: %s\n'%(repr(acc_sum)))
-f.write('acc using random ex: %s-%s\n'%(str(np.mean(acc_sum)), str(np.std(acc_sum))))
+#f.write('acc using random: %s\n'%(repr(acc_sum)))
+#f.write('acc using random ex: %s-%s\n'%(str(np.mean(acc_sum)), str(np.std(acc_sum))))
+cm_ = CM(test_label, preds_fn)
+cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
+fig = pl.figure()
+ax = fig.add_subplot(111)
+cax = ax.matshow(cm)
+fig.colorbar(cax)
+for x in xrange(len(cm)):
+    for y in xrange(len(cm)):
+        ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
+                    horizontalalignment='center',
+                    verticalalignment='center',
+                    fontsize=10)
+test_cls =np.unique(np.hstack((train_label, test_label)))
+cls = []
+for c in test_cls:
+    cls.append(mapping[c])
+pl.yticks(range(len(cls)), cls)
+pl.ylabel('True label')
+pl.xticks(range(len(cls)), cls)
+pl.xlabel('Predicted label')
+pl.title('Mn Confusion matrix (%.3f)'%acc)
+pl.show()
 
 #X = StandardScaler().fit_transform(fn)
 acc_sum = []
@@ -201,7 +251,7 @@ for train, test in kf:
     train_fd = fn[train]
     n_class = len(np.unique(label[train]))
     #print '# of training class', n_class
-    c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
+    c = KMeans(init='k-means++', n_clusters=n_class*2, n_init=10)
     c.fit(train_fd)
 #preds = c.predict(x_test)
 #print metrics.homogeneity_completeness_v_measure(y_test,preds)
@@ -247,11 +297,12 @@ for train, test in kf:
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
         acc = accuracy_score(test_label, preds_fn)
-        pre = precision_score(test_label, preds_fn, average=None)
-        rec = recall_score(test_label, preds_fn, average=None)
-        pre_sum = np.append(pre_sum, pre)
-        rec_sum = np.append(rec_sum, rec)
+        #pre = precision_score(test_label, preds_fn, average=None)
+        #rec = recall_score(test_label, preds_fn, average=None)
+        #pre_sum = np.append(pre_sum, pre)
+        #rec_sum = np.append(rec_sum, rec)
     #t_class = len(np.unique(test_label))
+    '''
     t_class = len(pre)
     pre_sum = np.reshape(pre_sum, (len(pre_sum)/t_class,t_class)).T.tolist()
     rec_sum = np.reshape(rec_sum, (len(rec_sum)/t_class,t_class)).T.tolist()
@@ -262,15 +313,38 @@ for train, test in kf:
     f.writelines('%s;\n'%repr(i) for i in rec_sum)
     f.write('ex in each itr:'+repr(train_label)+'\n')
     f.write(repr(np.unique(test_label))+'\n')
+    '''
     acc_sum.append(acc)
 #print ct(train_label)
 print 'acc using km ex:', np.mean(acc_sum), np.std(acc_sum)
-f.write('acc using km: %s\n'%(repr(acc_sum)))
-f.write('acc using km ex: %s-%s\n'%(str(np.mean(acc_sum)), str(np.std(acc_sum))))
-f.close()
+#f.write('acc using km: %s\n'%(repr(acc_sum)))
+#f.write('acc using km ex: %s-%s\n'%(str(np.mean(acc_sum)), str(np.std(acc_sum))))
+#f.close()
 #test_acc = np.mean(preds.ravel() == y_train.ravel())
 #test_acc = np.mean(preds.ravel() == y_test.ravel())
 #print 'test acc', test_acc
+cm_ = CM(test_label, preds_fn)
+cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
+fig = pl.figure()
+ax = fig.add_subplot(111)
+cax = ax.matshow(cm)
+fig.colorbar(cax)
+for x in xrange(len(cm)):
+    for y in xrange(len(cm)):
+        ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
+                    horizontalalignment='center',
+                    verticalalignment='center',
+                    fontsize=10)
+test_cls =np.unique(np.hstack((train_label, test_label)))
+cls = []
+for c in test_cls:
+    cls.append(mapping[c])
+pl.yticks(range(len(cls)), cls)
+pl.ylabel('True label')
+pl.xticks(range(len(cls)), cls)
+pl.xlabel('Predicted label')
+pl.title('Mn Confusion matrix (%.3f)'%acc)
+pl.show()
 
 #print(79 * '_')
 #print('% 9s' % 'init'
