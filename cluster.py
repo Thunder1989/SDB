@@ -1,6 +1,9 @@
 from time import time
 import numpy as np
 import matplotlib.pyplot as plt
+import math
+import random
+import pylab as pl
 from collections import defaultdict as dd
 from collections import Counter as ct
 
@@ -26,9 +29,6 @@ from sklearn.metrics import recall_score
 from sklearn.metrics import confusion_matrix as CM
 from sklearn import tree
 from sklearn.preprocessing import normalize
-import math
-import random
-import pylab as pl
 
 #input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 input1 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_forrice').readlines()]
@@ -152,76 +152,13 @@ for train, test in kf:
     f.write(repr(np.unique(test_label))+'\n')
     '''
     acc_sum.append(acc)
-#print len(train_label), 'training examples'
+print len(train_label), 'training examples'
 #print ct(train_label)
 print 'acc using gmm ex:', np.mean(acc_sum), np.std(acc_sum)
 #f.write('acc using gmm: %s\n'%(repr(acc_sum)))
 #f.write('acc using gmm ex: %s-%s\n'%(str(np.mean(acc_sum)), str(np.std(acc_sum))))
 
 mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
-cm_ = CM(test_label, preds_fn)
-cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
-fig = pl.figure()
-ax = fig.add_subplot(111)
-cax = ax.matshow(cm)
-fig.colorbar(cax)
-for x in xrange(len(cm)):
-    for y in xrange(len(cm)):
-        ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
-                    horizontalalignment='center',
-                    verticalalignment='center',
-                    fontsize=10)
-test_cls =np.unique(np.hstack((train_label, test_label)))
-cls = []
-for c in test_cls:
-    cls.append(mapping[c])
-pl.yticks(range(len(cls)), cls)
-pl.ylabel('True label')
-pl.xticks(range(len(cls)), cls)
-pl.xlabel('Predicted label')
-pl.title('Mn Confusion matrix (%.3f)'%acc)
-pl.show()
-
-
-acc_sum = []
-for train, test in kf:
-    rand_idx = random.sample(xrange(len(train)), len(gmm_idx))
-    n_class = len(np.unique(label[train]))
-
-    test_fn = fn[test]
-    test_label = label[test]
-    train_id = []
-    pre_sum = np.array([])
-    rec_sum = np.array([])
-    for i in rand_idx:
-        train_id.append(train[i])
-        train_fn = fn[train_id]
-        train_label = label[train_id]
-        clf.fit(train_fn, train_label)
-        preds_fn = clf.predict(test_fn)
-        acc = accuracy_score(test_label, preds_fn)
-        #pre = precision_score(test_label, preds_fn, average=None)
-        #rec = recall_score(test_label, preds_fn, average=None)
-        #pre_sum = np.append(pre_sum, pre)
-        #rec_sum = np.append(rec_sum, rec)
-    #t_class = len(np.unique(test_label))
-    '''
-    t_class = len(pre)
-    pre_sum = np.reshape(pre_sum, (len(pre_sum)/t_class,t_class)).T.tolist()
-    rec_sum = np.reshape(rec_sum, (len(rec_sum)/t_class,t_class)).T.tolist()
-    f.write('-------------random-------------\n')
-    f.write('-------------precision-------------\n')
-    f.writelines('%s;\n'%repr(i) for i in pre_sum)
-    f.write('-------------recall-------------\n')
-    f.writelines('%s;\n'%repr(i) for i in rec_sum)
-    f.write('ex in each itr:'+repr(train_label)+'\n')
-    f.write(repr(np.unique(test_label))+'\n')
-    '''
-    acc_sum.append(acc)
-#print ct(train_label)
-print 'acc using random ex:', np.mean(acc_sum), np.std(acc_sum)
-#f.write('acc using random: %s\n'%(repr(acc_sum)))
-#f.write('acc using random ex: %s-%s\n'%(str(np.mean(acc_sum)), str(np.std(acc_sum))))
 cm_ = CM(test_label, preds_fn)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
 fig = pl.figure()
@@ -258,10 +195,6 @@ for train, test in kf:
 #print 'ARI', metrics.adjusted_rand_score(y_test, preds)
 #print 'Sil', metrics.silhouette_score(x_train, c.labels_, metric='euclidean', sample_size=len(test))
 #score = metrics.silhouette_samples(fd, c.labels_)
-#rank = zip(xrange(len(label)), c.labels_, score)
-#rank = sorted(rank, key=lambda x: x[-1])
-#print len(rank)
-#print rank[:20]
     dist = np.sort(c.transform(train_fd))
     ex = dd(list)
     for i,j,k in zip(c.labels_, train, dist):
@@ -315,6 +248,7 @@ for train, test in kf:
     f.write(repr(np.unique(test_label))+'\n')
     '''
     acc_sum.append(acc)
+print len(train_label), 'training examples'
 #print ct(train_label)
 print 'acc using km ex:', np.mean(acc_sum), np.std(acc_sum)
 #f.write('acc using km: %s\n'%(repr(acc_sum)))
@@ -323,6 +257,119 @@ print 'acc using km ex:', np.mean(acc_sum), np.std(acc_sum)
 #test_acc = np.mean(preds.ravel() == y_train.ravel())
 #test_acc = np.mean(preds.ravel() == y_test.ravel())
 #print 'test acc', test_acc
+cm_ = CM(test_label, preds_fn)
+cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
+fig = pl.figure()
+ax = fig.add_subplot(111)
+cax = ax.matshow(cm)
+fig.colorbar(cax)
+for x in xrange(len(cm)):
+    for y in xrange(len(cm)):
+        ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
+                    horizontalalignment='center',
+                    verticalalignment='center',
+                    fontsize=10)
+test_cls =np.unique(np.hstack((train_label, test_label)))
+cls = []
+for c in test_cls:
+    cls.append(mapping[c])
+pl.yticks(range(len(cls)), cls)
+pl.ylabel('True label')
+pl.xticks(range(len(cls)), cls)
+pl.xlabel('Predicted label')
+pl.title('Mn Confusion matrix (%.3f)'%acc)
+pl.show()
+
+acc_sum = []
+for train, test in kf:
+    ex_dict = dd(list)
+    train_label = label[train]
+    for i,j in zip(train_label,train):
+        ex_dict[i].append(j)
+    o_idx = []
+    for v in ex_dict.values():
+        random.shuffle(v)
+        for i in range(len(gmm_idx)/len(ex_dict.keys())):
+            if len(v) > i:
+                o_idx.append(v[i])
+
+    test_fn = fn[test]
+    test_label = label[test]
+    train_id = []
+    for i in o_idx:
+        train_id.append(i)
+        train_fn = fn[train_id]
+        train_label = label[train_id]
+        clf.fit(train_fn, train_label)
+        preds_fn = clf.predict(test_fn)
+        acc = accuracy_score(test_label, preds_fn)
+    acc_sum.append(acc)
+print len(train_label)
+cm_ = CM(test_label, preds_fn)
+cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
+fig = pl.figure()
+ax = fig.add_subplot(111)
+cax = ax.matshow(cm)
+fig.colorbar(cax)
+for x in xrange(len(cm)):
+    for y in xrange(len(cm)):
+        ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
+                    horizontalalignment='center',
+                    verticalalignment='center',
+                    fontsize=10)
+test_cls =np.unique(np.hstack((train_label, test_label)))
+cls = []
+for c in test_cls:
+    cls.append(mapping[c])
+pl.yticks(range(len(cls)), cls)
+pl.ylabel('True label')
+pl.xticks(range(len(cls)), cls)
+pl.xlabel('Predicted label')
+pl.title('Mn Confusion matrix (%.3f)'%acc)
+pl.show()
+print 'acc using oracle ex:', np.mean(acc_sum), np.std(acc_sum)
+
+
+acc_sum = []
+for train, test in kf:
+    rand_idx = random.sample(xrange(len(train)), len(gmm_idx))
+    n_class = len(np.unique(label[train]))
+
+    test_fn = fn[test]
+    test_label = label[test]
+    train_id = []
+    pre_sum = np.array([])
+    rec_sum = np.array([])
+    for i in rand_idx:
+        train_id.append(train[i])
+        train_fn = fn[train_id]
+        train_label = label[train_id]
+        clf.fit(train_fn, train_label)
+        preds_fn = clf.predict(test_fn)
+        acc = accuracy_score(test_label, preds_fn)
+        #pre = precision_score(test_label, preds_fn, average=None)
+        #rec = recall_score(test_label, preds_fn, average=None)
+        #pre_sum = np.append(pre_sum, pre)
+        #rec_sum = np.append(rec_sum, rec)
+    #t_class = len(np.unique(test_label))
+    '''
+    t_class = len(pre)
+    pre_sum = np.reshape(pre_sum, (len(pre_sum)/t_class,t_class)).T.tolist()
+    rec_sum = np.reshape(rec_sum, (len(rec_sum)/t_class,t_class)).T.tolist()
+    f.write('-------------random-------------\n')
+    f.write('-------------precision-------------\n')
+    f.writelines('%s;\n'%repr(i) for i in pre_sum)
+    f.write('-------------recall-------------\n')
+    f.writelines('%s;\n'%repr(i) for i in rec_sum)
+    f.write('ex in each itr:'+repr(train_label)+'\n')
+    f.write(repr(np.unique(test_label))+'\n')
+    '''
+    acc_sum.append(acc)
+print len(train_label)
+#print ct(train_label)
+print 'acc using random ex:', np.mean(acc_sum), np.std(acc_sum)
+#f.write('acc using random: %s\n'%(repr(acc_sum)))
+#f.write('acc using random ex: %s-%s\n'%(str(np.mean(acc_sum)), str(np.std(acc_sum))))
 cm_ = CM(test_label, preds_fn)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
 fig = pl.figure()

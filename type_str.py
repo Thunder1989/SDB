@@ -27,16 +27,16 @@ input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 label1 = input2[:,-1]
 label1 = input4[:,-1]
 
-fold = 5
+fold = 2
 clx = 15
 skf = StratifiedKFold(label1, n_folds=fold)
 acc_sum = []
 indi_acc =[[] for i in range(clx)]
 #clf = ETC(n_estimators=10, criterion='entropy')
-#clf = RFC(n_estimators=50, criterion='entropy')
+clf = RFC(n_estimators=50, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = Ada(n_estimators=100)
-clf = SVC(kernel='linear')
+#clf = SVC(kernel='linear')
 #clf = GNB()
 
 #vc = CV(token_pattern='[a-z]{2,}')
