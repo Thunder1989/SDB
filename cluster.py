@@ -82,7 +82,7 @@ for train, test in kf:
     folds[i] = test
     i+=1
 '''
-
+acc_ = []
 #clf = SVC(kernel='linear')
 clf = RFC(n_estimators=50, criterion='entropy')
 rounds = 1
@@ -155,6 +155,7 @@ for train, test in kf:
 print len(train_label), 'training examples'
 #print ct(train_label)
 print 'acc using gmm ex:', np.mean(acc_sum), np.std(acc_sum)
+acc_.append(np.mean(acc_sum))
 #f.write('acc using gmm: %s\n'%(repr(acc_sum)))
 #f.write('acc using gmm ex: %s-%s\n'%(str(np.mean(acc_sum)), str(np.std(acc_sum))))
 
@@ -224,6 +225,8 @@ for train, test in kf:
     pre_sum = np.array([])
     rec_sum = np.array([])
     for i in km_idx:
+        print '=============================='
+        print mapping[label[i]],":",input3[i]
         train_id.append(i)
         train_fn = fn[train_id]
         train_label = label[train_id]
@@ -251,6 +254,7 @@ for train, test in kf:
 print len(train_label), 'training examples'
 #print ct(train_label)
 print 'acc using km ex:', np.mean(acc_sum), np.std(acc_sum)
+acc_.append(np.mean(acc_sum))
 #f.write('acc using km: %s\n'%(repr(acc_sum)))
 #f.write('acc using km ex: %s-%s\n'%(str(np.mean(acc_sum)), str(np.std(acc_sum))))
 #f.close()
@@ -307,6 +311,8 @@ for train, test in kf:
     pre_sum = np.array([])
     rec_sum = np.array([])
     for i in oc_idx:
+        print '=============================='
+        print mapping[label[i]],':',input3[i]
         train_id.append(i)
         train_fn = fn[train_id]
         train_label = label[train_id]
@@ -317,6 +323,7 @@ for train, test in kf:
 print len(train_label), 'training examples'
 #print ct(train_label)
 print 'acc using oc ex:', np.mean(acc_sum), np.std(acc_sum)
+acc_.append(np.mean(acc_sum))
 cm_ = CM(test_label, preds_fn)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
 fig = pl.figure()
@@ -368,6 +375,7 @@ for train, test in kf:
     acc_sum.append(acc)
 print len(train_label), 'training examples'
 print 'acc using oracle ex:', np.mean(acc_sum), np.std(acc_sum)
+acc_.append(np.mean(acc_sum))
 cm_ = CM(test_label, preds_fn)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
 fig = pl.figure()
@@ -430,6 +438,8 @@ for train, test in kf:
 print len(train_label), 'training examples'
 #print ct(train_label)
 print 'acc using random ex:', np.mean(acc_sum), np.std(acc_sum)
+acc_.append(np.mean(acc_sum))
+print acc_
 #f.write('acc using random: %s\n'%(repr(acc_sum)))
 #f.write('acc using random ex: %s-%s\n'%(str(np.mean(acc_sum)), str(np.std(acc_sum))))
 cm_ = CM(test_label, preds_fn)
