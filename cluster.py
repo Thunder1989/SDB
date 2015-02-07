@@ -253,7 +253,7 @@ for train, test in kf:
     acc_sum.append(acc)
 print len(train_label), 'training examples'
 #print ct(train_label)
-print 'acc using km ex:', np.mean(acc_sum), np.std(acc_sum)
+print 'acc using km centroid ex:', np.mean(acc_sum), np.std(acc_sum)
 acc_.append(np.mean(acc_sum))
 #f.write('acc using km: %s\n'%(repr(acc_sum)))
 #f.write('acc using km ex: %s-%s\n'%(str(np.mean(acc_sum)), str(np.std(acc_sum))))
@@ -286,33 +286,33 @@ pl.show()
 
 acc_sum = []
 for train, test in kf:
-    c = KMeans(init='k-means++', n_clusters=1, n_init=10)
-    train_label = (label[train])
-    n_class = len(np.unique(train_label))
+    train_fd = fn[train]
+    n_class = len(np.unique(label[train]))
+    #print '# of training class', n_class
+    c = KMeans(init='k-means++', n_clusters=n_class*2, n_init=10)
+    c.fit(train_fd)
+    dist = np.sort(c.transform(train_fd))
     ex = dd(list)
-    for i,j in zip(train_label,train):
+    for i,j in zip(c.labels_, train):
         ex[i].append(j)
-    oc_idx = []
-    for idx in ex.values():
-        train_fd = fn[idx]
-        c.fit(train_fd)
-        dist = zip(idx, c.transform(train_fd))
-        dist = sorted(dist, key=lambda x: x[-1])
-        for i in range(rounds*3):
-            if len(oc_idx)>=len(gmm_idx):
-                break
-            if len(dist)>i and len(oc_idx)<len(gmm_idx):
-                oc_idx.append(dist[i][0])
-    #print len(oc_idx)
+
+    km_rand_idx = []
+    for k,v in ex.items():
+        random.shuffle(v)
+        ex[k] = v
+    for i in range(rounds*3):
+        if len(km_rand_idx)>=len(gmm_idx):
+            break
+        for v in ex.values():
+            if len(v)>i and len(km_rand_idx)<len(gmm_idx):
+                km_rand_idx.append(v[i])
 
     test_fn = fn[test]
     test_label = label[test]
     train_id = []
-    pre_sum = np.array([])
-    rec_sum = np.array([])
     print '=============================='
-    for i in oc_idx:
-        print mapping[label[i]],':',input3[i]
+    for i in km_rand_idx:
+        print mapping[label[i]],":",input3[i]
         train_id.append(i)
         train_fn = fn[train_id]
         train_label = label[train_id]
@@ -322,7 +322,7 @@ for train, test in kf:
     acc_sum.append(acc)
 print len(train_label), 'training examples'
 #print ct(train_label)
-print 'acc using oc ex:', np.mean(acc_sum), np.std(acc_sum)
+print 'acc using km random ex:', np.mean(acc_sum), np.std(acc_sum)
 acc_.append(np.mean(acc_sum))
 cm_ = CM(test_label, preds_fn)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
@@ -349,23 +349,36 @@ pl.show()
 
 acc_sum = []
 for train, test in kf:
-    ex_dict = dd(list)
-    train_label = label[train]
+    c = KMeans(init='k-means++', n_clusters=1, n_init=10)
+    train_label = (label[train])
+    #print len(np.unique(train_label))
+    ex = dd(list)
     for i,j in zip(train_label,train):
-        ex_dict[i].append(j)
-    o_idx = []
-    for v in ex_dict.values():
-        random.shuffle(v)
-        for i in range(rounds*3):
-            if len(o_idx)>=len(gmm_idx):
-                break
-            if len(v)>i and len(o_idx)<len(gmm_idx):
-                o_idx.append(v[i])
+        ex[i].append(j)
+    for k,v in ex.items():
+        train_fd = fn[v]
+        c.fit(train_fd)
+        dist = zip(v, c.transform(train_fd))
+        dist = sorted(dist, key=lambda x: x[-1])
+        ex[k] = dist
+
+    oc_idx = []
+    for i in range(rounds*3):
+        if len(oc_idx)>=len(gmm_idx):
+            break
+        for v in ex.values():
+            if len(v)>i and len(oc_idx)<len(gmm_idx):
+                oc_idx.append(v[i][0])
+                print mapping[label[v[i][0]]]
 
     test_fn = fn[test]
     test_label = label[test]
     train_id = []
-    for i in o_idx:
+    pre_sum = np.array([])
+    rec_sum = np.array([])
+    print '=============================='
+    for i in oc_idx:
+        print mapping[label[i]],':',input3[i]
         train_id.append(i)
         train_fn = fn[train_id]
         train_label = label[train_id]
@@ -374,7 +387,64 @@ for train, test in kf:
         acc = accuracy_score(test_label, preds_fn)
     acc_sum.append(acc)
 print len(train_label), 'training examples'
-print 'acc using oracle ex:', np.mean(acc_sum), np.std(acc_sum)
+#print ct(train_label)
+print 'acc using oracle centriod ex:', np.mean(acc_sum), np.std(acc_sum)
+acc_.append(np.mean(acc_sum))
+cm_ = CM(test_label, preds_fn)
+cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
+fig = pl.figure()
+ax = fig.add_subplot(111)
+cax = ax.matshow(cm)
+fig.colorbar(cax)
+for x in xrange(len(cm)):
+    for y in xrange(len(cm)):
+        ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
+                    horizontalalignment='center',
+                    verticalalignment='center',
+                    fontsize=10)
+test_cls =np.unique(np.hstack((train_label, test_label)))
+cls = []
+for c in test_cls:
+    cls.append(mapping[c])
+pl.yticks(range(len(cls)), cls)
+pl.ylabel('True label')
+pl.xticks(range(len(cls)), cls)
+pl.xlabel('Predicted label')
+pl.title('Mn Confusion matrix (%.3f)'%acc)
+pl.show()
+
+acc_sum = []
+for train, test in kf:
+    ex = dd(list)
+    train_label = label[train]
+    for i,j in zip(train_label,train):
+        ex[i].append(j)
+    o_idx = []
+    for k,v in ex.items():
+        random.shuffle(v)
+        ex[k] = v
+    for i in range(rounds*3):
+        if len(o_idx)>=len(gmm_idx):
+            break
+        for v in ex.values():
+            if len(v)>i and len(o_idx)<len(gmm_idx):
+                o_idx.append(v[i])
+
+    test_fn = fn[test]
+    test_label = label[test]
+    train_id = []
+    print '=============================='
+    for i in o_idx:
+        print mapping[label[i]],':',input3[i]
+        train_id.append(i)
+        train_fn = fn[train_id]
+        train_label = label[train_id]
+        clf.fit(train_fn, train_label)
+        preds_fn = clf.predict(test_fn)
+        acc = accuracy_score(test_label, preds_fn)
+    acc_sum.append(acc)
+print len(train_label), 'training examples'
+print 'acc using oracle random ex:', np.mean(acc_sum), np.std(acc_sum)
 acc_.append(np.mean(acc_sum))
 cm_ = CM(test_label, preds_fn)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
