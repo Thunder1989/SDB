@@ -224,8 +224,8 @@ for train, test in kf:
     train_id = []
     pre_sum = np.array([])
     rec_sum = np.array([])
+    print '=============================='
     for i in km_idx:
-        print '=============================='
         print mapping[label[i]],":",input3[i]
         train_id.append(i)
         train_fn = fn[train_id]
@@ -310,8 +310,8 @@ for train, test in kf:
     train_id = []
     pre_sum = np.array([])
     rec_sum = np.array([])
+    print '=============================='
     for i in oc_idx:
-        print '=============================='
         print mapping[label[i]],':',input3[i]
         train_id.append(i)
         train_fn = fn[train_id]
