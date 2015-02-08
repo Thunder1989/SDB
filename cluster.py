@@ -1,9 +1,10 @@
-from time import time
 import numpy as np
 import matplotlib.pyplot as plt
 import math
 import random
+import re
 import pylab as pl
+from time import time
 from collections import defaultdict as dd
 from collections import Counter as ct
 
@@ -37,14 +38,24 @@ input3 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_forsdh').readlin
 input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 label2 = input2[:,-1]
 label = input4[:,-1]
-vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
-#vc = TV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
-fn = vc.fit_transform(input3).toarray()
+name = []
+for i in input3:
+    s = re.findall('(?i)[a-z]{2,}',i)
+    name.append(' '.join(s))
+#vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
+vc = TV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
+fn = vc.fit_transform(name).toarray()
 fd = input4[:,[0,1,2,3,5,6,7]]
 #n_class = len(np.unique(label))
 #print n_class
 #print np.unique(label)
 print ct(label)
+kmer = vc.get_feature_names()
+idf = zip(kmer, vc._tfidf.idf_)
+idf = sorted(idf, key=lambda x: x[-1], reverse=True)
+print idf[:20]
+print idf[-20:]
+#print vc.get_feature_names()
 '''
 def bench_k_means(estimator, name, data):
     sample_size, feature_size = data.shape
@@ -369,7 +380,6 @@ for train, test in kf:
         for v in ex.values():
             if len(v)>i and len(oc_idx)<len(gmm_idx):
                 oc_idx.append(v[i][0])
-                print mapping[label[v[i][0]]]
 
     test_fn = fn[test]
     test_label = label[test]
