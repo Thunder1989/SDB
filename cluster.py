@@ -53,8 +53,8 @@ print ct(label)
 kmer = vc.get_feature_names()
 idf = zip(kmer, vc._tfidf.idf_)
 idf = sorted(idf, key=lambda x: x[-1], reverse=True)
-print idf[:20]
-print idf[-20:]
+#print idf[:20]
+#print idf[-20:]
 #print vc.get_feature_names()
 '''
 def bench_k_means(estimator, name, data):
@@ -323,7 +323,7 @@ for train, test in kf:
     train_id = []
     print '=============================='
     for i in km_rand_idx:
-        print mapping[label[i]],":",input3[i]
+        #print mapping[label[i]],":",input3[i]
         train_id.append(i)
         train_fn = fn[train_id]
         train_label = label[train_id]
@@ -360,26 +360,28 @@ pl.show()
 
 acc_sum = []
 for train, test in kf:
-    c = KMeans(init='k-means++', n_clusters=1, n_init=10)
     train_label = (label[train])
     #print len(np.unique(train_label))
     ex = dd(list)
+    oc_idx = []
     for i,j in zip(train_label,train):
         ex[i].append(j)
     for k,v in ex.items():
         train_fd = fn[v]
+        n = 1
+        if len(v)>=10:
+            #print mapping[k], len(v)
+            n = len(v)/10
+        c = KMeans(init='k-means++', n_clusters=n, n_init=10)
         c.fit(train_fd)
-        dist = zip(v, c.transform(train_fd))
-        dist = sorted(dist, key=lambda x: x[-1])
-        ex[k] = dist
-
-    oc_idx = []
-    for i in range(rounds*3):
-        if len(oc_idx)>=len(gmm_idx):
-            break
-        for v in ex.values():
-            if len(v)>i and len(oc_idx)<len(gmm_idx):
-                oc_idx.append(v[i][0])
+        rank = dd(list)
+        for i,j,k in zip(c.labels_, v, np.sort(c.transform(train_fd))):
+            rank[i].append([j,k[0]])
+        for v in rank.values():
+            dist = sorted(v, key=lambda x: x[-1])
+            for i in range(rounds):
+                if len(dist) > i:
+                    oc_idx.append(dist[i][0])
 
     test_fn = fn[test]
     test_label = label[test]
@@ -445,7 +447,7 @@ for train, test in kf:
     train_id = []
     print '=============================='
     for i in o_idx:
-        print mapping[label[i]],':',input3[i]
+        #print mapping[label[i]],':',input3[i]
         train_id.append(i)
         train_fn = fn[train_id]
         train_label = label[train_id]
