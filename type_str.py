@@ -6,8 +6,6 @@ from sklearn.feature_extraction.text import TfidfVectorizer as TV
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.tree import DecisionTreeClassifier as DT
 from sklearn.ensemble import RandomForestClassifier as RFC
-from sklearn.ensemble import ExtraTreesClassifier as ETC
-from sklearn.ensemble import AdaBoostClassifier as Ada
 from sklearn.naive_bayes import GaussianNB as GNB
 from sklearn.naive_bayes import MultinomialNB as MNB
 from sklearn.svm import SVC
@@ -16,33 +14,39 @@ from sklearn.metrics import confusion_matrix as CM
 from sklearn import tree
 from sklearn.preprocessing import normalize
 import numpy as np
+import re
 import math
 import pylab as pl
 
-#input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
-input1 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_forrice').readlines()]
+input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
 input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
-input3 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_forsdh').readlines()]
+input3 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlines()]
 input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 label1 = input2[:,-1]
-label1 = input4[:,-1]
-
+label = input4[:,-1]
+'''
+name = []
+for i in input3:
+    s = re.findall('(?i)[a-z]{2,}',i)
+    name.append(' '.join(s))
+#print name
+'''
 fold = 2
-clx = 15
-skf = StratifiedKFold(label1, n_folds=fold)
+#clx = len(np.unique(label))
+clx = 10
+skf = StratifiedKFold(label, n_folds=fold)
 acc_sum = []
 indi_acc =[[] for i in range(clx)]
-#clf = ETC(n_estimators=10, criterion='entropy')
-clf = RFC(n_estimators=50, criterion='entropy')
+#clf = RFC(n_estimators=100, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
-#clf = Ada(n_estimators=100)
-#clf = SVC(kernel='linear')
+clf = SVC(kernel='linear')
 #clf = GNB()
 
 #vc = CV(token_pattern='[a-z]{2,}')
-#vc = TV(token_pattern='[a-z]{2,}')
+#vc = TV(analyzer='char_wb', ngram_range=(3,4))
 vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
-data1 = vc.fit_transform(input3).toarray()
+fn = vc.fit_transform(input3).toarray()
+#print vc.get_feature_names()
 #vc.fit(input1)
 #data1 = vc.transform(input1).toarray()
 #data2 = vc.transform(input3).toarray()
@@ -52,10 +56,10 @@ for train_idx, test_idx in skf:
     aka, use 1 fold to train, k-1 folds to test
     so the indexing is inversed
     '''
-    train_data = data1[test_idx]
-    train_label = label1[test_idx]
-    test_data = data1[train_idx]
-    test_label = label1[train_idx]
+    train_data = fn[test_idx]
+    train_label = label[test_idx]
+    test_data = fn[train_idx]
+    test_label = label[train_idx]
     #test_data = data2
     #test_label = label2
     clf.fit(train_data, train_label)
@@ -69,6 +73,11 @@ for train_idx, test_idx in skf:
     while k<clx:
         indi_acc[k].append(cm[k,k])
         k += 1
+
+    for i,j,k in zip(test_label, preds, train_idx):
+        if i==1 and j==1:
+                pass
+            #print name[k]
 
     '''
     #debug co2 instances
@@ -126,7 +135,7 @@ print 'ave acc:', np.mean(acc_sum)
 
 
 cm_ = CM(test_label,preds)
-#print cm
+print cm_.shape
 cm = normalize(cm.astype(np.float), axis=1, norm='l1')
 #print cm
 #cm /= cm.astype(np.float).sum(axis=1)
@@ -148,8 +157,12 @@ for x in xrange(len(cm)):
 #for c in cls_id:
 #   cls.append(mapping[c])
 
-cls = ['co2','humidity','rmt','status','stpt','flow','HW sup','HW ret','CW sup','CW ret','SAT','RAT','MAT','C enter','C leave','occu']
-#cls = ['co2','humidity','rmt','stpt','flow','other T']
+mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
+test_cls =np.unique(np.hstack((train_label, test_label)))
+print len(test_cls)
+cls = []
+for c in test_cls:
+    cls.append(mapping[int(c)])
 pl.xticks(range(len(cm)),cls)
 pl.yticks(range(len(cm)),cls)
 pl.title('Confusion matrix (%.3f)'%acc)

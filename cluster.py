@@ -11,8 +11,6 @@ from collections import Counter as ct
 from sklearn import metrics
 from sklearn.cluster import KMeans
 from sklearn.mixture import GMM
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import scale
 from sklearn.preprocessing import StandardScaler
 
 from sklearn.feature_extraction.text import CountVectorizer as CV
@@ -21,8 +19,6 @@ from sklearn.cross_validation import StratifiedKFold
 from sklearn.cross_validation import KFold
 from sklearn.tree import DecisionTreeClassifier as DT
 from sklearn.ensemble import RandomForestClassifier as RFC
-from sklearn.naive_bayes import GaussianNB as GNB
-from sklearn.naive_bayes import MultinomialNB as MNB
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
@@ -42,46 +38,20 @@ name = []
 for i in input3:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
-#vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
-vc = TV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
+vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
+#vc = TV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
 fn = vc.fit_transform(name).toarray()
 fd = input4[:,[0,1,2,3,5,6,7]]
 #n_class = len(np.unique(label))
 #print n_class
 #print np.unique(label)
 print ct(label)
-kmer = vc.get_feature_names()
-idf = zip(kmer, vc._tfidf.idf_)
-idf = sorted(idf, key=lambda x: x[-1], reverse=True)
+#kmer = vc.get_feature_names()
+#idf = zip(kmer, vc._tfidf.idf_)
+#idf = sorted(idf, key=lambda x: x[-1], reverse=True)
 #print idf[:20]
 #print idf[-20:]
 #print vc.get_feature_names()
-'''
-def bench_k_means(estimator, name, data):
-    sample_size, feature_size = data.shape
-    t0 = time()
-    estimator.fit(data)
-    print('% 9s   %.2fs    %i   %.3f   %.3f   %.3f   %.3f   %.3f    %.3f'
-          % (name, (time() - t0), estimator.inertia_,
-             metrics.homogeneity_score(labels, estimator.labels_),
-             metrics.completeness_score(labels, estimator.labels_),
-             metrics.v_measure_score(labels, estimator.labels_),
-             metrics.adjusted_rand_score(labels, estimator.labels_),
-             metrics.adjusted_mutual_info_score(labels,  estimator.labels_),
-             metrics.silhouette_score(data, estimator.labels_,
-                                      metric='euclidean',
-                                      sample_size=sample_size)))
-
-fold = 5
-skf = StratifiedKFold(label, n_folds=fold)
-train, test = next(iter(skf))
-x_train = data[train]
-y_train = label[train]
-x_test = data[test]
-y_test = label[test]
-n_class = len(np.unique(y_train))
-print n_class, 'classes'
-'''
 
 fold = 2
 kf = StratifiedKFold(label, n_folds=fold)
@@ -263,7 +233,7 @@ for train, test in kf:
     '''
     acc_sum.append(acc)
 print len(train_label), 'training examples'
-#print ct(train_label)
+print ct(train_label)
 print 'acc using km centroid ex:', np.mean(acc_sum), np.std(acc_sum)
 acc_.append(np.mean(acc_sum))
 #f.write('acc using km: %s\n'%(repr(acc_sum)))
@@ -323,7 +293,7 @@ for train, test in kf:
     train_id = []
     print '=============================='
     for i in km_rand_idx:
-        #print mapping[label[i]],":",input3[i]
+        print mapping[label[i]],":",input3[i]
         train_id.append(i)
         train_fn = fn[train_id]
         train_label = label[train_id]
@@ -399,7 +369,7 @@ for train, test in kf:
         acc = accuracy_score(test_label, preds_fn)
     acc_sum.append(acc)
 print len(train_label), 'training examples'
-#print ct(train_label)
+print ct(train_label)
 print 'acc using oracle centriod ex:', np.mean(acc_sum), np.std(acc_sum)
 acc_.append(np.mean(acc_sum))
 cm_ = CM(test_label, preds_fn)
@@ -447,7 +417,7 @@ for train, test in kf:
     train_id = []
     print '=============================='
     for i in o_idx:
-        #print mapping[label[i]],':',input3[i]
+        print mapping[label[i]],':',input3[i]
         train_id.append(i)
         train_fn = fn[train_id]
         train_label = label[train_id]

@@ -15,17 +15,17 @@ import pylab as pl
 input1 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 input2 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_forsdh').readlines()]
 #data1 = input1[:,[0,1,2,3,5,6,7,9,10,11]]
-fd1 = input1[:,[0,1,2,3,5,6,7]]
+fd = input1[:,[0,1,2,3,5,6,7]]
 #data1 = input1[:,0:-1]
 #index = data1.shape[1]*2/3
 #data1 = input1[:,0:index]
-label1 = input1[:,-1]
+label = input1[:,-1]
 input3 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
 input4 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_forrice').readlines()]
-fd = input3[:,[0,1,2,3,5,6,7]]
-label = input3[:,-1]
+fd1 = input3[:,[0,1,2,3,5,6,7]]
+label1 = input3[:,-1]
 
-fold = 10
+fold = 2
 clx = 9
 skf = StratifiedKFold(label, n_folds=fold)
 acc_sum = []
@@ -64,8 +64,8 @@ while loop<run/fold:
         #print clf.feature_importances_
         preds_fd = clf1.predict(test_fd)
         preds_fn = clf2.predict(test_fn)
-        #acc = accuracy_score(test_label, preds)
-        #acc_sum.append(acc)
+        acc = accuracy_score(test_label, preds_fd)
+        acc_sum.append(acc)
         #importance += clf.feature_importances_
         #print acc
 
@@ -139,7 +139,7 @@ print float(d_mn_r)/(run*num)
 #indi_ave_acc_std = [np.std(i) for i in indi_acc]
 #print 'ave acc/type:', indi_ave_acc
 #print 'acc std/type:', indi_ave_acc_std
-#print 'ave acc:', np.mean(acc_sum)
+print 'ave acc:', np.mean(acc_sum)
 #print 'std:', np.std(acc_sum)
 
 '''
