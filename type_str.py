@@ -13,11 +13,11 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix as CM
 from sklearn import tree
 from sklearn.preprocessing import normalize
+from sklearn.utils import shuffle
 import numpy as np
 import re
 import math
 import pylab as pl
-from sklearn.utils import shuffle
 
 input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
 input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
@@ -26,14 +26,14 @@ input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 label1 = input2[:,-1]
 label = input4[:,-1]
 input3, label = shuffle(input3, label)
-'''
+
 name = []
 for i in input3:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
 #print name
-'''
-fold = 2
+
+fold = 10
 #clx = len(np.unique(label))
 clx = 10
 skf = StratifiedKFold(label, n_folds=fold)
@@ -53,7 +53,6 @@ fn = vc.fit_transform(input3).toarray()
 #data1 = vc.transform(input1).toarray()
 #data2 = vc.transform(input3).toarray()
 for train_idx, test_idx in skf:
-    print test_idx
     '''
     because we want to do inverse k-fold XV
     aka, use 1 fold to train, k-1 folds to test
@@ -138,7 +137,7 @@ print 'ave acc:', np.mean(acc_sum)
 
 
 cm_ = CM(test_label,preds)
-print cm_.shape
+#print cm_.shape
 cm = normalize(cm.astype(np.float), axis=1, norm='l1')
 #print cm
 #cm /= cm.astype(np.float).sum(axis=1)
@@ -162,7 +161,7 @@ for x in xrange(len(cm)):
 
 mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
 test_cls =np.unique(np.hstack((train_label, test_label)))
-print len(test_cls)
+#print len(test_cls)
 cls = []
 for c in test_cls:
     cls.append(mapping[int(c)])

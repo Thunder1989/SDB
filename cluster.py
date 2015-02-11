@@ -28,14 +28,14 @@ from sklearn.metrics import confusion_matrix as CM
 from sklearn import tree
 from sklearn.preprocessing import normalize
 
-#input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 input1 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_forrice').readlines()]
 input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
 input3 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_forsdh').readlines()]
 input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 label2 = input2[:,-1]
 label = input4[:,-1]
-input3, label = shuffle(input3, label)
+#input3, label = shuffle(input3, label)
+
 name = []
 for i in input3:
     s = re.findall('(?i)[a-z]{2,}',i)
@@ -56,7 +56,7 @@ print ct(label)
 #print vc.get_feature_names()
 
 fold = 2
-kf = StratifiedKFold(label, n_folds=fold)
+kf = StratifiedKFold(label, n_folds=fold, shuffle=True)
 #kf = KFold(len(label), n_folds=fold, shuffle=True)
 '''
 folds = [[] for i in range(fold)]
@@ -98,7 +98,6 @@ for train, test in kf:
     for i,j in ex.items():
         #print i,j
         ex[i] = sorted(j, key=lambda x: x[-1], reverse=True)
-    #gmm_idx = [j[k][0] for i,j in ex.items() for k in range(2)]
     gmm_idx = []
     for i in range(rounds):
         for v in ex.values():
@@ -155,7 +154,7 @@ for x in xrange(len(cm)):
                     horizontalalignment='center',
                     verticalalignment='center',
                     fontsize=10)
-test_cls =np.unique(np.hstack((train_label, test_label)))
+test_cls =np.unique(np.hstack((test_label,preds_fn)))
 cls = []
 for c in test_cls:
     cls.append(mapping[c])
@@ -192,7 +191,6 @@ for train, test in kf:
         ex[i].append([j,k[0]])
     for i,j in ex.items():
         ex[i] = sorted(j, key=lambda x: x[-1])
-    #km_idx = [j[k][0] for i,j in ex.items() for k in range(2)]
     km_idx = []
     for i in range(rounds*2):
         if len(km_idx)>len(gmm_idx):
@@ -205,8 +203,6 @@ for train, test in kf:
     test_fn = fn[test]
     test_label = label[test]
     train_id = []
-    pre_sum = np.array([])
-    rec_sum = np.array([])
     print '=============================='
     for i in km_idx:
         print mapping[label[i]],":",input3[i]
@@ -216,34 +212,12 @@ for train, test in kf:
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
         acc = accuracy_score(test_label, preds_fn)
-        #pre = precision_score(test_label, preds_fn, average=None)
-        #rec = recall_score(test_label, preds_fn, average=None)
-        #pre_sum = np.append(pre_sum, pre)
-        #rec_sum = np.append(rec_sum, rec)
     #t_class = len(np.unique(test_label))
-    '''
-    t_class = len(pre)
-    pre_sum = np.reshape(pre_sum, (len(pre_sum)/t_class,t_class)).T.tolist()
-    rec_sum = np.reshape(rec_sum, (len(rec_sum)/t_class,t_class)).T.tolist()
-    f.write('-------------km-------------\n')
-    f.write('-------------precision-------------\n')
-    f.writelines('%s;\n'%repr(i) for i in pre_sum)
-    f.write('-------------recall-------------\n')
-    f.writelines('%s;\n'%repr(i) for i in rec_sum)
-    f.write('ex in each itr:'+repr(train_label)+'\n')
-    f.write(repr(np.unique(test_label))+'\n')
-    '''
     acc_sum.append(acc)
 print len(train_label), 'training examples'
 print ct(train_label)
 print 'acc using km centroid ex:', np.mean(acc_sum), np.std(acc_sum)
 acc_.append(np.mean(acc_sum))
-#f.write('acc using km: %s\n'%(repr(acc_sum)))
-#f.write('acc using km ex: %s-%s\n'%(str(np.mean(acc_sum)), str(np.std(acc_sum))))
-#f.close()
-#test_acc = np.mean(preds.ravel() == y_train.ravel())
-#test_acc = np.mean(preds.ravel() == y_test.ravel())
-#print 'test acc', test_acc
 cm_ = CM(test_label, preds_fn)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
 fig = pl.figure()
@@ -256,7 +230,7 @@ for x in xrange(len(cm)):
                     horizontalalignment='center',
                     verticalalignment='center',
                     fontsize=10)
-test_cls =np.unique(np.hstack((train_label, test_label)))
+test_cls =np.unique(np.hstack((test_label,preds_fn)))
 cls = []
 for c in test_cls:
     cls.append(mapping[c])
@@ -319,7 +293,7 @@ for x in xrange(len(cm)):
                     horizontalalignment='center',
                     verticalalignment='center',
                     fontsize=10)
-test_cls =np.unique(np.hstack((train_label, test_label)))
+test_cls =np.unique(np.hstack((test_label,preds_fn)))
 cls = []
 for c in test_cls:
     cls.append(mapping[c])
@@ -358,8 +332,6 @@ for train, test in kf:
     test_fn = fn[test]
     test_label = label[test]
     train_id = []
-    pre_sum = np.array([])
-    rec_sum = np.array([])
     print '=============================='
     for i in oc_idx:
         print mapping[label[i]],':',input3[i]
@@ -386,7 +358,7 @@ for x in xrange(len(cm)):
                     horizontalalignment='center',
                     verticalalignment='center',
                     fontsize=10)
-test_cls =np.unique(np.hstack((train_label, test_label)))
+test_cls =np.unique(np.hstack((test_label,preds_fn)))
 cls = []
 for c in test_cls:
     cls.append(mapping[c])
@@ -442,7 +414,7 @@ for x in xrange(len(cm)):
                     horizontalalignment='center',
                     verticalalignment='center',
                     fontsize=10)
-test_cls =np.unique(np.hstack((train_label, test_label)))
+test_cls =np.unique(np.hstack((test_label,preds_fn)))
 cls = []
 for c in test_cls:
     cls.append(mapping[c])
@@ -462,8 +434,6 @@ for train, test in kf:
     test_fn = fn[test]
     test_label = label[test]
     train_id = []
-    pre_sum = np.array([])
-    rec_sum = np.array([])
     for i in rand_idx:
         train_id.append(train[i])
         train_fn = fn[train_id]
@@ -471,31 +441,13 @@ for train, test in kf:
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
         acc = accuracy_score(test_label, preds_fn)
-        #pre = precision_score(test_label, preds_fn, average=None)
-        #rec = recall_score(test_label, preds_fn, average=None)
-        #pre_sum = np.append(pre_sum, pre)
-        #rec_sum = np.append(rec_sum, rec)
     #t_class = len(np.unique(test_label))
-    '''
-    t_class = len(pre)
-    pre_sum = np.reshape(pre_sum, (len(pre_sum)/t_class,t_class)).T.tolist()
-    rec_sum = np.reshape(rec_sum, (len(rec_sum)/t_class,t_class)).T.tolist()
-    f.write('-------------random-------------\n')
-    f.write('-------------precision-------------\n')
-    f.writelines('%s;\n'%repr(i) for i in pre_sum)
-    f.write('-------------recall-------------\n')
-    f.writelines('%s;\n'%repr(i) for i in rec_sum)
-    f.write('ex in each itr:'+repr(train_label)+'\n')
-    f.write(repr(np.unique(test_label))+'\n')
-    '''
     acc_sum.append(acc)
 print len(train_label), 'training examples'
 #print ct(train_label)
 print 'acc using random ex:', np.mean(acc_sum), np.std(acc_sum)
 acc_.append(np.mean(acc_sum))
 print acc_
-#f.write('acc using random: %s\n'%(repr(acc_sum)))
-#f.write('acc using random ex: %s-%s\n'%(str(np.mean(acc_sum)), str(np.std(acc_sum))))
 cm_ = CM(test_label, preds_fn)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
 fig = pl.figure()
@@ -508,7 +460,7 @@ for x in xrange(len(cm)):
                     horizontalalignment='center',
                     verticalalignment='center',
                     fontsize=10)
-test_cls =np.unique(np.hstack((train_label, test_label)))
+test_cls =np.unique(np.hstack((test_label,preds_fn)))
 cls = []
 for c in test_cls:
     cls.append(mapping[c])
