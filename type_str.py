@@ -17,6 +17,7 @@ import numpy as np
 import re
 import math
 import pylab as pl
+from sklearn.utils import shuffle
 
 input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
 input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
@@ -24,6 +25,7 @@ input3 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlin
 input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 label1 = input2[:,-1]
 label = input4[:,-1]
+input3, label = shuffle(input3, label)
 '''
 name = []
 for i in input3:
@@ -51,6 +53,7 @@ fn = vc.fit_transform(input3).toarray()
 #data1 = vc.transform(input1).toarray()
 #data2 = vc.transform(input3).toarray()
 for train_idx, test_idx in skf:
+    print test_idx
     '''
     because we want to do inverse k-fold XV
     aka, use 1 fold to train, k-1 folds to test

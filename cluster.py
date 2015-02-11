@@ -12,6 +12,7 @@ from sklearn import metrics
 from sklearn.cluster import KMeans
 from sklearn.mixture import GMM
 from sklearn.preprocessing import StandardScaler
+from sklearn.utils import shuffle
 
 from sklearn.feature_extraction.text import CountVectorizer as CV
 from sklearn.feature_extraction.text import TfidfVectorizer as TV
@@ -34,6 +35,7 @@ input3 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_forsdh').readlin
 input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 label2 = input2[:,-1]
 label = input4[:,-1]
+input3, label = shuffle(input3, label)
 name = []
 for i in input3:
     s = re.findall('(?i)[a-z]{2,}',i)
