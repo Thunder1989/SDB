@@ -35,11 +35,11 @@ input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 label2 = input2[:,-1]
 label = input4[:,-1]
 #input3, label = shuffle(input3, label)
-
 name = []
 for i in input3:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
+
 vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
 #vc = TV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
 fn = vc.fit_transform(name).toarray()
@@ -96,7 +96,6 @@ for train, test in kf:
         '''
         ex[i].append([j,k[-1]])
     for i,j in ex.items():
-        #print i,j
         ex[i] = sorted(j, key=lambda x: x[-1], reverse=True)
     gmm_idx = []
     for i in range(rounds):
@@ -108,8 +107,8 @@ for train, test in kf:
     test_fn = fn[test]
     test_label = label[test]
     train_id = []
-    pre_sum = np.array([])
-    rec_sum = np.array([])
+    #pre_sum = np.array([])
+    #rec_sum = np.array([])
     for i in gmm_idx:
         train_id.append(i)
         train_fn = fn[train_id]
@@ -154,9 +153,9 @@ for x in xrange(len(cm)):
                     horizontalalignment='center',
                     verticalalignment='center',
                     fontsize=10)
-test_cls =np.unique(np.hstack((test_label,preds_fn)))
+cm_cls =np.unique(np.hstack((test_label,preds_fn)))
 cls = []
-for c in test_cls:
+for c in cm_cls:
     cls.append(mapping[c])
 pl.yticks(range(len(cls)), cls)
 pl.ylabel('True label')
@@ -195,9 +194,12 @@ for train, test in kf:
     for i in range(rounds*2):
         if len(km_idx)>len(gmm_idx):
             break
-        for v in ex.values():
+        for k,v in ex.items():
             if len(v)>i and len(km_idx)<len(gmm_idx):
                 km_idx.append(v[i][0])
+                print '--------------------------'
+                print k,len(v),label[v[i][0]],input3[v[i][0]]
+                print '\n'.join([name[ii[0]] for ii in v])
     #print len(km_idx)
 
     test_fn = fn[test]
@@ -230,9 +232,9 @@ for x in xrange(len(cm)):
                     horizontalalignment='center',
                     verticalalignment='center',
                     fontsize=10)
-test_cls =np.unique(np.hstack((test_label,preds_fn)))
+cm_cls =np.unique(np.hstack((test_label,preds_fn)))
 cls = []
-for c in test_cls:
+for c in cm_cls:
     cls.append(mapping[c])
 pl.yticks(range(len(cls)), cls)
 pl.ylabel('True label')
@@ -248,7 +250,6 @@ for train, test in kf:
     #print '# of training class', n_class
     c = KMeans(init='k-means++', n_clusters=n_class*2, n_init=10)
     c.fit(train_fd)
-    dist = np.sort(c.transform(train_fd))
     ex = dd(list)
     for i,j in zip(c.labels_, train):
         ex[i].append(j)
@@ -293,9 +294,9 @@ for x in xrange(len(cm)):
                     horizontalalignment='center',
                     verticalalignment='center',
                     fontsize=10)
-test_cls =np.unique(np.hstack((test_label,preds_fn)))
+cm_cls =np.unique(np.hstack((test_label,preds_fn)))
 cls = []
-for c in test_cls:
+for c in cm_cls:
     cls.append(mapping[c])
 pl.yticks(range(len(cls)), cls)
 pl.ylabel('True label')
@@ -306,7 +307,7 @@ pl.show()
 
 acc_sum = []
 for train, test in kf:
-    train_label = (label[train])
+    train_label = label[train]
     #print len(np.unique(train_label))
     ex = dd(list)
     oc_idx = []
@@ -318,17 +319,21 @@ for train, test in kf:
         if len(v)>=10:
             #print mapping[k], len(v)
             n = len(v)/10
+        if k==4:
+            n=4
+        if k==6:
+            k=10
         c = KMeans(init='k-means++', n_clusters=n, n_init=10)
         c.fit(train_fd)
         rank = dd(list)
-        for i,j,k in zip(c.labels_, v, np.sort(c.transform(train_fd))):
-            rank[i].append([j,k[0]])
-        for v in rank.values():
-            dist = sorted(v, key=lambda x: x[-1])
+        for i,j,kk in zip(c.labels_, v, np.sort(c.transform(train_fd))):
+            rank[i].append([j,kk[0]])
+        for kk,vv in rank.items():
+            dist = sorted(vv, key=lambda x: x[-1])
             for i in range(rounds):
                 if len(dist) > i:
                     oc_idx.append(dist[i][0])
-
+                    print kk, input3[dist[i][0]]
     test_fn = fn[test]
     test_label = label[test]
     train_id = []
@@ -344,7 +349,7 @@ for train, test in kf:
     acc_sum.append(acc)
 print len(train_label), 'training examples'
 print ct(train_label)
-print 'acc using oracle centriod ex:', np.mean(acc_sum), np.std(acc_sum)
+print 'acc using oracle centroid ex:', np.mean(acc_sum), np.std(acc_sum)
 acc_.append(np.mean(acc_sum))
 cm_ = CM(test_label, preds_fn)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
@@ -358,9 +363,9 @@ for x in xrange(len(cm)):
                     horizontalalignment='center',
                     verticalalignment='center',
                     fontsize=10)
-test_cls =np.unique(np.hstack((test_label,preds_fn)))
+cm_cls =np.unique(np.hstack((test_label,preds_fn)))
 cls = []
-for c in test_cls:
+for c in cm_cls:
     cls.append(mapping[c])
 pl.yticks(range(len(cls)), cls)
 pl.ylabel('True label')
@@ -414,9 +419,9 @@ for x in xrange(len(cm)):
                     horizontalalignment='center',
                     verticalalignment='center',
                     fontsize=10)
-test_cls =np.unique(np.hstack((test_label,preds_fn)))
+cm_cls =np.unique(np.hstack((test_label,preds_fn)))
 cls = []
-for c in test_cls:
+for c in cm_cls:
     cls.append(mapping[c])
 pl.yticks(range(len(cls)), cls)
 pl.ylabel('True label')
@@ -429,7 +434,6 @@ pl.show()
 acc_sum = []
 for train, test in kf:
     rand_idx = random.sample(xrange(len(train)), len(gmm_idx))
-    n_class = len(np.unique(label[train]))
 
     test_fn = fn[test]
     test_label = label[test]
@@ -460,9 +464,9 @@ for x in xrange(len(cm)):
                     horizontalalignment='center',
                     verticalalignment='center',
                     fontsize=10)
-test_cls =np.unique(np.hstack((test_label,preds_fn)))
+cm_cls =np.unique(np.hstack((test_label,preds_fn)))
 cls = []
-for c in test_cls:
+for c in cm_cls:
     cls.append(mapping[c])
 pl.yticks(range(len(cls)), cls)
 pl.ylabel('True label')
