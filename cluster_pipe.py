@@ -85,35 +85,35 @@ for train, test in kf:
                 km_idx.append(v[i][0])
                 print k,label[v[i][0]],input3[v[i][0]]
     print len(km_idx), 'training examples'
-
     test_fn = fn[test]
     test_label = label[test]
-    train_fn = fn[km_idx]
-    train_label = label[km_idx]
-    print ct(train_label)
-    clf.fit(train_fn, train_label)
-    preds_fn = clf.predict(test_fn)
-    preds_c = clf.predict(fn[train]) #predict labels for cluster learning set
-    acc = accuracy_score(test_label, preds_fn)
-    acc_ = accuracy_score(label[train], preds_c)
-    print 'acc on test set', acc
-    print 'acc on cluster set', acc_
-    print 'class count of predicted labels on cluster learning ex:\n', ct(preds_c)
-    acc_sum.append(acc)
-    sub_pred = dd(list)
-    for i,j in zip(c.labels_, preds_c):
-        sub_pred[i].append(j)
-    rank = []
-    for k,v in sub_pred.items():
-        count = ct(v).values()
-        count[:] = [i/float(max(count)) for i in count]
-        H = np.sum(-math.pi*math.log(p, 2) for p in count if p!=0)
-        rank.append([k,len(v),H])
-    rank = sorted(rank, key=lambda x: x[-1], reverse=True)
-    #print rank
-    for i in range(len(rank)):
-        print 'adding exs from sub cluster', i, '>>>>>>>>>>>>>>>>>>>>>>>>>>>'
-        idx = rank[i][0] #pick the id of the 1st cluster on the rank
+
+    for rr in range(n_class):
+        train_fn = fn[km_idx]
+        train_label = label[km_idx]
+        print ct(train_label)
+        clf.fit(train_fn, train_label)
+        preds_fn = clf.predict(test_fn)
+        preds_c = clf.predict(fn[train]) #predict labels for cluster learning set
+        acc = accuracy_score(test_label, preds_fn)
+        acc_ = accuracy_score(label[train], preds_c)
+        print 'acc on test set', acc
+        print 'acc on cluster set', acc_
+        print 'class count of predicted labels on cluster learning ex:\n', ct(preds_c)
+        acc_sum.append(acc)
+        sub_pred = dd(list)
+        for i,j in zip(c.labels_, preds_c):
+            sub_pred[i].append(j)
+        rank = []
+        for k,v in sub_pred.items():
+            count = ct(v).values()
+            count[:] = [i/float(max(count)) for i in count]
+            H = np.sum(-math.pi*math.log(p, 2) for p in count if p!=0)
+            rank.append([k,len(v),H])
+        rank = sorted(rank, key=lambda x: x[-1], reverse=True)
+        #print rank
+        print 'adding exs itr', r, '>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+        idx = rank[0][0] #pick the id of the 1st cluster on the rank
         c_id = [i[0] for i in ex[idx]]
         sub_label = sub_pred[idx]
         sub_fn = fn[c_id]
@@ -130,8 +130,9 @@ for train, test in kf:
                 if len(v)>i:
                     if v[i][0] not in km_idx:
                         km_idx.append(v[i][0])
-                        print k,label[v[i][0]],input3[v[i][0]]
+                        print '>',k,label[v[i][0]],input3[v[i][0]]
         print len(km_idx), 'training examples'
+        '''
         train_fn = fn[km_idx]
         train_label = label[km_idx]
         clf.fit(train_fn, train_label)
@@ -142,6 +143,7 @@ for train, test in kf:
         print 'acc on test set', acc
         print 'acc on cluster set', acc_
         print 'class count of predicted labels on cluster training ex:\n', ct(preds_train)
+        '''
     print '---------------------------------------------'
     print '---------------------------------------------'
 
