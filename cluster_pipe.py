@@ -44,6 +44,7 @@ vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1)
 #vc = TV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
 fn = vc.fit_transform(name).toarray()
 fd = input4[:,[0,1,2,3,5,6,7]]
+print 'class count of true labels of all ex:\n', ct(label)
 #n_class = len(np.unique(label))
 #print n_class
 #print np.unique(label)
@@ -57,8 +58,8 @@ fd = input4[:,[0,1,2,3,5,6,7]]
 
 fold = 2
 rounds = 1
-clf = SVC(kernel='linear')
-#clf = RFC(n_estimators=50, criterion='entropy')
+#clf = SVC(kernel='linear')
+clf = RFC(n_estimators=100, criterion='entropy')
 kf = StratifiedKFold(label, n_folds=fold, shuffle=True)
 #kf = KFold(len(label), n_folds=fold, shuffle=True)
 mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
@@ -67,7 +68,8 @@ acc_sum = []
 for train, test in kf:
     print 'class count of true labels on cluster training ex:\n', ct(label[train])
     train_fd = fn[train]
-    n_class = len(np.unique(label[train]))
+    #n_class = len(np.unique(label[train]))
+    n_class = 30
     #print '# of training class', n_class
     c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
     c.fit(train_fd)
@@ -88,7 +90,8 @@ for train, test in kf:
     test_fn = fn[test]
     test_label = label[test]
 
-    for rr in range(n_class):
+    #for rr in range(n_class):
+    for rr in range(1):
         train_fn = fn[km_idx]
         train_label = label[km_idx]
         print ct(train_label)
@@ -102,8 +105,13 @@ for train, test in kf:
         print 'class count of predicted labels on cluster learning ex:\n', ct(preds_c)
         acc_sum.append(acc)
         sub_pred = dd(list)
-        for i,j in zip(c.labels_, preds_c):
+        debug = dd(list)
+        for i,j,k in zip(c.labels_, preds_c, train):
             sub_pred[i].append(j)
+            debug[j].append((i,input3[k]))
+        for i,j in debug.items():
+            for jj in j:
+                print '<<', i, jj
         rank = []
         for k,v in sub_pred.items():
             count = ct(v).values()
@@ -112,7 +120,7 @@ for train, test in kf:
             rank.append([k,len(v),H])
         rank = sorted(rank, key=lambda x: x[-1], reverse=True)
         #print rank
-        print 'adding exs itr', r, '>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+        print 'adding exs itr', rr, '>>>>>>>>>>>>>>>>>>>>>>>>>>>'
         idx = rank[0][0] #pick the id of the 1st cluster on the rank
         c_id = [i[0] for i in ex[idx]]
         sub_label = sub_pred[idx]
