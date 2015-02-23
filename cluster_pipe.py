@@ -90,11 +90,11 @@ for train, test in kf:
     test_fn = fn[test]
     test_label = label[test]
 
-    #for rr in range(n_class):
-    for rr in range(1):
+    for rr in range(n_class):
+    #for rr in range(1):
         train_fn = fn[km_idx]
         train_label = label[km_idx]
-        print ct(train_label)
+        #print ct(train_label)
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
         preds_c = clf.predict(fn[train]) #predict labels for cluster learning set
@@ -102,7 +102,7 @@ for train, test in kf:
         acc_ = accuracy_score(label[train], preds_c)
         print 'acc on test set', acc
         print 'acc on cluster set', acc_
-        print 'class count of predicted labels on cluster learning ex:\n', ct(preds_c)
+        #print 'class count of predicted labels on cluster learning ex:\n', ct(preds_c)
         acc_sum.append(acc)
         sub_pred = dd(list)
         debug = dd(list)
@@ -111,7 +111,8 @@ for train, test in kf:
             debug[j].append((i,input3[k]))
         for i,j in debug.items():
             for jj in j:
-                print '<<', i, jj
+                #print '<<', i, jj
+                pass
         rank = []
         for k,v in sub_pred.items():
             count = ct(v).values()
@@ -120,7 +121,7 @@ for train, test in kf:
             rank.append([k,len(v),H])
         rank = sorted(rank, key=lambda x: x[-1], reverse=True)
         #print rank
-        print 'adding exs itr', rr, '>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+        print 'iteration', rr, '>>>>>>>>>>>>>>>>>>>>>>>>>>>'
         idx = rank[0][0] #pick the id of the 1st cluster on the rank
         c_id = [i[0] for i in ex[idx]]
         sub_label = sub_pred[idx]

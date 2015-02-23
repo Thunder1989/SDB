@@ -76,7 +76,7 @@ for train, test in kf:
     train_fd = fn[train]
     n_class = len(np.unique(label[train]))
     #print '# of training class', n_class
-    g = GMM(n_components=n_class*2, covariance_type='spherical', init_params='wmc', n_iter=100)
+    g = GMM(n_components=n_class*3, covariance_type='spherical', init_params='wmc', n_iter=100)
     g.fit(train_fd)
     #g.means_ = np.array([x_train[y_train == i].mean(axis=0) for i in np.unique(y_train)])
     #print g.means_
@@ -170,7 +170,7 @@ for train, test in kf:
     train_fd = fn[train]
     n_class = len(np.unique(label[train]))
     #print '# of training class', n_class
-    c = KMeans(init='k-means++', n_clusters=n_class*2, n_init=10)
+    c = KMeans(init='k-means++', n_clusters=n_class*3, n_init=10)
     c.fit(train_fd)
 #preds = c.predict(x_test)
 #print metrics.homogeneity_completeness_v_measure(y_test,preds)
@@ -248,7 +248,7 @@ for train, test in kf:
     train_fd = fn[train]
     n_class = len(np.unique(label[train]))
     #print '# of training class', n_class
-    c = KMeans(init='k-means++', n_clusters=n_class*2, n_init=10)
+    c = KMeans(init='k-means++', n_clusters=n_class*3, n_init=10)
     c.fit(train_fd)
     ex = dd(list)
     for i,j in zip(c.labels_, train):
@@ -279,7 +279,7 @@ for train, test in kf:
         acc = accuracy_score(test_label, preds_fn)
     acc_sum.append(acc)
 print len(train_label), 'training examples'
-#print ct(train_label)
+print ct(train_label)
 print 'acc using km random ex:', np.mean(acc_sum), np.std(acc_sum)
 acc_.append(np.mean(acc_sum))
 cm_ = CM(test_label, preds_fn)
@@ -320,9 +320,11 @@ for train, test in kf:
             #print mapping[k], len(v)
             n = len(v)/10
         if k==4:
-            n=4
+            n=5
+        if k==5:
+            n=7
         if k==6:
-            k=10
+            n=15
         c = KMeans(init='k-means++', n_clusters=n, n_init=10)
         c.fit(train_fd)
         rank = dd(list)
