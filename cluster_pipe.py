@@ -10,6 +10,7 @@ from collections import Counter as ct
 
 from sklearn import metrics
 from sklearn.cluster import KMeans
+from sklearn.cluster import AgglomerativeClustering as AC
 from sklearn.mixture import GMM
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import shuffle
@@ -71,8 +72,23 @@ for train, test in kf:
     #n_class = len(np.unique(label[train]))
     n_class = 30
     #print '# of training class', n_class
+    c = AC(n_clusters=n_class, affinity='cosine', linkage='average')
+    c.fit(train_fd)
+    tmp = dd(list)
+    for i,j in zip(c.labels_, train):
+        tmp[i].append(j)
+    for k,v in tmp.items():
+        for vv in v:
+            print k, input3[vv]
+    print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
     c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
     c.fit(train_fd)
+    tmp = dd(list)
+    for i,j in zip(c.labels_, train):
+        tmp[i].append(j)
+    for k,v in tmp.items():
+        for vv in v:
+            print k, input3[vv]
     dist = np.sort(c.transform(train_fd))
     ex = dd(list)
     for i,j,k in zip(c.labels_, train, dist):
