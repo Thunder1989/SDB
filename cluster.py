@@ -68,7 +68,7 @@ for train, test in kf:
 acc_ = []
 #clf = SVC(kernel='linear')
 clf = RFC(n_estimators=50, criterion='entropy')
-rounds = 1
+rounds = 10
 print 'total rounds of', rounds
 #f = open('c_out2','w')
 acc_sum = []
