@@ -192,7 +192,7 @@ print 'acc of Md', clf.score(test_data, test_label)
 #compute 'confidence' for each example in the new bldg
 label_pr = np.sort(clf.predict_proba(test_data)) #sort each prob vector in ascending order
 cf_md = []
-for h,pr in zip(xrange(len(test_data)),label_pr):
+for pr in label_pr:
     #entropy = np.sum(-p*math.log(p,2) for p in pr if p!=0)
     if len(pr)<2:
         margin = 1
@@ -214,7 +214,7 @@ for i in input1:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
 
-iteration = 3
+iteration = 6
 fold = 2
 clx = 13
 kf = KFold(len(label), n_folds=fold, shuffle=True)
@@ -224,7 +224,8 @@ for train, test in kf:
     folds.append(test)
 '''
 acc_sum = [[] for i in range(iteration)]
-acc_Md = []
+acc_H = []
+acc_T = []
 acc_type = [[] for i in range(clx)]
 #acc_type = [[[] for i in range(iteration)] for i in range(6)]
 #clf = RFC(n_estimators=100, criterion='entropy')
@@ -277,31 +278,42 @@ for train, test in kf:
         ex[i].append([j,k[0]])
     for i,j in ex.items():
         ex[i] = sorted(j, key=lambda x: x[-1])
-    km_idx = []
-    gt_idx = []
+    auto_idx = []
+    ora_idx = []
+
+    ex_num1 = []
+    ex_num2 = []
     for itr in range(iteration):
         for k,v in ex.items():
             if len(v)>itr:
-                if cf_md[v[itr][0]] >=0.85:
-                    km_idx.append(v[itr][0])
-                    print k,label_md[v[itr][0]],label[v[itr][0]],cf_md[v[itr][0]],input1[v[itr][0]]
+                idx = v[itr][0]
+                if cf_md[idx] >=0.85:
+                    auto_idx.append(idx)
+                    #print k,label_md[idx],label[idx],cf_md[idx],input1[idx]
                 #elif cf_md[v[itr][0]] <=0.2:
                 else:
-                    gt_idx.append(v[itr][0])
-                    print '>>>>>',k,label_md[v[itr][0]],label[v[itr][0]],cf_md[v[itr][0]],input1[v[itr][0]]
+                    ora_idx.append(idx)
+                    #print '>>>>>',k,label_md[idx],label[idx],cf_md[idx],input1[idx]
+
+        ex_num1.append(len(ora_idx))
+        ex_num2.append(len(ora_idx)+len(auto_idx))
         '''
         train_data = data1[train]
         train_label = label1[train]
         validate_data = data1[validate]
         validate_label = label1[validate]
         '''
-        train_data = fn[np.hstack((km_idx,gt_idx))]
-        #train_label = label[np.hstack((km_idx,gt_idx))]
-        train_label = np.hstack((label_md[km_idx],label[gt_idx]))
+        train_data = fn[np.hstack((auto_idx,ora_idx))]
+        train_label = np.hstack((label_md[auto_idx],label[ora_idx]))
+        train_label_ = label[np.hstack((auto_idx,ora_idx))]
 
-        clf.fit(train_data, train_label)
-        acc = clf.score(test_data, test_label)
+        clf.fit(train_data,train_label)
+        acc = clf.score(test_data,test_label)
         acc_sum[itr].append(acc)
+        acc_H.append(acc)
+        clf.fit(train_data,train_label_)
+        acc = clf.score(test_data,test_label)
+        acc_T.append(acc)
         preds_fn = clf.predict(test_data)
         '''
         cm = CM(test_label,preds)
@@ -331,17 +343,21 @@ for train, test in kf:
         train = np.append(train, elmt)
         validate = validate[validate!=elmt]
         '''
-    print 'true label count for selected set:\n', ct(label[km_idx])
-    print 'md label count for selected set:\n', ct(label_md[km_idx])
+    print 'true label count for selected set:\n', ct(label[auto_idx])
+    print 'md label count for selected set:\n', ct(label_md[auto_idx])
     #print 'label count for selected set:\n', ct(train_label)
-    print '# of auto ex', len(km_idx)
-    print '# of manual ex', len(gt_idx)
-    print np.sum(label_md[km_idx]==label[km_idx])
-print acc
+    print '# of auto ex', len(auto_idx)
+    print '# of manual ex', len(ora_idx)
+    print 'acc of auto ex', np.sum(label_md[auto_idx]==label[auto_idx])/(float)(len(auto_idx))
+    break
 #print 'acc from Md', np.mean(acc_Md)
 ave_acc = [np.mean(acc) for acc in acc_sum]
 acc_std = [np.std(acc) for acc in acc_sum]
 
+print ex_num1
+print ex_num2
+print acc_H
+print acc_T
 print 'overall acc:', repr(ave_acc)
 #print 'acc std:', repr(acc_std)
 #print 'acc by type', repr(acc_type)
@@ -355,6 +371,7 @@ print 'overall acc:', repr(ave_acc)
 #print repr(ex)
 
 mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
+clf.fit(train_data,train_label)
 acc = clf.score(test_data, test_label)
 cm_ = CM(test_label, preds_fn)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
