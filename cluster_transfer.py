@@ -214,7 +214,7 @@ for i in input1:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
 
-iteration = 6
+iteration = 5
 fold = 2
 clx = 13
 kf = KFold(len(label), n_folds=fold, shuffle=True)
@@ -270,7 +270,8 @@ for train, test in kf:
         tmp[i].append(j)
     for k,v in tmp.items():
         for vv in v:
-            print k, input1[vv]
+            pass
+            #print k, input1[vv]
 
     ex = DD(list)
     dist = np.sort(c.transform(train_fn))
@@ -278,25 +279,25 @@ for train, test in kf:
         ex[i].append([j,k[0]])
     for i,j in ex.items():
         ex[i] = sorted(j, key=lambda x: x[-1])
-    auto_idx = []
-    ora_idx = []
 
-    ex_num1 = []
-    ex_num2 = []
+    ex_auto = []
+    ex_ora = []
+    ora_idx = []
+    auto_idx = []
+    for i in train:
+        if cf_md[i]>=0.8:
+            auto_idx.append(i)
     for itr in range(iteration):
         for k,v in ex.items():
             if len(v)>itr:
                 idx = v[itr][0]
-                if cf_md[idx] >=0.85:
-                    auto_idx.append(idx)
+                if idx not in auto_idx:
+                    ora_idx.append(idx)
                     #print k,label_md[idx],label[idx],cf_md[idx],input1[idx]
                 #elif cf_md[v[itr][0]] <=0.2:
-                else:
-                    ora_idx.append(idx)
                     #print '>>>>>',k,label_md[idx],label[idx],cf_md[idx],input1[idx]
 
-        ex_num1.append(len(ora_idx))
-        ex_num2.append(len(ora_idx)+len(auto_idx))
+        ex_ora.append(len(ora_idx))
         '''
         train_data = data1[train]
         train_label = label1[train]
@@ -305,16 +306,13 @@ for train, test in kf:
         '''
         train_data = fn[np.hstack((auto_idx,ora_idx))]
         train_label = np.hstack((label_md[auto_idx],label[ora_idx]))
-        train_label_ = label[np.hstack((auto_idx,ora_idx))]
+        #train_label_ = label[np.hstack((auto_idx,ora_idx))]
+        print ct(train_label)
 
         clf.fit(train_data,train_label)
         acc = clf.score(test_data,test_label)
-        acc_sum[itr].append(acc)
+        #acc_sum[itr].append(acc)
         acc_H.append(acc)
-        clf.fit(train_data,train_label_)
-        acc = clf.score(test_data,test_label)
-        acc_T.append(acc)
-        preds_fn = clf.predict(test_data)
         '''
         cm = CM(test_label,preds)
         cm = normalize(cm.astype(np.float), axis=1, norm='l1')
@@ -343,21 +341,23 @@ for train, test in kf:
         train = np.append(train, elmt)
         validate = validate[validate!=elmt]
         '''
-    print 'true label count for selected set:\n', ct(label[auto_idx])
-    print 'md label count for selected set:\n', ct(label_md[auto_idx])
+    #print 'true label count for selected set:\n', ct(label[auto_idx])
+    #print 'md label count for selected set:\n', ct(label_md[auto_idx])
     #print 'label count for selected set:\n', ct(train_label)
-    print '# of auto ex', len(auto_idx)
-    print '# of manual ex', len(ora_idx)
-    print 'acc of auto ex', np.sum(label_md[auto_idx]==label[auto_idx])/(float)(len(auto_idx))
+    #print '# of auto ex', len(auto_idx)
+    #print '# of manual ex', len(ora_idx)
+    #print 'acc of auto ex', np.sum(label_md[auto_idx]==label[auto_idx])/(float)(len(auto_idx))
     break
 #print 'acc from Md', np.mean(acc_Md)
 ave_acc = [np.mean(acc) for acc in acc_sum]
 acc_std = [np.std(acc) for acc in acc_sum]
 
-print ex_num1
-print ex_num2
+print ct(label_md[auto_idx])
+print 'acc of auto ex', np.sum(label_md[auto_idx]==label[auto_idx])/(float)(len(auto_idx))
+print len(auto_idx)
+print len(train_label)
+print ex_ora
 print acc_H
-print acc_T
 print 'overall acc:', repr(ave_acc)
 #print 'acc std:', repr(acc_std)
 #print 'acc by type', repr(acc_type)

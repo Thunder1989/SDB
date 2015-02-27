@@ -41,7 +41,7 @@ for i in input3:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
 
-vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1)
+vc = CV(analyzer='char_wb', ngram_range=(3,4))
 #vc = TV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
 fn = vc.fit_transform(name).toarray()
 fd = input4[:,[0,1,2,3,5,6,7]]
@@ -106,6 +106,7 @@ for train, test in kf:
     test_fn = fn[test]
     test_label = label[test]
 
+    acc_itr= []
     for rr in range(n_class):
     #for rr in range(1):
         train_fn = fn[km_idx]
@@ -156,6 +157,7 @@ for train, test in kf:
                     if v[i][0] not in km_idx:
                         km_idx.append(v[i][0])
                         print '>',k,label[v[i][0]],input3[v[i][0]]
+                        acc_itr.append(acc)
         print len(km_idx), 'training examples'
         '''
         train_fn = fn[km_idx]
@@ -175,6 +177,8 @@ for train, test in kf:
 #print len(train_label), 'training examples'
 print 'class count of clf training ex:', ct(train_label)
 print 'average acc:', np.mean(acc_sum), np.std(acc_sum)
+print repr(acc_itr)
+
 cm_ = CM(test_label, preds_fn)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
 fig = pl.figure()

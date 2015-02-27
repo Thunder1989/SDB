@@ -15,6 +15,7 @@ from collections import defaultdict as dd
 import numpy as np
 import math
 import random
+import re
 import pylab as pl
 
 '''
@@ -32,9 +33,13 @@ input3 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_forsdh').readlin
 input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 label1 = input2[:,-1]
 label = input4[:,-1]
+name = []
+for i in input3:
+    s = re.findall('(?i)[a-z]{2,}',i)
+    name.append(' '.join(s))
 
-iteration = 100
-fold = 5
+iteration = 140
+fold = 2
 #loo = LeaveOneOut(len(data))
 #skf = StratifiedKFold(label1, n_folds=fold)
 kf = KFold(len(label), n_folds=fold, shuffle=True)
@@ -49,17 +54,17 @@ acc_sum = [[] for i in range(iteration)]
 #precision_type = [[[] for i in range(iteration)] for i in range(6)]
 #recall_type = [[[] for i in range(iteration)] for i in range(6)]
 #clf = ETC(n_estimators=10, criterion='entropy')
-clf = RFC(n_estimators=50, criterion='entropy')
+clf = RFC(n_estimators=100, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = Ada(n_estimators=100)
 #clf = SVC(kernel='linear')
 
-vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
-fn = vc.fit_transform(input3).toarray()
+vc = CV(analyzer='char_wb', ngram_range=(3,4))
+fn = vc.fit_transform(name).toarray()
 for fd in range(fold):
     train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
-    validate = np.hstack((folds[(fd+x)%fold] for x in range(1,fold/2)))
-    validate = np.hstack((train,validate))
+    #validate = np.hstack((folds[(fd+x)%fold] for x in range(1,fold/2)))
+    #validate = np.hstack((train,validate))
     '''
     ex_dict = dd(list)
     train_label = label[validate]
@@ -74,7 +79,9 @@ for fd in range(fold):
         validate = validate[validate!=v[0]]
     '''
     #cut train to one example
-    validate = np.append(validate,train[2:])
+    #validate = np.append(validate,train[2:])
+    random.shuffle(train)
+    validate = train[2:]
     train = train[:2]
 
     #print len(train)
@@ -156,12 +163,12 @@ for fd in range(fold):
         #Entropy-based, sort and pick the one with largest H
         res = sorted(res, key=lambda x: x[-2], reverse=True)
         idx = 0
-
+        '''
 
         #Margin-based, sort and pick the one with least margin
         res = sorted(res, key=lambda x: x[-1])
         idx = 0
-
+        '''
 
         #least confidence based
         tmp = sorted(label_pr, key=lambda x: x[-1])
@@ -174,14 +181,13 @@ for fd in range(fold):
         res = sorted(res, key=lambda x: x[3])
         idx = 0
 
-        '''
+
         #randomly pick one
         idx = random.randint(0,len(res)-1)
-
+        '''
 
         elmt = res[idx][0]
-        #print 'running fold %d iter %d'%(fd, itr)
-        #print label1[elmt]
+        print 'itr',itr,label[elmt],input3[elmt]
 
         '''
         #minimal future expected error
