@@ -285,7 +285,7 @@ for train, test in kf:
     ora_idx = []
     auto_idx = []
     for i in train:
-        if cf_md[i]>=0.8:
+        if cf_md[i]>=0.9:
             auto_idx.append(i)
     for itr in range(iteration):
         for k,v in ex.items():
@@ -306,13 +306,16 @@ for train, test in kf:
         '''
         train_data = fn[np.hstack((auto_idx,ora_idx))]
         train_label = np.hstack((label_md[auto_idx],label[ora_idx]))
-        #train_label_ = label[np.hstack((auto_idx,ora_idx))]
+        train_label_ = label[np.hstack((auto_idx,ora_idx))]
         print ct(train_label)
 
         clf.fit(train_data,train_label)
         acc = clf.score(test_data,test_label)
         #acc_sum[itr].append(acc)
         acc_H.append(acc)
+        clf.fit(train_data,train_label_)
+        acc = clf.score(test_data,test_label)
+        acc_T.append(acc)
         '''
         cm = CM(test_label,preds)
         cm = normalize(cm.astype(np.float), axis=1, norm='l1')
@@ -355,10 +358,10 @@ acc_std = [np.std(acc) for acc in acc_sum]
 print ct(label_md[auto_idx])
 print 'acc of auto ex', np.sum(label_md[auto_idx]==label[auto_idx])/(float)(len(auto_idx))
 print len(auto_idx)
-print len(train_label)
 print ex_ora
 print acc_H
-print 'overall acc:', repr(ave_acc)
+print acc_T
+#print 'overall acc:', repr(ave_acc)
 #print 'acc std:', repr(acc_std)
 #print 'acc by type', repr(acc_type)
 #f = open('pipe_out','w')

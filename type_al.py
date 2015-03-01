@@ -1,10 +1,9 @@
 from sklearn.feature_extraction.text import CountVectorizer as CV
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.cross_validation import KFold
+
 from sklearn.tree import DecisionTreeClassifier as DT
 from sklearn.ensemble import RandomForestClassifier as RFC
-from sklearn.ensemble import ExtraTreesClassifier as ETC
-from sklearn.ensemble import AdaBoostClassifier as Ada
 from sklearn.svm import SVC
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
@@ -12,6 +11,8 @@ from sklearn.metrics import confusion_matrix as CM
 from sklearn import tree
 from sklearn.preprocessing import normalize
 from collections import defaultdict as dd
+from collections import Counter as ct
+
 import numpy as np
 import math
 import random
@@ -89,6 +90,8 @@ for fd in range(fold):
     test_data = fn[test]
     test_label = label[test]
 
+    ex_50 = []
+    ex_all = []
     for itr in range(iteration):
         #if itr%10==0:
         #    print 'running fold %d iter %d'%(fd, itr)
@@ -188,7 +191,9 @@ for fd in range(fold):
 
         elmt = res[idx][0]
         print 'itr',itr,label[elmt],input3[elmt]
-
+        ex_all.append(label[elmt])
+        if itr>=60:
+            ex_50.append(label[elmt])
         '''
         #minimal future expected error
         loss = []
@@ -226,12 +231,15 @@ for fd in range(fold):
         '''
 
         #remove the item from validate set
-        #add it to train set
+        #add it to training set
         train = np.append(train, elmt)
         validate = validate[validate!=elmt]
         #train_idx.append(elmt)
         #test_idx.remove(elmt)
+    print 'ex after 50 itr', ct(ex_50)
+    print 'ex all', ct(ex_all)
 
+print 'f count on all ex', ct(label)
 ave_acc = [np.mean(acc) for acc in acc_sum]
 acc_std = [np.std(acc) for acc in acc_sum]
 '''
