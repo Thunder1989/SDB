@@ -41,21 +41,21 @@ for i in input3:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
 
-vc = CV(analyzer='char_wb', ngram_range=(3,4))
-#vc = TV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
-fn = vc.fit_transform(name).toarray()
+cv = CV(analyzer='char_wb', ngram_range=(3,4))
+tv = TV(analyzer='char_wb', ngram_range=(3,4))
+fn = cv.fit_transform(name).toarray()
 fd = input4[:,[0,1,2,3,5,6,7]]
 print 'class count of true labels of all ex:\n', ct(label)
 #n_class = len(np.unique(label))
 #print n_class
 #print np.unique(label)
 #print 'class count from groud truth labels:\n',ct(label)
-#kmer = vc.get_feature_names()
-#idf = zip(kmer, vc._tfidf.idf_)
+#kmer = cv.get_feature_names()
+#idf = zip(kmer, cv._tfidf.idf_)
 #idf = sorted(idf, key=lambda x: x[-1], reverse=True)
 #print idf[:20]
 #print idf[-20:]
-#print vc.get_feature_names()
+#print cv.get_feature_names()
 
 fold = 2
 rounds = 1
@@ -70,7 +70,7 @@ for train, test in kf:
     print 'class count of true labels on cluster training ex:\n', ct(label[train])
     train_fd = fn[train]
     #n_class = len(np.unique(label[train]))
-    n_class = 30
+    n_class = 15
     #print '# of training class', n_class
     c = AC(n_clusters=n_class, affinity='cosine', linkage='average')
     c.fit(train_fd)
@@ -79,7 +79,8 @@ for train, test in kf:
         tmp[i].append(j)
     for k,v in tmp.items():
         for vv in v:
-            print k, input3[vv]
+            pass
+            #print k, input3[vv]
     print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
     c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
     c.fit(train_fd)
@@ -88,7 +89,8 @@ for train, test in kf:
         tmp[i].append(j)
     for k,v in tmp.items():
         for vv in v:
-            print k, input3[vv]
+            pass
+            #print k, input3[vv]
     dist = np.sort(c.transform(train_fd))
     ex = dd(list)
     for i,j,k in zip(c.labels_, train, dist):
@@ -107,11 +109,12 @@ for train, test in kf:
     test_label = label[test]
 
     acc_itr= []
-    for rr in range(n_class):
+    cl_id = []
+    for rr in range(3*n_class):
     #for rr in range(1):
         train_fn = fn[km_idx]
         train_label = label[km_idx]
-        #print ct(train_label)
+        print 'ct on traing label', ct(train_label)
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
         preds_c = clf.predict(fn[train]) #predict labels for cluster learning set
@@ -125,26 +128,56 @@ for train, test in kf:
         debug = dd(list)
         for i,j,k in zip(c.labels_, preds_c, train):
             sub_pred[i].append(j)
-            debug[j].append((i,input3[k]))
+            debug[i].append((j,label[k],input3[k]))
         for i,j in debug.items():
+            #print '---',len(j),'---'
             for jj in j:
-                #print '<<', i, jj
                 pass
+                #print '<<', i, jj
+
         rank = []
         for k,v in sub_pred.items():
             count = ct(v).values()
             count[:] = [i/float(max(count)) for i in count]
-            H = np.sum(-math.pi*math.log(p, 2) for p in count if p!=0)
+            H = np.sum(-p*math.log(p, 2) for p in count if p!=0)
+            #H *= len(v)/float(len(train))
             rank.append([k,len(v),H])
+            #if rr+1 == 3*n_class:
+            print k,'---',len(v), H
+
+        '''
+        ss = raw_input('')
+        while ss!='+':
+            l = debug[int(ss)]
+            for ll in l:
+                print '<<', ss, ll
+            ss = raw_input('')
+        '''
+
         rank = sorted(rank, key=lambda x: x[-1], reverse=True)
         #print rank
-        print 'iteration', rr, '>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+        print 'iteration', rr, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
         idx = rank[0][0] #pick the id of the 1st cluster on the rank
+        cl_id.append(idx)
+        l = debug[idx]
+        for ll in l:
+            print '<<', idx, ll
         c_id = [i[0] for i in ex[idx]]
         sub_label = sub_pred[idx]
         sub_fn = fn[c_id]
+        #name_ = []
+        #for cc in c_id:
+        #    name_.append(name[cc])
+        #sub_fn = tv.fit_transform(name_).toarray()
         c_ = KMeans(init='k-means++', n_clusters=len(np.unique(sub_label)), n_init=10)
         c_.fit(sub_fn)
+        c_sub = dd(list)
+        for i,j in zip(c_.labels_, train):
+            c_sub[i].append(input3[j])
+        print 'sub clusters in', idx
+        for k,v in c_sub.items():
+            for vv in v:
+                print k, vv
         dist = np.sort(c_.transform(sub_fn))
         ex_ = dd(list)
         for i,j,k in zip(c_.labels_, c_id, dist):
@@ -174,6 +207,7 @@ for train, test in kf:
     print '---------------------------------------------'
     print '---------------------------------------------'
 
+print cl_id
 #print len(train_label), 'training examples'
 print 'class count of clf training ex:', ct(train_label)
 print 'average acc:', np.mean(acc_sum), np.std(acc_sum)

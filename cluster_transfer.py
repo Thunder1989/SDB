@@ -346,7 +346,6 @@ for train, test in kf:
         '''
     #print 'true label count for selected set:\n', ct(label[auto_idx])
     #print 'md label count for selected set:\n', ct(label_md[auto_idx])
-    #print 'label count for selected set:\n', ct(train_label)
     #print '# of auto ex', len(auto_idx)
     #print '# of manual ex', len(ora_idx)
     #print 'acc of auto ex', np.sum(label_md[auto_idx]==label[auto_idx])/(float)(len(auto_idx))

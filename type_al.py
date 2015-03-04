@@ -90,6 +90,7 @@ for fd in range(fold):
     test_data = fn[test]
     test_label = label[test]
 
+    ex_30 = []
     ex_50 = []
     ex_all = []
     for itr in range(iteration):
@@ -192,6 +193,8 @@ for fd in range(fold):
         elmt = res[idx][0]
         print 'itr',itr,label[elmt],input3[elmt]
         ex_all.append(label[elmt])
+        if itr<=30:
+            ex_30.append(label[elmt])
         if itr>=60:
             ex_50.append(label[elmt])
         '''
@@ -236,6 +239,7 @@ for fd in range(fold):
         validate = validate[validate!=elmt]
         #train_idx.append(elmt)
         #test_idx.remove(elmt)
+    print 'ex before 30 itr', ct(ex_30)
     print 'ex after 50 itr', ct(ex_50)
     print 'ex all', ct(ex_all)
 
