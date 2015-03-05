@@ -70,7 +70,7 @@ for train, test in kf:
     print 'class count of true labels on cluster training ex:\n', ct(label[train])
     train_fd = fn[train]
     #n_class = len(np.unique(label[train]))
-    n_class = 15
+    n_class = 30
     #print '# of training class', n_class
     c = AC(n_clusters=n_class, affinity='cosine', linkage='average')
     c.fit(train_fd)
@@ -84,17 +84,17 @@ for train, test in kf:
     print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
     c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
     c.fit(train_fd)
-    tmp = dd(list)
-    for i,j in zip(c.labels_, train):
-        tmp[i].append(j)
-    for k,v in tmp.items():
-        for vv in v:
-            pass
-            #print k, input3[vv]
     dist = np.sort(c.transform(train_fd))
     ex = dd(list)
+    debug=dd(list)
     for i,j,k in zip(c.labels_, train, dist):
         ex[i].append([j,k[0]])
+        debug[i].append([label[j],k[0],k[1],input3[j]])
+    for k,v in debug.items():
+        for vv in v:
+            #pass
+            print k, vv
+    ss=raw_input()
     for i,j in ex.items():
         ex[i] = sorted(j, key=lambda x: x[-1])
     km_idx = []
@@ -110,7 +110,7 @@ for train, test in kf:
 
     acc_itr= []
     cl_id = []
-    for rr in range(3*n_class):
+    for rr in range(n_class):
     #for rr in range(1):
         train_fn = fn[km_idx]
         train_label = label[km_idx]
@@ -140,7 +140,7 @@ for train, test in kf:
             count = ct(v).values()
             count[:] = [i/float(max(count)) for i in count]
             H = np.sum(-p*math.log(p, 2) for p in count if p!=0)
-            #H *= len(v)/float(len(train))
+            #H /= len(v)/float(len(train))
             rank.append([k,len(v),H])
             #if rr+1 == 3*n_class:
             print k,'---',len(v), H

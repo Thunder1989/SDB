@@ -277,6 +277,7 @@ for train, test in kf:
     dist = np.sort(c.transform(train_fn))
     for i,j,k in zip(c.labels_,train,dist):
         ex[i].append([j,k[0]])
+        print i,k[0],input3[j]
     for i,j in ex.items():
         ex[i] = sorted(j, key=lambda x: x[-1])
 

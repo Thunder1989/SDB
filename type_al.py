@@ -2,6 +2,8 @@ from sklearn.feature_extraction.text import CountVectorizer as CV
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.cross_validation import KFold
 
+from sklearn.cluster import KMeans
+from sklearn.mixture import GMM
 from sklearn.tree import DecisionTreeClassifier as DT
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.svm import SVC
@@ -17,6 +19,7 @@ import numpy as np
 import math
 import random
 import re
+import operator
 import pylab as pl
 
 '''
@@ -39,7 +42,7 @@ for i in input3:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
 
-iteration = 140
+iteration = 200
 fold = 2
 #loo = LeaveOneOut(len(data))
 #skf = StratifiedKFold(label1, n_folds=fold)
@@ -79,7 +82,30 @@ for fd in range(fold):
         #remove train ex id from validate, the rest is the new validate
         validate = validate[validate!=v[0]]
     '''
-    #cut train to one example
+    n_class = 15
+    #c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
+    g = GMM(n_components=n_class*2, covariance_type='spherical', init_params='wmc', n_iter=100)
+    train_data = fn[train]
+    g.fit(train_data)
+    #g.means_ = np.array([x_train[y_train == i].mean(axis=0) for i in np.unique(y_train)])
+    #print g.means_
+    #preds = g.predict(train_data)
+    w = g.weights_
+    pr = g.predict_proba(train_data)
+    #dist = np.sort(c.transform(train_data))
+    #w = [1]*n_class
+    #computing the prior of each cluster
+    w_ = np.ones(len(w))
+    while sum(abs(w_-w)) > 0.01:
+        w = w_
+        p_x = np.array([w*p for p in pr])
+        p_x = np.array([i/j for i,j in zip(p_x, np.sum(p_x, axis=1, dtype=float))])
+        w_ = np.sum(p_x, axis=0)/p_x.shape[0]
+
+    p_x = dd(list)
+    for i,j in zip(train,pr):
+        p_x[i] = sum(w_*j)
+    #print sorted(p_x.items(),key=operator.itemgetter(1))
     #validate = np.append(validate,train[2:])
     random.shuffle(train)
     validate = train[2:]
@@ -160,6 +186,8 @@ for fd in range(fold):
                 margin = 1
             else:
                 margin = pr[-1]-pr[-2]
+            #margin = 1 - margin
+            #margin *= p_x[h]
             res.append([h,i,margin])
         #print 'iter', itr, 'wrong #', len(wrong)
 
@@ -170,6 +198,7 @@ for fd in range(fold):
         '''
 
         #Margin-based, sort and pick the one with least margin
+        #res = sorted(res, key=lambda x: x[-1], reverse=True)
         res = sorted(res, key=lambda x: x[-1])
         idx = 0
         '''
@@ -191,11 +220,11 @@ for fd in range(fold):
         '''
 
         elmt = res[idx][0]
-        print 'itr',itr,label[elmt],input3[elmt]
+        print 'itr',itr,res[idx][-1],label[elmt],input3[elmt]
         ex_all.append(label[elmt])
-        if itr<=30:
+        if itr<=50:
             ex_30.append(label[elmt])
-        if itr>=60:
+        if itr>=50:
             ex_50.append(label[elmt])
         '''
         #minimal future expected error
