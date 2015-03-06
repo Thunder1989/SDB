@@ -54,7 +54,7 @@ for train, test in kf:
     i+=1
 
 acc_sum = [[] for i in range(iteration)]
-#acc_type = [[[] for i in range(iteration)] for i in range(6)]
+tp_type = [[] for i in range(17)]
 #precision_type = [[[] for i in range(iteration)] for i in range(6)]
 #recall_type = [[[] for i in range(iteration)] for i in range(6)]
 #clf = ETC(n_estimators=10, criterion='entropy')
@@ -65,7 +65,9 @@ clf = RFC(n_estimators=100, criterion='entropy')
 
 vc = CV(analyzer='char_wb', ngram_range=(3,4))
 fn = vc.fit_transform(name).toarray()
-for fd in range(fold):
+ex = []
+for fd in range(1):
+#for fd in range(fold):
     train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
     #validate = np.hstack((folds[(fd+x)%fold] for x in range(1,fold/2)))
     #validate = np.hstack((train,validate))
@@ -133,6 +135,12 @@ for fd in range(fold):
         acc = clf.score(test_data, test_label)
         acc_sum[itr].append(acc)
 
+        cm = CM(test_label,preds)
+        cm = normalize(cm.astype(np.float), axis=1, norm='l1')
+        k=0
+        while k<len(cm):
+            tp_type[k].append(cm[k,k])
+            k += 1
         '''
         cm_ = CM(test_label,preds)
         cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
@@ -222,6 +230,7 @@ for fd in range(fold):
         elmt = res[idx][0]
         print 'itr',itr,res[idx][-1],label[elmt],input3[elmt]
         ex_all.append(label[elmt])
+        ex.extend([itr+1, elmt, label[elmt]])
         if itr<=50:
             ex_30.append(label[elmt])
         if itr>=50:
@@ -272,9 +281,17 @@ for fd in range(fold):
     print 'ex after 50 itr', ct(ex_50)
     print 'ex all', ct(ex_all)
 
+cm_cls = np.unique(np.hstack((test_label,preds)))
+f = open('al_out','w')
+f.writelines('%s;\n'%repr(i) for i in tp_type)
+f.write('ex in each itr:'+repr(ex)+'\n')
+f.write(repr(cm_cls))
+f.close()
+
 print 'f count on all ex', ct(label)
 ave_acc = [np.mean(acc) for acc in acc_sum]
 acc_std = [np.std(acc) for acc in acc_sum]
+
 '''
 ave_acc_type = [[] for i in range(6)]
 ave_pre = [[] for i in range(6)]
