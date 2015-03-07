@@ -67,8 +67,8 @@ for train, test in kf:
 '''
 acc_ = []
 #clf = SVC(kernel='linear')
-clf = RFC(n_estimators=50, criterion='entropy')
-rounds = 10
+clf = RFC(n_estimators=100, criterion='entropy')
+rounds = 1
 print 'total rounds of', rounds
 #f = open('c_out2','w')
 acc_sum = []
@@ -76,7 +76,7 @@ for train, test in kf:
     train_fd = fn[train]
     n_class = len(np.unique(label[train]))
     #print '# of training class', n_class
-    g = GMM(n_components=n_class*3, covariance_type='spherical', init_params='wmc', n_iter=100)
+    g = GMM(n_components=n_class*2, covariance_type='spherical', init_params='wmc', n_iter=100)
     g.fit(train_fd)
     #g.means_ = np.array([x_train[y_train == i].mean(axis=0) for i in np.unique(y_train)])
     #print g.means_
@@ -170,7 +170,7 @@ for train, test in kf:
     train_fd = fn[train]
     n_class = len(np.unique(label[train]))
     #print '# of training class', n_class
-    c = KMeans(init='k-means++', n_clusters=n_class*3, n_init=10)
+    c = KMeans(init='k-means++', n_clusters=n_class*2, n_init=10)
     c.fit(train_fd)
 #preds = c.predict(x_test)
 #print metrics.homogeneity_completeness_v_measure(y_test,preds)
@@ -248,7 +248,7 @@ for train, test in kf:
     train_fd = fn[train]
     n_class = len(np.unique(label[train]))
     #print '# of training class', n_class
-    c = KMeans(init='k-means++', n_clusters=n_class*3, n_init=10)
+    c = KMeans(init='k-means++', n_clusters=n_class*2, n_init=10)
     c.fit(train_fd)
     ex = dd(list)
     for i,j in zip(c.labels_, train):
