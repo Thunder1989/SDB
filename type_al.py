@@ -43,7 +43,7 @@ for i in input3:
     name.append(' '.join(s))
 
 iteration = 180
-fold = 3
+fold = 10
 #loo = LeaveOneOut(len(data))
 #skf = StratifiedKFold(label1, n_folds=fold)
 kf = KFold(len(label), n_folds=fold, shuffle=True)
@@ -65,10 +65,11 @@ clf = RFC(n_estimators=100, criterion='entropy')
 
 vc = CV(analyzer='char_wb', ngram_range=(3,4))
 fn = vc.fit_transform(name).toarray()
-#for fd in range(fold):
-for fd in range(1):
+for fd in range(fold):
+#for fd in range(1):
+    print 'fold...', fd
     ex = []
-    train = np.hstack((folds[(fd+x)%fold] for x in range(2)))
+    train = np.hstack((folds[(fd+x)%fold] for x in range(fold-1)))
     #validate = np.hstack((folds[(fd+x)%fold] for x in range(1,fold/2)))
     #validate = np.hstack((train,validate))
     '''
@@ -114,7 +115,7 @@ for fd in range(1):
     train = train[:2]
 
     #print len(train)
-    test = np.hstack((folds[(fd+x)%fold] for x in range(2,fold)))
+    test = np.hstack((folds[(fd+x)%fold] for x in range(fold-1,fold)))
     test_data = fn[test]
     test_label = label[test]
 
@@ -228,7 +229,7 @@ for fd in range(1):
         '''
 
         elmt = res[idx][0]
-        print 'itr',itr,res[idx][-1],label[elmt],input3[elmt]
+        #print 'itr',itr,res[idx][-1],label[elmt],input3[elmt]
         ex_all.append(label[elmt])
         ex.extend([itr+1, elmt, label[elmt]])
         if itr<50:
