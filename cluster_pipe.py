@@ -76,11 +76,12 @@ for train, test in kf:
     c.fit(train_fd)
     tmp = dd(list)
     for i,j in zip(c.labels_, train):
-        tmp[i].append(j)
+        tmp[i].append([label[j], input3[j]])
     for k,v in tmp.items():
         for vv in v:
-            pass
-            #print k, input3[vv]
+            #pass
+            print k, vv
+    ss=raw_input()
     print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
     c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
     c.fit(train_fd)
@@ -89,7 +90,8 @@ for train, test in kf:
     debug=dd(list)
     for i,j,k in zip(c.labels_, train, dist):
         ex[i].append([j,k[0]])
-        debug[i].append([label[j],k[0],k[1],input3[j]])
+        #debug[i].append([label[j],k[0],k[1],input3[j]])
+        debug[i].append([label[j],input3[j]])
     for k,v in debug.items():
         for vv in v:
             #pass
