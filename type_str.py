@@ -25,7 +25,7 @@ input3 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlin
 input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 label1 = input2[:,-1]
 label = input4[:,-1]
-input3, label = shuffle(input3, label)
+#input3, label = shuffle(input3, label)
 
 name = []
 for i in input3:
@@ -36,7 +36,7 @@ for i in input3:
 fold = 10
 #clx = len(np.unique(label))
 clx = 10
-skf = StratifiedKFold(label, n_folds=fold)
+skf = StratifiedKFold(label, n_folds=fold, shuffle=True)
 acc_sum = []
 indi_acc =[[] for i in range(clx)]
 #clf = RFC(n_estimators=100, criterion='entropy')
@@ -47,12 +47,15 @@ clf = SVC(kernel='linear')
 #vc = CV(token_pattern='[a-z]{2,}')
 #vc = TV(analyzer='char_wb', ngram_range=(3,4))
 vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
+#fn = vc.fit_transform(name).toarray()
 fn = vc.fit_transform(input3).toarray()
 #print vc.get_feature_names()
 #vc.fit(input1)
 #data1 = vc.transform(input1).toarray()
 #data2 = vc.transform(input3).toarray()
+
 for train_idx, test_idx in skf:
+#for test_idx,train_idx in skf:
     '''
     because we want to do inverse k-fold XV
     aka, use 1 fold to train, k-1 folds to test
