@@ -66,7 +66,7 @@ rounds = 5
 clf = LinearSVC()
 #clf = SVC(kernel='linear')
 #clf = RFC(n_estimators=100, criterion='entropy')
-'''
+
 clf.fit(fn, label)
 coef = abs(clf.coef_)
 weight = np.max(coef, axis=0)
@@ -81,7 +81,7 @@ for i in feature_rank:
         feature_idx.append(i[1])
 #print 'feature num', len(feature_idx)
 fn = fn[:, feature_idx]
-'''
+
 '''
 same = []
 diff = []
@@ -161,6 +161,7 @@ for train, test in kf:
     test_fn = fn[test]
     test_label = label[test]
 
+    '''
     #find neighbors for each ex within each cluster
     neighbor = dd(list)
     for v in ex.values():
@@ -168,12 +169,12 @@ for train, test in kf:
         pair = list(itertools.combinations(idx,2))
         for p in pair:
             d = np.linalg.norm(fn[p[0]]-fn[p[1]])
-            if d>=4:
+            if d>=6:
                 neighbor[p[0]].append([p[1],d])
                 neighbor[p[1]].append([p[0],d])
     for k,v in neighbor.items():
         neighbor[k] = sorted(v, key=lambda x: x[-1])
-
+    '''
     acc_itr= []
     cl_id = []
     ex_al = []
@@ -194,7 +195,7 @@ for train, test in kf:
         #print 'class count of predicted labels on cluster learning ex:\n', ct(preds_c)
         acc_sum[rr].append(acc)
         acc_itr.append(acc)
-
+        '''
         for k in ex.keys():
             prev = ex_cur[k]
             nb = neighbor[prev]
@@ -215,7 +216,6 @@ for train, test in kf:
             for jj in j:
                 pass
                 #print '<<', i, jj
-        '''
         '''
         #the original H based cluster selection
         rank = []
@@ -247,7 +247,6 @@ for train, test in kf:
         for ll in l:
             print '<<', idx, ll
         '''
-        '''
         for cc,ll in sub_pred.items():
             print 'cluster',cc,'# of ex.', len(ll),'# predicted L', len(np.unique(ll))
             c_id = [i[0] for i in ex[cc]] #example id of the cluster picked
@@ -272,14 +271,20 @@ for train, test in kf:
                 ex_[i].append([j,l,k[0]])
             for i,j in ex_.items(): #sort by ex. dist to the centroid for each C
                 ex_[i] = sorted(j, key=lambda x: x[-1])
-            for k,v in ex_.items():
-                if v[0][0] not in km_idx:
-                    km_idx.append(v[0][0])
-                    ex_al.append([rr,cc,v[0][-2],label[v[0][0]],input3[v[0][0]]])
-                    #print '>',k,label[v[i][0]],input3[v[i][0]]
-                    #acc_itr.append(acc)
+            flag = False #stop or not
+            for i in xrange(rounds):
+                if flag:
                     break
-        '''
+                for k,v in ex_.items():
+                    if len(v)<=i:
+                        continue
+                    if v[i][0] not in km_idx:
+                        km_idx.append(v[i][0])
+                        ex_al.append([rr,cc,v[i][-2],label[v[i][0]],input3[v[i][0]]])
+                        #print '>',k,label[v[i][0]],input3[v[i][0]]
+                        #acc_itr.append(acc)
+                        flag = True
+                        break
         print len(km_idx), 'training examples'
         '''
         train_fn = fn[km_idx]
