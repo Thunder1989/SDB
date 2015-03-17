@@ -35,14 +35,14 @@ input1 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_forrice').read
 input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
 input3 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_forsdh').readlines()]
 input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
-label1 = input2[:,-1]
-label = input4[:,-1]
+label = input2[:,-1]
+label1 = input4[:,-1]
 name = []
 for i in input3:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
 
-iteration = 180
+iteration = 100
 fold = 10
 #loo = LeaveOneOut(len(data))
 #skf = StratifiedKFold(label1, n_folds=fold)
@@ -64,7 +64,8 @@ clf = RFC(n_estimators=100, criterion='entropy')
 #clf = SVC(kernel='linear')
 
 vc = CV(analyzer='char_wb', ngram_range=(3,4))
-fn = vc.fit_transform(name).toarray()
+#fn = vc.fit_transform(name).toarray()
+fn = vc.fit_transform(input1).toarray()
 for fd in range(fold):
 #for fd in range(1):
     print 'fold...', fd
