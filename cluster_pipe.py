@@ -7,6 +7,7 @@ import itertools
 import pylab as pl
 from scikits.statsmodels.tools.tools import ECDF
 from scipy import stats
+from scipy.optimize import curve_fit
 from time import time
 from collections import defaultdict as dd
 from collections import Counter as ct
@@ -50,7 +51,7 @@ for i in input3:
     name.append(' '.join(s))
 
 cv = CV(analyzer='char_wb', ngram_range=(3,4))
-tv = TV(analyzer='char_wb', ngram_range=(3,4))
+#tv = TV(analyzer='char_wb', ngram_range=(3,4))
 fn = cv.fit_transform(name).toarray()
 #fn = cv.fit_transform(input1).toarray()
 fd = input4[:,[0,1,2,3,5,6,7]]
@@ -89,7 +90,7 @@ fn = fn[:, feature_idx]
 
 #fn = fd
 #fn = StandardScaler().fit_transform(fn)
-
+'''
 n_class = 16
 c = KMeans(init='k-means++', n_clusters=2*n_class, n_init=10)
 c.fit(fn)
@@ -100,21 +101,21 @@ for i,j in zip(c.labels_, xrange(len(fn))):
 same = []
 diff = []
 all = []
-#for i in xrange(len(fn)):
-#    for j in xrange(0,i):
-#        d = np.linalg.norm(fn[i]-fn[j])
-for v in ex_id.values():
-    pair = list(itertools.combinations(v,2))
-    for p in pair:
-        d = np.linalg.norm(fn[p[0]]-fn[p[1]])
+for i in xrange(len(fn)):
+    for j in xrange(0,i):
+        d = np.linalg.norm(fn[i]-fn[j])
+#for v in ex_id.values():
+#    pair = list(itertools.combinations(v,2))
+#    for p in pair:
+#        d = np.linalg.norm(fn[p[0]]-fn[p[1]])
         all.append(d)
-        #if label[i] == label[j]:
-        if label[p[0]] == label[p[1]]:
+        if label[i] == label[j]:
+        #if label[p[0]] == label[p[1]]:
             same.append(d)
         else:
             diff.append(d)
-print len(same)
-print len(diff)
+#print len(same)
+#print len(diff)
 #t,p = stats.ttest_ind(same, diff, equal_var=False)
 #print t,p
 #y1 = np.mean(same)
@@ -126,9 +127,10 @@ print len(diff)
 #T = (y1-y2)/np.sqrt(s1/n1 + s2/n2)
 #print T
 
-src = same
-ecdf = ECDF(src)
+#src = same
+#ecdf = ECDF(src)
 #plt.plot(ecdf.x, ecdf.y, 'b--', label='within')
+
 x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
 y = ecdf(x)
 plt.plot(x, y, 'r--', label='within')
@@ -137,16 +139,17 @@ ecdf = ECDF(src)
 x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
 y = ecdf(x)
 plt.plot(x, y, 'b--', label='across')
+
 src = all
 ecdf = ECDF(src)
 x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
 y = ecdf(x)
-plt.plot(x, y, 'k--', label='all')
-plt.legend(loc='lower right')
-plt.grid(axis='y')
-plt.show()
-s = raw_input()
-
+#plt.plot(x, y, 'k--', label='all')
+#plt.legend(loc='lower right')
+#plt.grid(axis='y')
+#plt.show()
+#s = raw_input()
+'''
 
 #kf = StratifiedKFold(label, n_folds=fold, shuffle=True)
 kf = KFold(len(label), n_folds=fold, shuffle=True)
@@ -154,7 +157,7 @@ mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',
 #X = StandardScaler().fit_transform(fn)
 acc_sum = [[] for i in xrange(rounds)]
 acc_ave = dd(list)
-tao = 2
+tao = 0
 for train, test in kf:
     print 'class count of true labels on cluster training ex:\n', ct(label[train])
     train_fd = fn[train]
@@ -171,7 +174,7 @@ for train, test in kf:
             pass
             #print k, vv
     print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
-    c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
+    c = KMeans(init='k-means++', n_clusters=2*n_class, n_init=10)
     c.fit(train_fd)
     dist = np.sort(c.transform(train_fd))
     ex = dd(list) #example id, distance to centroid
@@ -190,32 +193,78 @@ for train, test in kf:
     for i,j in ex.items():
         ex[i] = sorted(j, key=lambda x: x[-1])
     km_idx = []
-    train_idx = []
+    p_idx = []
+    p_label = []
     print 'initial exs from k clusters centroid=============================='
-    ex_cur = dd(list)
     for k,v in ex.items():
         for i in range(1):
             if len(v)<=i:
                 continue
             idx = v[i][0]
-            tmp = []
-            for e in ex_id[k]:
-                if e == idx:
-                    continue
-                d = np.linalg.norm(fn[e]-fn[idx])
-                if d<=tao:
-                    train_idx.append(e)
-                else:
-                    tmp.append(e)
-            if not tmp:
-                ex_id.pop(k)
-            else:
-                ex_id[k] = tmp
             km_idx.append(idx)
-            train_idx.append(idx)
-            ex_cur[k] = idx
             print k,label[idx],input3[idx]
-    print len(km_idx), 'training examples'
+    #print len(km_idx), 'training examples'
+
+    def sigmoid(x, x0, k):
+        y = 1 / (1 + np.exp(-k*(x-x0)))
+        return y
+
+    #compute the all pair distribution, set tao to min_X
+    fit_dist = []
+    fit_same = []
+    fit_diff = []
+    pair = list(itertools.combinations(km_idx,2))
+    for p in pair:
+        d = np.linalg.norm(fn[p[0]]-fn[p[1]])
+        fit_dist.append(d)
+        if label[p[0]] == label[p[1]]:
+            fit_same.append(d)
+        else:
+            fit_diff.append(d)
+    src = fit_dist
+    ecdf = ECDF(src)
+    xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
+    ydata = ecdf(xdata)
+    tao = min(xdata)
+    '''
+    #popt, pcov = curve_fit(sigmoid, xdata, ydata)
+    #print popt
+    #x_p = np.linspace(min(src), max(src), 100)
+    #y_p = sigmoid(x_p, popt[0],popt[1])
+    plt.plot(x, y, 'r', label='all_true')
+    #plt.plot(x_p, y_p, 'k--', label='fit')
+    plt.plot(xdata, ydata, 'k', label='all_prx')
+    src = fit_same
+    ecdf = ECDF(src)
+    xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
+    ydata = ecdf(xdata)
+    plt.plot(xdata, ydata, 'r--', label='same_prx')
+    src = fit_diff
+    ecdf = ECDF(src)
+    xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
+    ydata = ecdf(xdata)
+    plt.plot(xdata, ydata, 'k--', label='diff_prx')
+    plt.legend(loc='lower right')
+    plt.grid(axis='y')
+    plt.show()
+    '''
+    #with tao, excluding the exs near initial C centroid
+    for k,idx in zip(ex.keys(),km_idx):
+        tmp = []
+        for e in ex_id[k]:
+            if e == idx:
+                continue
+            d = np.linalg.norm(fn[e]-fn[idx])
+            if d<tao:
+                p_idx.append(e)
+                p_label.append(label[idx])
+            else:
+                tmp.append(e)
+        if not tmp:
+            ex_id.pop(k)
+        else:
+            ex_id[k] = tmp
+
     test_fn = fn[test]
     test_label = label[test]
 
@@ -240,8 +289,8 @@ for train, test in kf:
     #for rr in range(n_class):
     for rr in range(rounds):
         ex_num.append(len(km_idx))
-        train_fn = fn[train_idx]
-        train_label = label[train_idx]
+        train_fn = fn[np.hstack((km_idx, p_idx))]
+        train_label = np.hstack((label[km_idx], p_label))
         #train_fn = fn[km_idx]
         #train_label = label[km_idx]
         print 'ct on traing label', ct(train_label)
@@ -301,7 +350,7 @@ for train, test in kf:
             print '<<', idx, ll
         '''
         for cc,ll in sub_pred.items():
-            print 'cluster',cc,'# of ex.', len(ll),'# predicted L', len(np.unique(ll))
+            #print 'cluster',cc,'# of ex.', len(ll),'# predicted L', len(np.unique(ll))
             c_id = ex_id[cc] #example id of the cluster picked
             #sub_label = sub_pred[idx]
             sub_label = ll
@@ -332,8 +381,9 @@ for train, test in kf:
                         if e == idx:
                             continue
                         d = np.linalg.norm(fn[e]-fn[idx])
-                        if d<=tao:
-                            train_idx.append(e)
+                        if d<tao:
+                            p_idx.append(e)
+                            p_label.append(label[idx])
                         else:
                             tmp.append(e)
                     if not tmp:
@@ -341,7 +391,6 @@ for train, test in kf:
                     else:
                         ex_id[cc] = tmp
                     km_idx.append(idx)
-                    train_idx.append(idx)
                     #ex_cur[k] = idx
                     ex_al.append([rr,cc,v[0][-2],label[idx],input3[idx]])
                     print cc,label[idx],input3[idx]
