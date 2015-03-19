@@ -412,7 +412,7 @@ for train, test in kf:
     for e in ex_al:
         print e
     #print cl_id
-    print sum(label[p_idx]==p_label)/len(p_label)
+    print 'psudo label acc', sum(label[p_idx]==p_label)/float(len(p_label))
     print 'x=',ex_num
     print 'y=',repr(acc_itr)
     for i,j in zip(ex_num, acc_itr):
