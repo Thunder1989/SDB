@@ -68,7 +68,7 @@ print 'class count of true labels of all ex:\n', ct(label)
 #print cv.get_feature_names()
 
 fold = 10
-rounds = 5
+rounds = 100
 clf = LinearSVC()
 #clf = SVC(kernel='linear')
 #clf = RFC(n_estimators=100, criterion='entropy')
@@ -159,11 +159,10 @@ acc_sum = [[] for i in xrange(rounds)]
 acc_ave = dd(list)
 tao = 0
 for train, test in kf:
-    print 'class count of true labels on cluster training ex:\n', ct(label[train])
+    #print 'class count of true labels on cluster training ex:\n', ct(label[train])
     train_fd = fn[train]
     #n_class = len(np.unique(label[train]))
     n_class = 16
-    #print '# of training class', n_class
     c = AC(n_clusters=n_class, affinity='cosine', linkage='average')
     c.fit(train_fd)
     tmp = dd(list)
@@ -189,24 +188,23 @@ for train, test in kf:
         for vv in v:
             pass
             #print k, vv
-    #ss=raw_input()
     for i,j in ex.items():
         ex[i] = sorted(j, key=lambda x: x[-1])
     km_idx = []
     p_idx = []
     p_label = []
-    print 'initial exs from k clusters centroid=============================='
+    #print 'initial exs from k clusters centroid=============================='
     for k,v in ex.items():
         for i in range(1):
             if len(v)<=i:
                 continue
             idx = v[i][0]
             km_idx.append(idx)
-            print k,label[idx],input3[idx]
+            #print k,label[idx],input3[idx]
     #print len(km_idx), 'training examples'
 
     def sigmoid(x, x0, k):
-        y = 1 / (1 + np.exp(-k*(x-x0)))
+        y = 1/(1 + np.exp(-k*(x-x0)))
         return y
 
     #compute the all pair distribution, set tao to min_X
@@ -225,7 +223,7 @@ for train, test in kf:
     ecdf = ECDF(src)
     xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
     ydata = ecdf(xdata)
-    tao = min(xdata)
+    tao = 0.8*min(xdata)
     '''
     #popt, pcov = curve_fit(sigmoid, xdata, ydata)
     #print popt
@@ -282,31 +280,31 @@ for train, test in kf:
     for k,v in neighbor.items():
         neighbor[k] = sorted(v, key=lambda x: x[-1])
     '''
+
     acc_itr= []
     cl_id = []
     ex_al = [] #the ex added in each itr
     ex_num = [] #num of training ex in each itr
-    #for rr in range(n_class):
     for rr in range(rounds):
         ex_num.append(len(km_idx))
         train_fn = fn[np.hstack((km_idx, p_idx))]
         train_label = np.hstack((label[km_idx], p_label))
         #train_fn = fn[km_idx]
         #train_label = label[km_idx]
-        print 'ct on traing label', ct(train_label)
+        #print 'ct on traing label', ct(train_label)
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
         sub_pred = dd(list) #Mn predicted labels for each cluster
         for k,v in ex_id.items():
             sub_pred[k] = clf.predict(fn[v]) #predict labels for cluster learning set
-        #print sub_pred.values()
         acc = accuracy_score(test_label, preds_fn)
         #acc_ = accuracy_score(label[train_], preds_c)
-        print 'acc on test set', acc
+        #print 'acc on test set', acc
         #print 'acc on cluster set', acc_
         #print 'class count of predicted labels on cluster learning ex:\n', ct(preds_c)
         acc_sum[rr].append(acc)
         acc_itr.append(acc)
+        #print 'iteration', rr, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
         '''
         for k in ex.keys():
             prev = ex_cur[k]
@@ -318,7 +316,7 @@ for train, test in kf:
                     ex_al.append([rr,k,label[n[0]],input3[n[0]]])
                     break
         '''
-        '''
+
         #the original H based cluster selection
         rank = []
         for k,v in sub_pred.items():
@@ -329,9 +327,12 @@ for train, test in kf:
             rank.append([k,len(v),H])
             #if rr+1 == 3*n_class:
             #print k,'---',len(v), H
-        #rank = sorted(rank, key=lambda x: x[-1], reverse=True)
-        #print rank
-        '''
+        rank = sorted(rank, key=lambda x: x[-1], reverse=True)
+        if not rank:
+            break
+        idx = rank[0][0] #pick the id of the 1st cluster on the rank
+        cl_id.append(idx) #track cluster id on each iteration
+
         '''
         #for debug
         ss = raw_input('')
@@ -340,63 +341,57 @@ for train, test in kf:
             for ll in l:
                 print '<<', ss, ll
             ss = raw_input('')
-        '''
-        print 'iteration', rr, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
-        #idx = rank[0][0] #pick the id of the 1st cluster on the rank
-        #cl_id.append(idx) #track cluster id on each iteration
-        '''
+
         l = debug[idx]
         for ll in l:
             print '<<', idx, ll
         '''
-        for cc,ll in sub_pred.items():
+
+        #for cc,ll in sub_pred.items(): #if commented out, the following out also
             #print 'cluster',cc,'# of ex.', len(ll),'# predicted L', len(np.unique(ll))
-            c_id = ex_id[cc] #example id of the cluster picked
-            #sub_label = sub_pred[idx]
-            sub_label = ll
-            sub_fn = fn[c_id]
-            #name_ = []
-            #for cc in c_id:
-            #    name_.append(name[cc])
-            #sub_fn = tv.fit_transform(name_).toarray()
+        cc = idx #used when choosing cluster by H
+        c_id = ex_id[cc] #example id of the cluster picked
+        sub_label = sub_pred[idx]#used when choosing cluster by H
+        #sub_label = ll
+        sub_fn = fn[c_id]
 
-            #sub-clustering the each cluster
-            c_ = KMeans(init='k-means++', n_clusters=len(np.unique(sub_label)), n_init=10)
-            c_.fit(sub_fn)
-            c_sub = dd(list)
-            for i,j in zip(c_.labels_, c_id):
-                c_sub[i].append(input3[j])
-            dist = np.sort(c_.transform(sub_fn))
+        #sub-clustering the each cluster
+        c_ = KMeans(init='k-means++', n_clusters=len(np.unique(sub_label)), n_init=10)
+        c_.fit(sub_fn)
+        c_sub = dd(list)
+        for i,j in zip(c_.labels_, c_id):
+            c_sub[i].append(input3[j])
+        dist = np.sort(c_.transform(sub_fn))
 
-            ex_ = dd(list)
-            for i,j,k,l in zip(c_.labels_, c_id, dist, sub_label):
-                ex_[i].append([j,l,k[0]])
-            for i,j in ex_.items(): #sort by ex. dist to the centroid for each C
-                ex_[i] = sorted(j, key=lambda x: x[-1])
-            for k,v in ex_.items():
-                if v[0][0] not in km_idx:
-                    idx = v[0][0]
-                    tmp = []
-                    for e in ex_id[cc]:
-                        if e == idx:
-                            continue
-                        d = np.linalg.norm(fn[e]-fn[idx])
-                        if d<tao:
-                            p_idx.append(e)
-                            p_label.append(label[idx])
-                        else:
-                            tmp.append(e)
-                    if not tmp:
-                        ex_id.pop(cc)
+        ex_ = dd(list)
+        for i,j,k,l in zip(c_.labels_, c_id, dist, sub_label):
+            ex_[i].append([j,l,k[0]])
+        for i,j in ex_.items(): #sort by ex. dist to the centroid for each C
+            ex_[i] = sorted(j, key=lambda x: x[-1])
+        for k,v in ex_.items():
+            if v[0][0] not in km_idx:
+                idx = v[0][0]
+                tmp = []
+                for e in ex_id[cc]:
+                    if e == idx:
+                        continue
+                    d = np.linalg.norm(fn[e]-fn[idx])
+                    if d<tao:
+                        p_idx.append(e)
+                        p_label.append(label[idx])
                     else:
-                        ex_id[cc] = tmp
-                    km_idx.append(idx)
-                    #ex_cur[k] = idx
-                    ex_al.append([rr,cc,v[0][-2],label[idx],input3[idx]])
-                    print cc,label[idx],input3[idx]
-                    break
+                        tmp.append(e)
+                if not tmp:
+                    ex_id.pop(cc)
+                else:
+                    ex_id[cc] = tmp
+                km_idx.append(idx)
+                #ex_cur[k] = idx
+                ex_al.append([rr,cc,v[0][-2],label[idx],input3[idx]])
+                #print cc,label[idx],input3[idx]
+                break
 
-        print len(km_idx), 'training examples'
+        #print len(km_idx), 'training examples'
         '''
         train_fn = fn[km_idx]
         train_label = label[km_idx]
@@ -409,17 +404,17 @@ for train, test in kf:
         print 'acc on cluster set', acc_
         print 'class count of predicted labels on cluster training ex:\n', ct(preds_train)
         '''
-    for e in ex_al:
-        print e
-    #print cl_id
+    #for e in ex_al: #print the example detail added on each itr
+    #    print e
+    print cl_id
     print 'psudo label acc', sum(label[p_idx]==p_label)/float(len(p_label))
-    print 'x=',ex_num
-    print 'y=',repr(acc_itr)
+    #print 'x=',ex_num
+    #print 'y=',repr(acc_itr)
     for i,j in zip(ex_num, acc_itr):
         acc_ave[i].append(j)
-    print '---------------------------------------------'
-    print '---------------------------------------------'
-    ss = raw_input()
+    print '----------------------------------------------------'
+    print '----------------------------------------------------'
+    #ss = raw_input()
 #print len(train_label), 'training examples'
 print 'class count of clf training ex:', ct(train_label)
 print 'average acc:', [np.mean(i) for i in acc_sum]
