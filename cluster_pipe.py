@@ -158,6 +158,7 @@ mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',
 acc_sum = [[] for i in xrange(rounds)]
 acc_ave = dd(list)
 tao = 0
+alpha = 1
 for train, test in kf:
     #print 'class count of true labels on cluster training ex:\n', ct(label[train])
     train_fd = fn[train]
@@ -178,16 +179,9 @@ for train, test in kf:
     dist = np.sort(c.transform(train_fd))
     ex = dd(list) #example id, distance to centroid
     ex_id = dd(list) #example id for each C
-    debug = dd(list) #example true label, point name
     for i,j,k in zip(c.labels_, train, dist):
         ex[i].append([j,k[0]])
         ex_id[i].append(int(j))
-        #debug[i].append([label[j],k[0],k[1],input3[j]])
-        debug[i].append([label[j],input3[j]])
-    for k,v in debug.items():
-        for vv in v:
-            pass
-            #print k, vv
     for i,j in ex.items():
         ex[i] = sorted(j, key=lambda x: x[-1])
     km_idx = []
@@ -207,7 +201,7 @@ for train, test in kf:
         y = 1/(1 + np.exp(-k*(x-x0)))
         return y
 
-    #compute the all pair distribution, set tao to min_X
+    #compute all pair dist distribution, set tao to min_X
     fit_dist = []
     fit_same = []
     fit_diff = []
@@ -223,7 +217,7 @@ for train, test in kf:
     ecdf = ECDF(src)
     xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
     ydata = ecdf(xdata)
-    tao = 0.8*min(xdata)
+    tao = alpha*min(xdata)
     '''
     #popt, pcov = curve_fit(sigmoid, xdata, ydata)
     #print popt
@@ -301,7 +295,6 @@ for train, test in kf:
         #acc_ = accuracy_score(label[train_], preds_c)
         #print 'acc on test set', acc
         #print 'acc on cluster set', acc_
-        #print 'class count of predicted labels on cluster learning ex:\n', ct(preds_c)
         acc_sum[rr].append(acc)
         acc_itr.append(acc)
         #print 'iteration', rr, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
@@ -355,7 +348,7 @@ for train, test in kf:
         #sub_label = ll
         sub_fn = fn[c_id]
 
-        #sub-clustering the each cluster
+        #sub-clustering the cluster
         c_ = KMeans(init='k-means++', n_clusters=len(np.unique(sub_label)), n_init=10)
         c_.fit(sub_fn)
         c_sub = dd(list)
@@ -391,7 +384,19 @@ for train, test in kf:
                 #print cc,label[idx],input3[idx]
                 break
 
+        #update tao
+        fit_dist = []
+        pair = list(itertools.combinations(km_idx,2))
+        for p in pair:
+            d = np.linalg.norm(fn[p[0]]-fn[p[1]])
+            fit_dist.append(d)
+        src = fit_dist
+        ecdf = ECDF(src)
+        xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
+        ydata = ecdf(xdata)
+        tao = alpha*min(xdata)
         #print len(km_idx), 'training examples'
+
         '''
         train_fn = fn[km_idx]
         train_label = label[km_idx]
