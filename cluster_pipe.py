@@ -40,13 +40,13 @@ input3 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlin
 input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 input5 = [i.strip().split('_')[-1][:-5] for i in open('soda_pt_new').readlines()]
 input6 = np.genfromtxt('soda_45min_new', delimiter=',')
-label = input2[:,-1]
-label1 = input4[:,-1]
+label1 = input2[:,-1]
+label = input4[:,-1]
 label1 = input6[:,-1]
-input3 = input1 #for quick run of the code using other building
+#input3 = input1 #for quick run of the code using other building
 #input3, label = shuffle(input3, label)
 name = []
-for i in input1:
+for i in input3:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
 
@@ -88,130 +88,6 @@ for i in feature_rank:
 #print 'feature num', len(feature_idx)
 fn = fn[:, feature_idx]
 
-#fn = fd
-#fn = StandardScaler().fit_transform(fn)
-
-n_class = 16
-c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
-c.fit(fn)
-ex_id = dd(list) #example id for each C
-for i,j in zip(c.labels_, xrange(len(fn))):
-    ex_id[i].append(j)
-
-p_same = []
-p_diff = []
-p_all = []#all pairs
-intra_same = []
-intra_diff = []
-intra_all = []#only intra cluster pairs
-inter_same = []
-inter_diff = []
-inter_all = []#only inter cluster pairs
-for i in xrange(len(fn)):
-    for j in xrange(0,i):
-        d = np.linalg.norm(fn[i]-fn[j])
-#for v in ex_id.values():
-#    pair = list(itertools.combinations(v,2))
-#    for p in pair:
-#        d = np.linalg.norm(fn[p[0]]-fn[p[1]])
-        p_all.append(d)
-        if c.labels_[i] == c.labels_[j]:
-            intra_all.append(d)
-            if label[i] == label[j]:
-            #if label[p[0]] == label[p[1]]:
-                intra_same.append(d)
-                p_same.append(d)
-            else:
-                intra_diff.append(d)
-                p_diff.append(d)
-        else:
-            inter_all.append(d)
-            if label[i] == label[j]:
-                inter_same.append(d)
-                p_same.append(d)
-            else:
-                inter_diff.append(d)
-                p_diff.append(d)
-#print len(diff)
-#t,p = stats.ttest_ind(same, diff, equal_var=False)
-#print t,p
-#y1 = np.mean(same)
-#y2 = np.mean(diff)
-#s1 = np.var(same)
-#s2 = np.var(diff)
-#n1 = len(same)
-#n2 = len(diff)
-#T = (y1-y2)/np.sqrt(s1/n1 + s2/n2)
-#print T
-
-src = p_same
-ecdf = ECDF(src)
-#plt.plot(ecdf.x, ecdf.y, 'b--', label='within')
-x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-y = ecdf(x)
-plt.plot(x, y, 'r--', label='within')
-src = p_diff
-ecdf = ECDF(src)
-x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-y = ecdf(x)
-plt.plot(x, y, 'b--', label='across')
-src = p_all
-ecdf = ECDF(src)
-x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-y = ecdf(x)
-plt.plot(x, y, 'k--', label='all')
-plt.legend(loc='lower right')
-plt.xlabel('L2 distance')
-plt.title('pairwise dist. distribution on all pairs')
-plt.grid(axis='y')
-plt.show()
-s = raw_input()
-
-src = intra_same
-ecdf = ECDF(src)
-x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-y = ecdf(x)
-plt.plot(x, y, 'r--', label='within')
-src = intra_diff
-ecdf = ECDF(src)
-x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-y = ecdf(x)
-plt.plot(x, y, 'b--', label='across')
-src = intra_all
-ecdf = ECDF(src)
-x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-y = ecdf(x)
-plt.plot(x, y, 'k--', label='all')
-plt.legend(loc='lower right')
-plt.xlabel('L2 distance')
-plt.title('pairwise dist. distribution on intra-cluster pairs')
-plt.grid(axis='y')
-plt.show()
-s = raw_input()
-
-src = inter_same
-ecdf = ECDF(src)
-x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-y = ecdf(x)
-plt.plot(x, y, 'r--', label='within')
-src = inter_diff
-ecdf = ECDF(src)
-x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-y = ecdf(x)
-plt.plot(x, y, 'b--', label='across')
-src = inter_all
-ecdf = ECDF(src)
-x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-y = ecdf(x)
-plt.plot(x, y, 'k--', label='all')
-plt.legend(loc='lower right')
-plt.xlabel('L2 distance')
-plt.title('pairwise dist. distribution on inter-cluster pairs')
-plt.grid(axis='y')
-plt.show()
-s = raw_input()
-
-
 #kf = StratifiedKFold(label, n_folds=fold, shuffle=True)
 kf = KFold(len(label), n_folds=fold, shuffle=True)
 mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
@@ -235,7 +111,7 @@ for train, test in kf:
             pass
             #print k, vv
     print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
-    c = KMeans(init='k-means++', n_clusters=2*n_class, n_init=10)
+    c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
     c.fit(train_fd)
     dist = np.sort(c.transform(train_fd))
     ex = dd(list) #example id, distance to centroid
