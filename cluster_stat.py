@@ -84,10 +84,20 @@ n_class = 16
 c = KMeans(init='k-means++', n_clusters=2*n_class, n_init=10)
 c.fit(fn)
 
+for i,d in zip(c.labels_, c.transform(fn)):
+    if d[i]==np.min(d):
+        pass
+        #print 'true'
+    else:
+        pass
+        #print 'false'
+
 dist = np.sort(c.transform(fn))
 ex = dd(list) #distance to centroid
-for i,k in zip(c.labels_, dist):
+debug = dd(list) #distance to centroid
+for i,j,k in zip(c.labels_, xrange(len(fn)), dist):
         ex[i].append(k[0])
+        debug[i].append(int(j))
 
 #distance matrix, diagonal is cluster radius, other cell is inter cluster centroid dist
 cm = np.zeros((32,32))
@@ -96,16 +106,20 @@ for i in xrange(32):
     cm[i][i] = np.max(ex[i])
     for j in xrange(i):
         cm[i][j] = np.linalg.norm(center[i]-center[j])
-
 def printMatrix(M):
-    print ' ',
+    print '  ',
     for i in range(len(M[1])):  # Make it work with non square matrices.
-        print i,
+        print i,'  ',
     print
-    for i, element in enumerate(M):
-        print i, ' '.join([str("%.3f"%e) for e in element])
+    for i,element in enumerate(M):
+        print '%d(%d)'%(i,len(ex[i])),' '.join([str("%.3f"%e) for e in element])
 printMatrix(cm)
-
+count = 0
+for i in xrange(32):
+    for j in xrange(i):
+        if cm[i][j] < cm[i][i] + cm[j][j]:
+            count += 1
+print count
 '''
 fig = pl.figure()
 ax = fig.add_subplot(111)
