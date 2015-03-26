@@ -43,7 +43,7 @@ input6 = np.genfromtxt('soda_45min_new', delimiter=',')
 label1 = input2[:,-1]
 label = input4[:,-1]
 label1 = input6[:,-1]
-#input3 = input1 #for quick run of the code using other building
+#input3 = input5 #quick run of the code using other building
 #input3, label = shuffle(input3, label)
 name = []
 for i in input3:
@@ -100,7 +100,7 @@ for train, test in kf:
     #print 'class count of true labels on cluster training ex:\n', ct(label[train])
     train_fd = fn[train]
     #n_class = len(np.unique(label[train]))
-    n_class = 16
+    n_class = 6
     c = AC(n_clusters=n_class, affinity='cosine', linkage='average')
     c.fit(train_fd)
     tmp = dd(list)
@@ -111,7 +111,8 @@ for train, test in kf:
             pass
             #print k, vv
     print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
-    c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
+    #c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
+    c = KMeans(init='k-means++', n_clusters=32, n_init=10)
     c.fit(train_fd)
     dist = np.sort(c.transform(train_fd))
     ex = dd(list) #example id, distance to centroid
