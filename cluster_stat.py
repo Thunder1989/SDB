@@ -32,13 +32,13 @@ input3 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlin
 input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 input5 = [i.strip().split('_')[-1][:-5] for i in open('soda_pt_new').readlines()]
 input6 = np.genfromtxt('soda_45min_new', delimiter=',')
-label = input2[:,-1]
-label1 = input4[:,-1]
+label1 = input2[:,-1]
+label = input4[:,-1]
 label1 = input6[:,-1]
 #input3 = input1 #for quick run of the code using other building
 #input3, label = shuffle(input3, label)
 name = []
-for i in input1:
+for i in input3:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
 
@@ -80,7 +80,7 @@ fn = fn[:, feature_idx]
 #fn = fd
 #fn = StandardScaler().fit_transform(fn)
 
-
+'''
 #explained variance v.s. # of clusters
 Y = np.mean(fn, axis=0)
 V = np.sum((fn-Y)**2, axis=0)/(len(fn)-1)
@@ -124,9 +124,9 @@ plt.grid(True)
 plt.xlabel('Number of clusters')
 plt.title('Elbow for KMeans clustering')
 plt.show()
-
-
 '''
+
+
 n_class = 16
 c = KMeans(init='k-means++', n_clusters=2*n_class, n_init=10)
 c.fit(fn)
@@ -137,6 +137,9 @@ d_c = dd(list) #distance to centroid
 for i,j,k in zip(c.labels_, xrange(len(fn)), dist):
         ex[i].append(k[0])
         d_c[i].append([j,k[0]])
+
+'''
+#distance to centroid v.s. label
 s2center = []
 d2center = []
 for k,v in d_c.items():
@@ -211,7 +214,7 @@ pl.title('Cluster Distance Matrix')
 pl.show()
 '''
 
-'''
+
 #generating CDF
 p_same = []
 p_diff = []
@@ -268,6 +271,7 @@ plt.plot(x, y, 'r--', label='within')
 src = p_diff
 ecdf = ECDF(src)
 x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
+print 'true tao', min(x)
 y = ecdf(x)
 plt.plot(x, y, 'b--', label='across')
 src = p_all
@@ -325,4 +329,4 @@ plt.title('pairwise dist. distribution on inter-cluster pairs')
 plt.grid(axis='y')
 plt.show()
 s = raw_input()
-'''
+

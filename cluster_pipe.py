@@ -333,6 +333,7 @@ for train, test in kf:
         xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
         ydata = ecdf(xdata)
         tao = alpha*min(xdata)
+        print 'tao', tao
         #print len(km_idx), 'training examples'
 
         '''
