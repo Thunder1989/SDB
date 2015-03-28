@@ -112,7 +112,7 @@ for train, test in kf:
             #print k, vv
     print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
     #c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
-    c = KMeans(init='k-means++', n_clusters=32, n_init=10)
+    c = KMeans(init='k-means++', n_clusters=32/2, n_init=10)
     c.fit(train_fd)
     dist = np.sort(c.transform(train_fd))
     ex = dd(list) #example id, distance to centroid
@@ -152,10 +152,12 @@ for train, test in kf:
         else:
             fit_diff.append(d)
     src = fit_dist
+    #src = fit_diff #set tao be the min(inter-class pair dist)/2
     ecdf = ECDF(src)
     xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-    ydata = ecdf(xdata)
+    #ydata = ecdf(xdata)
     tao = alpha*min(xdata)
+    #tao = alpha*min(xdata)/2
     '''
     #popt, pcov = curve_fit(sigmoid, xdata, ydata)
     #print popt
@@ -302,6 +304,30 @@ for train, test in kf:
         for k,v in ex_.items():
             if v[0][0] not in km_idx:
                 idx = v[0][0]
+                km_idx.append(idx)
+
+                #everytime labeled a new ex, update the tao and then remove ex<tao
+                fit_dist = []
+                fit_same = []
+                fit_diff = []
+                pair = list(itertools.combinations(km_idx,2))
+                for p in pair:
+                    d = np.linalg.norm(fn[p[0]]-fn[p[1]])
+                    fit_dist.append(d)
+                    if label[p[0]] == label[p[1]]:
+                        fit_same.append(d)
+                    else:
+                        fit_diff.append(d)
+                src = fit_dist
+                #src = fit_diff #set tao be the min(inter-class pair dist)/2
+                ecdf = ECDF(src)
+                xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
+                #ydata = ecdf(xdata)
+                tao = alpha*min(xdata)
+                #tao = alpha*min(xdata)/2
+                #print '# labeled', len(km_idx)
+                print 'tao', tao
+
                 tmp = []
                 for e in ex_id[cc]:
                     if e == idx:
@@ -316,26 +342,12 @@ for train, test in kf:
                     ex_id.pop(cc)
                 else:
                     ex_id[cc] = tmp
-                km_idx.append(idx)
                 #ex_cur[k] = idx
                 ex_al.append([rr,cc,v[0][-2],label[idx],input3[idx]])
                 #print cc,label[idx],input3[idx]
                 break
 
-        #update tao
-        fit_dist = []
-        pair = list(itertools.combinations(km_idx,2))
-        for p in pair:
-            d = np.linalg.norm(fn[p[0]]-fn[p[1]])
-            fit_dist.append(d)
-        src = fit_dist
-        ecdf = ECDF(src)
-        xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-        ydata = ecdf(xdata)
-        tao = alpha*min(xdata)
-        print 'tao', tao
         #print len(km_idx), 'training examples'
-
         '''
         train_fn = fn[km_idx]
         train_label = label[km_idx]

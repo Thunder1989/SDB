@@ -127,7 +127,7 @@ plt.show()
 '''
 
 
-n_class = 16
+n_class = 16*2
 c = KMeans(init='k-means++', n_clusters=2*n_class, n_init=10)
 c.fit(fn)
 
