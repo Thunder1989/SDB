@@ -1,12 +1,14 @@
 from sklearn.feature_extraction.text import CountVectorizer as CV
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.cross_validation import KFold
+from scikits.statsmodels.tools.tools import ECDF
 
 from sklearn.cluster import KMeans
 from sklearn.mixture import GMM
 from sklearn.tree import DecisionTreeClassifier as DT
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.svm import SVC
+from sklearn.svm import LinearSVC
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import confusion_matrix as CM
@@ -16,37 +18,30 @@ from collections import defaultdict as dd
 from collections import Counter as ct
 
 import numpy as np
+import itertools
 import math
 import random
 import re
 import operator
 import pylab as pl
 
-'''
-input1 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
-data1 = input1[:,[0,1,2,3,5,6,7]]
-label1 = input1[:,-1]
-input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
-data2 = input2[:,[0,1,2,3,5,6,7]]
-label2 = input2[:,-1]
-#label = [1,2,4,6,7,8]
-'''
 input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
 input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
 input3 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlines()]
 input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 input5 = [i.strip().split('_')[-1][:-5] for i in open('soda_pt_new').readlines()]
 input6 = np.genfromtxt('soda_45min_new', delimiter=',')
-label = input2[:,-1]
-label1 = input4[:,-1]
-label = input6[:,-1]
+label1 = input2[:,-1]
+label = input4[:,-1]
+label1 = input6[:,-1]
 name = []
-for i in input5:
+for i in input3:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
 
-iteration = 100
+iteration = 180
 fold = 10
+alpha = 1
 #loo = LeaveOneOut(len(data))
 #skf = StratifiedKFold(label1, n_folds=fold)
 kf = KFold(len(label), n_folds=fold, shuffle=True)
@@ -60,11 +55,10 @@ acc_sum = [[] for i in range(iteration)]
 tp_type = [[] for i in range(17)]
 #precision_type = [[[] for i in range(iteration)] for i in range(6)]
 #recall_type = [[[] for i in range(iteration)] for i in range(6)]
-#clf = ETC(n_estimators=10, criterion='entropy')
 clf = RFC(n_estimators=100, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
-#clf = Ada(n_estimators=100)
 #clf = SVC(kernel='linear')
+#clf = LinearSVC()
 
 vc = CV(analyzer='char_wb', ngram_range=(3,4))
 fn = vc.fit_transform(name).toarray()
@@ -76,19 +70,8 @@ for fd in range(fold):
     train = np.hstack((folds[(fd+x)%fold] for x in range(fold-1)))
     #validate = np.hstack((folds[(fd+x)%fold] for x in range(1,fold/2)))
     #validate = np.hstack((train,validate))
-    '''
-    ex_dict = dd(list)
-    train_label = label[validate]
-    for i,j in zip(train_label,validate):
-        ex_dict[i].append(j)
-    train = []
-    #get one ex per class as initial train
-    for v in ex_dict.values():
-        random.shuffle(v)
-        train.append(v[0])
-        #remove train ex id from validate, the rest is the new validate
-        validate = validate[validate!=v[0]]
-    '''
+
+    #generating cluster prior to be used together with ex uncertainty
     n_class = 15
     #c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
     g = GMM(n_components=n_class*2, covariance_type='spherical', init_params='wmc', n_iter=100)
@@ -126,11 +109,18 @@ for fd in range(fold):
     ex_30 = []
     ex_50 = []
     ex_all = []
+    p_idx = []
+    p_label = []
     for itr in range(iteration):
         #if itr%10==0:
         #    print 'running fold %d iter %d'%(fd, itr)
-        train_data = fn[train]
-        train_label = label[train]
+        #train_data = fn[train]
+        #train_label = label[train]
+        if not p_idx:
+            train_data = fn[train]
+        else:
+            train_data = fn[np.hstack((train, p_idx))]
+        train_label = np.hstack((label[train], p_label))
         validate_data = fn[validate]
         #validate_label = label[validate]
 
@@ -140,15 +130,14 @@ for fd in range(fold):
         acc = clf.score(test_data, test_label)
         acc_sum[itr].append(acc)
 
-        cm = CM(test_label,preds)
-        cm = normalize(cm.astype(np.float), axis=1, norm='l1')
+        '''
+        cm_ = CM(test_label,preds)
+        cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
+
         k=0
         while k<len(cm):
             tp_type[k].append(cm[k,k])
             k += 1
-        '''
-        cm_ = CM(test_label,preds)
-        cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
 
         #plot confusion matrix, for debugging
         if itr<20 and itr%2==0 or itr==iteration-1:
@@ -213,6 +202,7 @@ for fd in range(fold):
         #Margin-based, sort and pick the one with least margin
         #res = sorted(res, key=lambda x: x[-1], reverse=True)
         res = sorted(res, key=lambda x: x[-1])
+        #print 'iter', itr, len(res)
         idx = 0
         '''
 
@@ -234,12 +224,15 @@ for fd in range(fold):
 
         elmt = res[idx][0]
         #print 'itr',itr,res[idx][-1],label[elmt],input3[elmt]
+        '''
+        #logs of output examples
         ex_all.append(label[elmt])
         ex.extend([itr+1, elmt, label[elmt]])
         if itr<50:
             ex_30.append(label[elmt])
         if itr>=50:
             ex_50.append(label[elmt])
+        '''
         '''
         #minimal future expected error
         loss = []
@@ -282,6 +275,43 @@ for fd in range(fold):
         validate = validate[validate!=elmt]
         #train_idx.append(elmt)
         #test_idx.remove(elmt)
+
+        #compute tao and remove ex<tao
+        fit_dist = []
+        fit_same = []
+        fit_diff = []
+        pair = list(itertools.combinations(train,2))
+        for p in pair:
+            d = np.linalg.norm(fn[p[0]]-fn[p[1]])
+            fit_dist.append(d)
+            if label[p[0]] == label[p[1]]:
+                fit_same.append(d)
+            else:
+                fit_diff.append(d)
+        #src = fit_dist
+        if not fit_dist:
+            continue
+        src = fit_diff #set tao be the min(inter-class pair dist)/2
+        ecdf = ECDF(src)
+        xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
+        tao = alpha*min(xdata)
+        #print 'tao in itr', itr, tao
+        rmv = []
+        for e in validate:
+            if e == elmt:
+                continue
+            d = np.linalg.norm(fn[e]-fn[idx])
+            if d<tao:
+                p_idx.append(e)
+                p_label.append(label[elmt])
+                rmv.append(e)
+        for r in rmv:
+            validate = validate[validate!=r]
+        if not validate.any():
+            print len(validate)
+            break
+    print '# of p label', len(p_label)
+    print 'p label acc', sum(label[p_idx]==p_label)/float(len(p_label))
     #print 'ex before 30 itr', ct(ex_30)
     #print 'ex after 50 itr', ct(ex_50)
     #print 'ex all', ct(ex_all)
@@ -307,8 +337,8 @@ for i in range(6):
     ave_rec[i] = [np.mean(r) for r in recall_type[i] ]
 '''
 print 'overall acc:', repr(ave_acc)
-print ex_30
-print ex_50
+#print ex_30
+#print ex_50
 #print 'acc std:', repr(acc_std)
 '''
 print '=================================='

@@ -228,6 +228,7 @@ for train, test in kf:
         #print 'ct on traing label', ct(train_label)
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
+        #print clf.decision_function(test_fn)
         sub_pred = dd(list) #Mn predicted labels for each cluster
         for k,v in ex_id.items():
             sub_pred[k] = clf.predict(fn[v]) #predict labels for cluster learning set
