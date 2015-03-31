@@ -250,7 +250,7 @@ for i in xrange(len(fn)):
             else:
                 inter_diff.append(d)
                 p_diff.append(d)
-#print len(diff)
+#print len(p_all)
 #t,p = stats.ttest_ind(same, diff, equal_var=False)
 #print t,p
 #y1 = np.mean(same)
@@ -271,7 +271,7 @@ plt.plot(x, y, 'r--', label='within')
 src = p_diff
 ecdf = ECDF(src)
 x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-print 'true tao', min(x)
+print 'true tao', min(src)
 y = ecdf(x)
 plt.plot(x, y, 'b--', label='across')
 src = p_all

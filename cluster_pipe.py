@@ -88,6 +88,42 @@ for i in feature_rank:
 #print 'feature num', len(feature_idx)
 fn = fn[:, feature_idx]
 
+'''
+p_same = []
+p_diff = []
+p_all = []#all pairs
+intra_same = []
+intra_diff = []
+intra_all = []#only intra cluster pairs
+inter_same = []
+inter_diff = []
+inter_all = []#only inter cluster pairs
+c = KMeans(init='k-means++', n_clusters=32, n_init=10)
+c.fit(fn)
+for i in xrange(len(fn)):
+    for j in xrange(0,i):
+        d = np.linalg.norm(fn[i]-fn[j])
+        p_all.append(d)
+        if c.labels_[i] == c.labels_[j]:
+            intra_all.append(d)
+            if label[i] == label[j]:
+            #if label[p[0]] == label[p[1]]:
+                intra_same.append(d)
+                p_same.append(d)
+            else:
+                intra_diff.append(d)
+                p_diff.append(d)
+        else:
+            inter_all.append(d)
+            if label[i] == label[j]:
+                inter_same.append(d)
+                p_same.append(d)
+            else:
+                inter_diff.append(d)
+                p_diff.append(d)
+print 'true tao', min(p_diff)
+'''
+
 #kf = StratifiedKFold(label, n_folds=fold, shuffle=True)
 kf = KFold(len(label), n_folds=fold, shuffle=True)
 mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
@@ -112,7 +148,7 @@ for train, test in kf:
             #print k, vv
     print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
     #c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
-    c = KMeans(init='k-means++', n_clusters=32/2, n_init=10)
+    c = KMeans(init='k-means++', n_clusters=32, n_init=10)
     c.fit(train_fd)
     dist = np.sort(c.transform(train_fd))
     ex = dd(list) #example id, distance to centroid
@@ -125,6 +161,7 @@ for train, test in kf:
     km_idx = []
     p_idx = []
     p_label = []
+    p_dist = dd()
     #print 'initial exs from k clusters centroid=============================='
     for k,v in ex.items():
         for i in range(1):
@@ -151,13 +188,14 @@ for train, test in kf:
             fit_same.append(d)
         else:
             fit_diff.append(d)
-    src = fit_dist
-    #src = fit_diff #set tao be the min(inter-class pair dist)/2
-    ecdf = ECDF(src)
-    xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
+    #src = fit_dist
+    src = fit_diff #set tao be the min(inter-class pair dist)/2
+    #ecdf = ECDF(src)
+    #xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
     #ydata = ecdf(xdata)
-    tao = alpha*min(xdata)
-    #tao = alpha*min(xdata)/2
+    #tao = alpha*min(src)
+    tao = alpha*min(src)/2
+    print 'inital tao', tao
     '''
     #popt, pcov = curve_fit(sigmoid, xdata, ydata)
     #print popt
@@ -188,8 +226,11 @@ for train, test in kf:
                 continue
             d = np.linalg.norm(fn[e]-fn[idx])
             if d<tao:
+                p_dist[e] = d
                 p_idx.append(e)
                 p_label.append(label[idx])
+                #if label[idx]!=label[e]:
+                #print input3[e],label[idx], label[e],d
             else:
                 tmp.append(e)
         if not tmp:
@@ -307,7 +348,7 @@ for train, test in kf:
                 idx = v[0][0]
                 km_idx.append(idx)
 
-                #everytime labeled a new ex, update the tao and then remove ex<tao
+                #update tao then remove ex<tao
                 fit_dist = []
                 fit_same = []
                 fit_diff = []
@@ -319,26 +360,46 @@ for train, test in kf:
                         fit_same.append(d)
                     else:
                         fit_diff.append(d)
-                src = fit_dist
-                #src = fit_diff #set tao be the min(inter-class pair dist)/2
-                ecdf = ECDF(src)
-                xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
+                #src = fit_dist
+                src = fit_diff #set tao be the min(inter-class pair dist)/2
+                #ecdf = ECDF(src)
+                #xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
                 #ydata = ecdf(xdata)
-                tao = alpha*min(xdata)
-                #tao = alpha*min(xdata)/2
+                #tao = alpha*min(src)
+                tao = alpha*min(src)/2
                 #print '# labeled', len(km_idx)
                 print 'tao', tao
 
                 tmp = []
+                #re-visit exs removed on previous itr with the new tao
+                idx_tmp=[]
+                label_tmp=[]
+                for i,j in zip(p_idx,p_label):
+                    if p_dist[i]<tao:
+                        idx_tmp.append(i)
+                        label_tmp.append(j)
+                    else:
+                        p_dist.pop(i)
+                        #p_idx.remove(i)
+                        #p_label.remove(j)
+                        tmp.append(i)
+                p_idx = idx_tmp
+                p_label = label_tmp
                 for e in ex_id[cc]:
                     if e == idx:
                         continue
                     d = np.linalg.norm(fn[e]-fn[idx])
                     if d<tao:
+                        #print 'added ex with d',d
+                        p_dist[e] = d
                         p_idx.append(e)
                         p_label.append(label[idx])
+                        #if label[idx]!=label[e]:
+                        #    print input3[e],label[idx], label[e],d
                     else:
                         tmp.append(e)
+                #print '# of p label before clean', len(p_label)
+                #print '# of p label after clean', len(p_label)
                 if not tmp:
                     ex_id.pop(cc)
                 else:
@@ -363,7 +424,11 @@ for train, test in kf:
         '''
     #for e in ex_al: #print the example detail added on each itr
     #    print e
+    #print len(p_idx)
+    #print len(p_label)
     print cl_id
+    #for i,j in zip(p_idx,p_label):
+    #    print input3[i], j, label[i], p_dist[i]
     print 'psudo label acc', sum(label[p_idx]==p_label)/float(len(p_label))
     #print 'x=',ex_num
     #print 'y=',repr(acc_itr)

@@ -290,33 +290,44 @@ for fd in range(fold):
         #src = fit_dist
         if not fit_dist:
             continue
+        #src = fit_dist #set tao be the min(inter-class pair dist)/2
         src = fit_diff #set tao be the min(inter-class pair dist)/2
-        ecdf = ECDF(src)
-        xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-        tao = alpha*min(xdata)
+        #ecdf = ECDF(src)
+        #xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
+        tao = alpha*min(src)/2
         #print 'tao in itr', itr, tao
+        #re-visit previous ex using new tao
+        idx_tmp = []
+        label_tmp = []
+        for i,j in zip(p_idx,p_label):
+            if p_dist[i]<tao:
+                idx_tmp.append(i)
+                label_tmp.append(j)
+            else:
+                p_dist.pop(i)
+                np.append(validate,i)
+        p_idx = idx_tmp
+        p_label = label_tmp
+        #print 'ex from al', input3[elmt]
         for e in validate:
             if e == elmt:
                 continue
-            d = np.linalg.norm(fn[e]-fn[idx])
+            d = np.linalg.norm(fn[e]-fn[elmt])
             if d<tao:
+                #print '>>>removing',input3[e],d
                 p_dist[e] = d
                 p_idx.append(e)
                 p_label.append(label[elmt])
-                validate.remove(e)
-        for i,j in zip(p_idx,p_label):
-            if p_dist[i]<tao:
-                continue
-            else:
-                p_idx.remove(i)
-                p_label.remove(j)
-                p_dist.pop(i)
-                validate.append(i)
+                validate = validate[validate!=e]
         if not validate.any():
-            print len(validate)
+            print 'v set is exhausted', len(validate)
             break
-    print '# of p label', len(p_label)
-    print 'p label acc', sum(label[p_idx]==p_label)/float(len(p_label))
+    print 'tao',tao
+    if len(p_label)==0:
+        print '0 p label'
+    else:
+        print '# of p label', len(p_label)
+        print 'p label acc', sum(label[p_idx]==p_label)/float(len(p_label))
     #print 'ex before 30 itr', ct(ex_30)
     #print 'ex after 50 itr', ct(ex_50)
     #print 'ex all', ct(ex_all)
