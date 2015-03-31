@@ -111,9 +111,8 @@ for fd in range(fold):
     ex_all = []
     p_idx = []
     p_label = []
+    p_dist = dd()
     for itr in range(iteration):
-        #if itr%10==0:
-        #    print 'running fold %d iter %d'%(fd, itr)
         #train_data = fn[train]
         #train_label = label[train]
         if not p_idx:
@@ -166,7 +165,7 @@ for fd in range(fold):
             pl.xlabel('Predicted label')
             pl.show()
 
-        #statistics by type
+        #stats by type
         pre = precision_score(test_label, preds, average=None)
         rec = recall_score(test_label, preds, average=None)
         k=0
@@ -296,17 +295,23 @@ for fd in range(fold):
         xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
         tao = alpha*min(xdata)
         #print 'tao in itr', itr, tao
-        rmv = []
         for e in validate:
             if e == elmt:
                 continue
             d = np.linalg.norm(fn[e]-fn[idx])
             if d<tao:
+                p_dist[e] = d
                 p_idx.append(e)
                 p_label.append(label[elmt])
-                rmv.append(e)
-        for r in rmv:
-            validate = validate[validate!=r]
+                validate.remove(e)
+        for i,j in zip(p_idx,p_label):
+            if p_dist[i]<tao:
+                continue
+            else:
+                p_idx.remove(i)
+                p_label.remove(j)
+                p_dist.pop(i)
+                validate.append(i)
         if not validate.any():
             print len(validate)
             break
