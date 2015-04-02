@@ -128,6 +128,7 @@ print 'true tao', min(p_diff)
 kf = KFold(len(label), n_folds=fold, shuffle=True)
 mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
 #X = StandardScaler().fit_transform(fn)
+p_acc = [] #pseudo label acc
 acc_sum = [[] for i in xrange(rounds)]
 acc_ave = dd(list)
 tao = 0
@@ -188,13 +189,13 @@ for train, test in kf:
             fit_same.append(d)
         else:
             fit_diff.append(d)
-    #src = fit_dist
+    src = fit_dist
     src = fit_diff #set tao be the min(inter-class pair dist)/2
     #ecdf = ECDF(src)
     #xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
     #ydata = ecdf(xdata)
-    #tao = alpha*min(src)
-    tao = alpha*min(src)/2
+    tao = alpha*min(src)
+    #tao = alpha*min(src)/2
     print 'inital tao', tao
     '''
     #popt, pcov = curve_fit(sigmoid, xdata, ydata)
@@ -360,15 +361,14 @@ for train, test in kf:
                         fit_same.append(d)
                     else:
                         fit_diff.append(d)
-                #src = fit_dist
+                src = fit_dist
                 src = fit_diff #set tao be the min(inter-class pair dist)/2
                 #ecdf = ECDF(src)
                 #xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
                 #ydata = ecdf(xdata)
-                #tao = alpha*min(src)
-                tao = alpha*min(src)/2
+                tao = alpha*min(src)
+                #tao = alpha*min(src)/2
                 #print '# labeled', len(km_idx)
-                print 'tao', tao
 
                 tmp = []
                 #re-visit exs removed on previous itr with the new tao
@@ -408,7 +408,6 @@ for train, test in kf:
                 ex_al.append([rr,cc,v[0][-2],label[idx],input3[idx]])
                 #print cc,label[idx],input3[idx]
                 break
-
         #print len(km_idx), 'training examples'
         '''
         train_fn = fn[km_idx]
@@ -425,11 +424,13 @@ for train, test in kf:
     #for e in ex_al: #print the example detail added on each itr
     #    print e
     #print len(p_idx)
-    #print len(p_label)
+    print '# of p label', len(p_label)
+    print 'final tao', tao
     print cl_id
     #for i,j in zip(p_idx,p_label):
     #    print input3[i], j, label[i], p_dist[i]
     print 'psudo label acc', sum(label[p_idx]==p_label)/float(len(p_label))
+    p_acc.append(sum(label[p_idx]==p_label)/float(len(p_label)))
     #print 'x=',ex_num
     #print 'y=',repr(acc_itr)
     for i,j in zip(ex_num, acc_itr):
@@ -440,6 +441,7 @@ for train, test in kf:
 #print len(train_label), 'training examples'
 print 'class count of clf training ex:', ct(train_label)
 print 'average acc:', [np.mean(i) for i in acc_sum]
+print 'average p label acc:', np.mean(p_acc)
 tmp = []
 for i,j in acc_ave.items():
     tmp.append([i,np.mean(j)])
