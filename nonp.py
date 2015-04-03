@@ -64,7 +64,7 @@ for i in feature_rank:
     if i[0]>=0.05:
         feature_idx.append(i[1])
 #print 'feature num', len(feature_idx)
-fn = fn[:, feature_idx]
+#fn = fn[:, feature_idx]
 #X = StandardScaler().fit_transform(fn)
 
 fold = 3
@@ -76,27 +76,27 @@ acc_sum = [[] for i in range(fold)]
 for train, test in kf:
     train_fn = fn[train]
     #n_class = len(np.unique(label[train]))
-    n_class = 16*2
+
+    d = DPGMM(n_components=50, covariance_type='spherical',alpha=10)
+    d.fit(train_fn)
+    #print 'mixture mean', d.means_
+    preds = d.predict(train_fn)
+    print '# of M by DP', len(np.unique(preds))
+    #acc_sum[2].append(NMI(label[train], preds))
+    acc_sum[0].append(SS(train_fn, preds))
+
+    n_class = len(np.unique(preds))
     g = GMM(n_components=n_class, covariance_type='spherical', init_params='wmc', n_iter=100)
     g.fit(train_fn)
     #g.means_ = np.array([x_train[y_train == i].mean(axis=0) for i in np.unique(y_train)])
     preds = g.predict(train_fn)
-    print preds
     #prob = np.sort(g.predict_proba(train_fd))
     #acc_sum[0].append(NMI(label[train], preds))
-    acc_sum[0].append(SS(train_fn, preds))
+    acc_sum[1].append(SS(train_fn, preds))
 
     k = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
     k.fit(train_fn)
     #acc_sum[1].append(NMI(label[train], k.labels_))
-    acc_sum[1].append(SS(train_fn, k.labels_))
-
-    d = DPGMM(n_components=50, covariance_type='full')
-    d.fit(train_fn)
-    print '# of M', d.n_components
-    preds = d.predict(train_fn)
-    print preds
-    #acc_sum[2].append(NMI(label[train], preds))
-    acc_sum[2].append(SS(train_fn, preds))
+    acc_sum[2].append(SS(train_fn, k.labels_))
 
 print np.mean(acc_sum,axis=1)
