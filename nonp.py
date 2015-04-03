@@ -26,6 +26,8 @@ from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import confusion_matrix as CM
 from sklearn.metrics import normalized_mutual_info_score as NMI
+from sklearn.metrics import adjusted_mutual_info_score as AMI
+from sklearn.metrics import adjusted_rand_score as ARI
 from sklearn.metrics import silhouette_score as SS
 from sklearn import tree
 from sklearn.preprocessing import normalize
@@ -82,21 +84,22 @@ for train, test in kf:
     #print 'mixture mean', d.means_
     preds = d.predict(train_fn)
     print '# of M by DP', len(np.unique(preds))
-    #acc_sum[2].append(NMI(label[train], preds))
-    acc_sum[0].append(SS(train_fn, preds))
+    acc_sum[0].append(ARI(label[train], preds))
+    #acc_sum[0].append(SS(train_fn, preds))
 
-    n_class = len(np.unique(preds))
+    #n_class = len(np.unique(preds))
+    n_class = 32
     g = GMM(n_components=n_class, covariance_type='spherical', init_params='wmc', n_iter=100)
     g.fit(train_fn)
     #g.means_ = np.array([x_train[y_train == i].mean(axis=0) for i in np.unique(y_train)])
     preds = g.predict(train_fn)
     #prob = np.sort(g.predict_proba(train_fd))
-    #acc_sum[0].append(NMI(label[train], preds))
-    acc_sum[1].append(SS(train_fn, preds))
+    acc_sum[1].append(ARI(label[train], preds))
+    #acc_sum[1].append(SS(train_fn, preds))
 
     k = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
     k.fit(train_fn)
-    #acc_sum[1].append(NMI(label[train], k.labels_))
-    acc_sum[2].append(SS(train_fn, k.labels_))
+    acc_sum[2].append(ARI(label[train], k.labels_))
+    #acc_sum[2].append(SS(train_fn, k.labels_))
 
 print np.mean(acc_sum,axis=1)
