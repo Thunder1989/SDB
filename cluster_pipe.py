@@ -16,6 +16,7 @@ from sklearn import metrics
 from sklearn.cluster import KMeans
 from sklearn.cluster import AgglomerativeClustering as AC
 from sklearn.mixture import GMM
+from sklearn.mixture import DPGMM
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import shuffle
 
@@ -104,7 +105,7 @@ for i in xrange(len(fn)):
     for j in xrange(0,i):
         d = np.linalg.norm(fn[i]-fn[j])
         p_all.append(d)
-        if c.labels_[i] == c.labels_[j]:
+        if c_labels[i] == c_labels[j]:
             intra_all.append(d)
             if label[i] == label[j]:
             #if label[p[0]] == label[p[1]]:
@@ -137,25 +138,22 @@ for train, test in kf:
     #print 'class count of true labels on cluster training ex:\n', ct(label[train])
     train_fd = fn[train]
     #n_class = len(np.unique(label[train]))
-    n_class = 6
-    c = AC(n_clusters=n_class, affinity='cosine', linkage='average')
+    #c = KMeans(init='k-means++', n_clusters=32, n_init=10)
+    c = DPGMM(n_components=50, covariance_type='spherical',alpha=10)
     c.fit(train_fd)
-    tmp = dd(list)
-    for i,j in zip(c.labels_, train):
-        tmp[i].append([label[j], input3[j]])
-    for k,v in tmp.items():
-        for vv in v:
-            pass
-            #print k, vv
-    print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
-    #c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
-    c = KMeans(init='k-means++', n_clusters=32, n_init=10)
-    c.fit(train_fd)
-    dist = np.sort(c.transform(train_fd))
+    c_labels = c.predict(train_fd)
+    #dist = np.sort(c.transform(train_fd))
+    m = clf.means_
+    cov = clf._get_covars()
+    print c.predict_proba(train_fd[0])
+    dst = []
+    for i in np.unique(c_labels):
+
+    e_pr = np.sort(c.predict_proba(train_fd))
     ex = dd(list) #example id, distance to centroid
     ex_id = dd(list) #example id for each C
-    for i,j,k in zip(c.labels_, train, dist):
-        ex[i].append([j,k[0]])
+    for i,j,k in zip(c_labels, train, e_pr):
+        ex[i].append([j,k[-1]])
         ex_id[i].append(int(j))
     for i,j in ex.items():
         ex[i] = sorted(j, key=lambda x: x[-1])
@@ -490,7 +488,7 @@ for train, test in kf:
         c = KMeans(init='k-means++', n_clusters=n, n_init=10)
         c.fit(train_fd)
         rank = dd(list)
-        for i,j,k in zip(c.labels_, v, np.sort(c.transform(train_fd))):
+        for i,j,k in zip(c_labels, v, np.sort(c.transform(train_fd))):
             rank[i].append([j,k[0]])
         for k,vv in rank.items():
             dist = sorted(vv, key=lambda x: x[-1])
