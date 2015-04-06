@@ -169,7 +169,7 @@ for train, test in kf:
             idx = v[i][0]
             km_idx.append(idx)
             #print k,label[idx],input3[idx]
-    '''
+
     #compute all pair dist distribution, set tao to min_X
     fit_dist = []
     fit_same = []
@@ -187,10 +187,10 @@ for train, test in kf:
     #ecdf = ECDF(src)
     #xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
     #ydata = ecdf(xdata)
-    tao = alpha*min(src)
-    #tao = alpha*min(src)/2
+    #tao = alpha_*min(src)
+    tao = alpha_*min(src)/2
     print 'inital tao', tao
-    '''
+
     '''
     #popt, pcov = curve_fit(sigmoid, xdata, ydata)
     #print popt
@@ -213,19 +213,19 @@ for train, test in kf:
     plt.grid(axis='y')
     plt.show()
     '''
-    tao = 1.96
+    #tao = 3
     #with tao, excluding the exs near initial C centroid
     for k,idx in zip(ex.keys(),km_idx):
         tmp = []
         for e in ex_id[k]:
             if e == idx:
                 continue
-            #d = np.linalg.norm(fn[e]-fn[idx])
-            a = fn[e] - mu[k]
-            b = c_inv[k]
-            d = np.abs(np.dot(np.dot(a,b),a.T))
+            d = np.linalg.norm(fn[e]-fn[idx])
+            #a = fn[e] - mu[k]
+            #b = c_inv[k]
+            #d = np.abs(np.dot(np.dot(a,b),a.T))
             if d<tao:
-                #p_dist[e] = d
+                p_dist[e] = d
                 p_idx.append(e)
                 p_label.append(label[idx])
                 #if label[idx]!=label[e]:
@@ -349,7 +349,6 @@ for train, test in kf:
                 idx = v[0][0]
                 km_idx.append(idx)
 
-                '''
                 #update tao then remove ex<tao
                 fit_dist = []
                 fit_same = []
@@ -367,8 +366,8 @@ for train, test in kf:
                 #ecdf = ECDF(src)
                 #xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
                 #ydata = ecdf(xdata)
-                tao = alpha_*min(src)
-                #tao = alpha_*min(src)/2
+                #tao = alpha_*min(src)
+                tao = alpha_*min(src)/2
                 #print '# labeled', len(km_idx)
 
                 tmp = []
@@ -381,23 +380,21 @@ for train, test in kf:
                         label_tmp.append(j)
                     else:
                         p_dist.pop(i)
-                        #p_idx.remove(i)
-                        #p_label.remove(j)
                         tmp.append(i)
                 p_idx = idx_tmp
                 p_label = label_tmp
-                '''
-                tmp = []
+
+                #tmp = []
                 for e in ex_id[cc]:
                     if e == idx:
                         continue
-                    #d = np.linalg.norm(fn[e]-fn[idx])
-                    a = fn[e] - mu[k]
-                    b = c_inv[k]
-                    d = np.abs(np.dot(np.dot(a,b),a.T))
+                    d = np.linalg.norm(fn[e]-fn[idx])
+                    #a = fn[e] - mu[k]
+                    #b = c_inv[k]
+                    #d = np.abs(np.dot(np.dot(a,b),a.T))
                     if d<tao:
                         #print 'added ex with d',d
-                        #p_dist[e] = d
+                        p_dist[e] = d
                         p_idx.append(e)
                         p_label.append(label[idx])
                         #if label[idx]!=label[e]:
