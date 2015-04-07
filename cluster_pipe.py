@@ -133,22 +133,22 @@ p_acc = [] #pseudo label acc
 acc_sum = [[] for i in xrange(rounds)]
 acc_ave = dd(list)
 tao = 0
-alpha = 1
+alpha_ = 1
 for train, test in kf:
     #print 'class count of true labels on cluster training ex:\n', ct(label[train])
     train_fd = fn[train]
     #n_class = len(np.unique(label[train]))
     #c = KMeans(init='k-means++', n_clusters=32, n_init=10)
-    c = DPGMM(n_components=50, covariance_type='spherical',alpha=10)
+    c = DPGMM(n_components=50, covariance_type='spherical', alpha=10)
     c.fit(train_fd)
     c_labels = c.predict(train_fd)
+    print '# of GMM', len(np.unique(c_labels))
     #dist = np.sort(c.transform(train_fd))
-    m = clf.means_
-    cov = clf._get_covars()
-    print c.predict_proba(train_fd[0])
-    dst = []
-    for i in np.unique(c_labels):
-
+    mu = c.means_
+    cov = c._get_covars()
+    c_inv = []
+    for co in cov:
+        c_inv.append(np.linalg.inv(co))
     e_pr = np.sort(c.predict_proba(train_fd))
     ex = dd(list) #example id, distance to centroid
     ex_id = dd(list) #example id for each C
@@ -156,7 +156,7 @@ for train, test in kf:
         ex[i].append([j,k[-1]])
         ex_id[i].append(int(j))
     for i,j in ex.items():
-        ex[i] = sorted(j, key=lambda x: x[-1])
+        ex[i] = sorted(j, key=lambda x: x[-1], reverse=True)
     km_idx = []
     p_idx = []
     p_label = []
@@ -169,12 +169,7 @@ for train, test in kf:
             idx = v[i][0]
             km_idx.append(idx)
             #print k,label[idx],input3[idx]
-    #print len(km_idx), 'training examples'
-
-    def sigmoid(x, x0, k):
-        y = 1/(1 + np.exp(-k*(x-x0)))
-        return y
-
+    '''
     #compute all pair dist distribution, set tao to min_X
     fit_dist = []
     fit_same = []
@@ -195,6 +190,7 @@ for train, test in kf:
     tao = alpha*min(src)
     #tao = alpha*min(src)/2
     print 'inital tao', tao
+    '''
     '''
     #popt, pcov = curve_fit(sigmoid, xdata, ydata)
     #print popt
@@ -217,15 +213,19 @@ for train, test in kf:
     plt.grid(axis='y')
     plt.show()
     '''
+    tao = 1.96
     #with tao, excluding the exs near initial C centroid
     for k,idx in zip(ex.keys(),km_idx):
         tmp = []
         for e in ex_id[k]:
             if e == idx:
                 continue
-            d = np.linalg.norm(fn[e]-fn[idx])
+            #d = np.linalg.norm(fn[e]-fn[idx])
+            a = fn[e] - mu[k]
+            b = c_inv[k]
+            d = np.abs(np.dot(np.dot(a,b),a.T))
             if d<tao:
-                p_dist[e] = d
+                #p_dist[e] = d
                 p_idx.append(e)
                 p_label.append(label[idx])
                 #if label[idx]!=label[e]:
@@ -236,9 +236,6 @@ for train, test in kf:
             ex_id.pop(k)
         else:
             ex_id[k] = tmp
-
-    test_fn = fn[test]
-    test_label = label[test]
 
     '''
     #find neighbors for each ex within each cluster
@@ -259,12 +256,16 @@ for train, test in kf:
     cl_id = []
     ex_al = [] #the ex added in each itr
     ex_num = [] #num of training ex in each itr
+    test_fn = fn[test]
+    test_label = label[test]
     for rr in range(rounds):
         ex_num.append(len(km_idx))
-        train_fn = fn[np.hstack((km_idx, p_idx))]
-        train_label = np.hstack((label[km_idx], p_label))
-        #train_fn = fn[km_idx]
-        #train_label = label[km_idx]
+        if not p_idx:
+            train_fn = fn[km_idx]
+            train_label = label[km_idx]
+        else:
+            train_fn = fn[np.hstack((km_idx, p_idx))]
+            train_label = np.hstack((label[km_idx], p_label))
         #print 'ct on traing label', ct(train_label)
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
@@ -323,30 +324,35 @@ for train, test in kf:
 
         #for cc,ll in sub_pred.items(): #if commented out, the following out also
             #print 'cluster',cc,'# of ex.', len(ll),'# predicted L', len(np.unique(ll))
-        cc = idx #used when choosing cluster by H
+        cc = idx #id of the cluster picked by H
         c_id = ex_id[cc] #example id of the cluster picked
         sub_label = sub_pred[idx]#used when choosing cluster by H
         #sub_label = ll
         sub_fn = fn[c_id]
 
         #sub-clustering the cluster
-        c_ = KMeans(init='k-means++', n_clusters=len(np.unique(sub_label)), n_init=10)
+        #c_ = KMeans(init='k-means++', n_clusters=len(np.unique(sub_label)), n_init=10)
+        c_ = DPGMM(n_components=5, covariance_type='spherical', alpha=10)
         c_.fit(sub_fn)
-        c_sub = dd(list)
-        for i,j in zip(c_.labels_, c_id):
-            c_sub[i].append(input3[j])
-        dist = np.sort(c_.transform(sub_fn))
-
+        cc_labels = c_.predict(sub_fn)
+        #dist = np.sort(c_.transform(sub_fn))
+        mu = c_.means_
+        cov = c_._get_covars()
+        c_inv = []
+        for co in cov:
+            c_inv.append(np.linalg.inv(co))
+        e_pr = np.sort(c.predict_proba(sub_fn))
         ex_ = dd(list)
-        for i,j,k,l in zip(c_.labels_, c_id, dist, sub_label):
-            ex_[i].append([j,l,k[0]])
+        for i,j,k,l in zip(cc_labels, c_id, e_pr, sub_label):
+            ex_[i].append([j,l,k[-1]])
         for i,j in ex_.items(): #sort by ex. dist to the centroid for each C
-            ex_[i] = sorted(j, key=lambda x: x[-1])
+            ex_[i] = sorted(j, key=lambda x: x[-1], reverse=True)
         for k,v in ex_.items():
             if v[0][0] not in km_idx:
                 idx = v[0][0]
                 km_idx.append(idx)
 
+                '''
                 #update tao then remove ex<tao
                 fit_dist = []
                 fit_same = []
@@ -364,8 +370,8 @@ for train, test in kf:
                 #ecdf = ECDF(src)
                 #xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
                 #ydata = ecdf(xdata)
-                tao = alpha*min(src)
-                #tao = alpha*min(src)/2
+                tao = alpha_*min(src)
+                #tao = alpha_*min(src)/2
                 #print '# labeled', len(km_idx)
 
                 tmp = []
@@ -383,13 +389,17 @@ for train, test in kf:
                         tmp.append(i)
                 p_idx = idx_tmp
                 p_label = label_tmp
+                '''
                 for e in ex_id[cc]:
                     if e == idx:
                         continue
-                    d = np.linalg.norm(fn[e]-fn[idx])
+                    #d = np.linalg.norm(fn[e]-fn[idx])
+                    a = fn[e] - mu[k]
+                    b = c_inv[k]
+                    d = np.abs(np.dot(np.dot(a,b),a.T))
                     if d<tao:
                         #print 'added ex with d',d
-                        p_dist[e] = d
+                        #p_dist[e] = d
                         p_idx.append(e)
                         p_label.append(label[idx])
                         #if label[idx]!=label[e]:
@@ -423,7 +433,7 @@ for train, test in kf:
     #    print e
     #print len(p_idx)
     print '# of p label', len(p_label)
-    print 'final tao', tao
+    #print 'final tao', tao
     print cl_id
     #for i,j in zip(p_idx,p_label):
     #    print input3[i], j, label[i], p_dist[i]
