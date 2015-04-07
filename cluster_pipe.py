@@ -252,14 +252,11 @@ for train, test in kf:
         neighbor[k] = sorted(v, key=lambda x: x[-1])
     '''
 
-    acc_itr= []
     cl_id = []
     ex_al = [] #the ex added in each itr
-    ex_num = [] #num of training ex in each itr
     test_fn = fn[test]
     test_label = label[test]
     for rr in range(rounds):
-        ex_num.append(len(km_idx))
         if not p_idx:
             train_fn = fn[km_idx]
             train_label = label[km_idx]
@@ -278,7 +275,6 @@ for train, test in kf:
         #print 'acc on test set', acc
         #print 'acc on cluster set', acc_
         acc_sum[rr].append(acc)
-        acc_itr.append(acc)
         #print 'iteration', rr, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
         '''
         for k in ex.keys():
@@ -332,9 +328,10 @@ for train, test in kf:
 
         #sub-clustering the cluster
         #c_ = KMeans(init='k-means++', n_clusters=len(np.unique(sub_label)), n_init=10)
-        c_ = DPGMM(n_components=5, covariance_type='spherical', alpha=10)
+        c_ = DPGMM(n_components=len(c_id), covariance_type='spherical', alpha=10)
         c_.fit(sub_fn)
         cc_labels = c_.predict(sub_fn)
+        #print '# of sub-GMM', len(np.unique(cc_labels))
         #dist = np.sort(c_.transform(sub_fn))
         mu = c_.means_
         cov = c_._get_covars()
@@ -390,6 +387,7 @@ for train, test in kf:
                 p_idx = idx_tmp
                 p_label = label_tmp
                 '''
+                tmp = []
                 for e in ex_id[cc]:
                     if e == idx:
                         continue
@@ -439,10 +437,6 @@ for train, test in kf:
     #    print input3[i], j, label[i], p_dist[i]
     print 'psudo label acc', sum(label[p_idx]==p_label)/float(len(p_label))
     p_acc.append(sum(label[p_idx]==p_label)/float(len(p_label)))
-    #print 'x=',ex_num
-    #print 'y=',repr(acc_itr)
-    for i,j in zip(ex_num, acc_itr):
-        acc_ave[i].append(j)
     print '----------------------------------------------------'
     print '----------------------------------------------------'
     #ss = raw_input()
