@@ -213,7 +213,7 @@ for train, test in kf:
     plt.grid(axis='y')
     plt.show()
     '''
-    tao = 1.96
+    tao = 1.5
     #with tao, excluding the exs near initial C centroid
     for k,idx in zip(ex.keys(),km_idx):
         tmp = []
@@ -328,7 +328,12 @@ for train, test in kf:
 
         #sub-clustering the cluster
         #c_ = KMeans(init='k-means++', n_clusters=len(np.unique(sub_label)), n_init=10)
-        c_ = DPGMM(n_components=len(c_id), covariance_type='spherical', alpha=10)
+        n=0
+        if len(c_id)>=5:
+            n = 5
+        else:
+            n = len(c_id)
+        c_ = DPGMM(n_components=n, covariance_type='spherical', alpha=10)
         c_.fit(sub_fn)
         cc_labels = c_.predict(sub_fn)
         #print '# of sub-GMM', len(np.unique(cc_labels))
@@ -338,7 +343,7 @@ for train, test in kf:
         c_inv = []
         for co in cov:
             c_inv.append(np.linalg.inv(co))
-        e_pr = np.sort(c.predict_proba(sub_fn))
+        e_pr = np.sort(c_.predict_proba(sub_fn))
         ex_ = dd(list)
         for i,j,k,l in zip(cc_labels, c_id, e_pr, sub_label):
             ex_[i].append([j,l,k[-1]])
@@ -435,8 +440,12 @@ for train, test in kf:
     print cl_id
     #for i,j in zip(p_idx,p_label):
     #    print input3[i], j, label[i], p_dist[i]
-    print 'psudo label acc', sum(label[p_idx]==p_label)/float(len(p_label))
-    p_acc.append(sum(label[p_idx]==p_label)/float(len(p_label)))
+    if not p_label:
+        print 'psudo label acc', 0
+        p_acc.append(0)
+    else:
+        print 'psudo label acc', sum(label[p_idx]==p_label)/float(len(p_label))
+        p_acc.append(sum(label[p_idx]==p_label)/float(len(p_label)))
     print '----------------------------------------------------'
     print '----------------------------------------------------'
     #ss = raw_input()
