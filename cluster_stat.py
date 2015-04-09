@@ -12,6 +12,7 @@ from collections import defaultdict as dd
 from collections import Counter as ct
 
 from sklearn.cluster import KMeans
+from sklearn.mixture import DPGMM
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import shuffle
 
@@ -126,7 +127,51 @@ plt.title('Elbow for KMeans clustering')
 plt.show()
 '''
 
+c = DPGMM(n_components=50, covariance_type='spherical', alpha=10)
+c.fit(fn)
+c_labels = c.predict(fn)
+print '# of GMM', len(np.unique(c_labels))
+prob = np.sort(c.predict_proba(fn))
+mu = c.means_
+cov = c._get_covars()
 
+d_c = dd(list) #distance to centroid
+for i,j,k in zip(c_labels, xrange(len(fn)), prob):
+        d_c[i].append([j,k[-1]])
+
+#distance to centroid v.s. label
+s2center = []
+d2center = []
+for k,v in d_c.items():
+    d_c[k] = sorted(v,key=lambda x: x[-1], reverse=True)
+for k,v in d_c.items():
+    l = label[v[0][0]]
+    for vv in v:
+        a = fn[vv[0]] - mu[k]
+        b = np.linalg.inv(cov[k])
+        d = np.abs(np.dot(np.dot(a,b),a.T))
+        if label[vv[0]] == l:
+            s2center.append(d)
+        else:
+            d2center.append(d)
+            break
+
+src = s2center
+ecdf = ECDF(src)
+x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
+y = ecdf(x)
+plt.plot(x, y, 'r--', label='same as centroid')
+src = d2center
+ecdf = ECDF(src)
+x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
+y = ecdf(x)
+plt.plot(x, y, 'k--', label='1st diff than centroid')
+plt.legend(loc='lower right')
+plt.xlabel('z-value sqaure')
+plt.title('dist. to centroid distribution')
+plt.grid(axis='y')
+plt.show()
+'''
 n_class = 16*2
 c = KMeans(init='k-means++', n_clusters=2*n_class, n_init=10)
 c.fit(fn)
@@ -138,7 +183,7 @@ for i,j,k in zip(c.labels_, xrange(len(fn)), dist):
         ex[i].append(k[0])
         d_c[i].append([j,k[0]])
 
-'''
+
 #distance to centroid v.s. label
 s2center = []
 d2center = []
@@ -214,7 +259,7 @@ pl.title('Cluster Distance Matrix')
 pl.show()
 '''
 
-
+'''
 #generating CDF
 p_same = []
 p_diff = []
@@ -329,4 +374,4 @@ plt.title('pairwise dist. distribution on inter-cluster pairs')
 plt.grid(axis='y')
 plt.show()
 s = raw_input()
-
+'''
