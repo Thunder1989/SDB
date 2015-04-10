@@ -51,6 +51,26 @@ for train, test in kf:
     folds[i] = test
     i+=1
 
+vc = CV(analyzer='char_wb', ngram_range=(3,4))
+fn = vc.fit_transform(name).toarray()
+#fn = vc.fit_transform(input1).toarray()
+#fn = input4[:,[0,1,2,3,5,6,7]]
+
+clf = LinearSVC()
+clf.fit(fn, label)
+coef = abs(clf.coef_)
+weight = np.max(coef, axis=0)
+#weight = np.mean(coef,axis=0)
+feature_rank = []
+for i,j in zip(weight, xrange(len(weight))):
+    feature_rank.append([i,j])
+feature_rank = sorted(feature_rank,key=lambda x: x[0],reverse=True)
+feature_idx=[]
+for i in feature_rank:
+    if i[0]>=0.05:
+        feature_idx.append(i[1])
+#fn = fn[:, feature_idx]
+
 acc_sum = [[] for i in range(iteration)]
 tp_type = [[] for i in range(17)]
 #precision_type = [[[] for i in range(iteration)] for i in range(6)]
@@ -59,12 +79,6 @@ clf = RFC(n_estimators=100, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = SVC(kernel='linear')
 #clf = LinearSVC()
-
-vc = CV(analyzer='char_wb', ngram_range=(3,4))
-fn = vc.fit_transform(name).toarray()
-#fn = vc.fit_transform(input1).toarray()
-fn = input4[:,[0,1,2,3,5,6,7]]
-
 for fd in range(fold):
 #for fd in range(1):
     print 'fold...', fd
@@ -117,12 +131,13 @@ for fd in range(fold):
     for itr in range(iteration):
         #train_data = fn[train]
         #train_label = label[train]
-        #if not p_idx:
-        train_data = fn[train]
-        #else:
-        #    train_data = fn[np.hstack((train, p_idx))]
-        #train_label = np.hstack((label[train], p_label))
-        train_label = label[train]
+        if not p_idx:
+            train_data = fn[train]
+            train_label = label[train]
+        else:
+            train_data = fn[np.hstack((train, p_idx))]
+            train_label = np.hstack((label[train], p_label))
+        #train_label = label[train]
         validate_data = fn[validate]
         #validate_label = label[validate]
 
@@ -278,6 +293,18 @@ for fd in range(fold):
         #train_idx.append(elmt)
         #test_idx.remove(elmt)
 
+        tao = 4.8 #5-percentile
+        for e in validate:
+            if e == elmt:
+                continue
+            d = np.linalg.norm(fn[e]-fn[elmt])
+            if d<tao:
+                p_idx.append(e)
+                p_label.append(label[elmt])
+                validate = validate[validate!=e]
+        if not validate.any():
+            print 'v set is exhausted', len(validate)
+            break
         '''
         #compute tao and remove ex<tao
         fit_dist = []
@@ -334,6 +361,11 @@ for fd in range(fold):
         print '# of p label', len(p_label)
         print 'p label acc', sum(label[p_idx]==p_label)/float(len(p_label))
         '''
+    if len(p_label)==0:
+        print '0 p label'
+    else:
+        print '# of p label', len(p_label)
+        print 'p label acc', sum(label[p_idx]==p_label)/float(len(p_label))
     #print 'ex before 30 itr', ct(ex_30)
     #print 'ex after 50 itr', ct(ex_50)
     #print 'ex all', ct(ex_all)

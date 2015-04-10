@@ -87,7 +87,7 @@ for i in feature_rank:
     if i[0]>=0.05:
         feature_idx.append(i[1])
 #print 'feature num', len(feature_idx)
-fn = fn[:, feature_idx]
+#fn = fn[:, feature_idx]
 
 '''
 p_same = []
@@ -139,7 +139,7 @@ for train, test in kf:
     train_fd = fn[train]
     #n_class = len(np.unique(label[train]))
     #c = KMeans(init='k-means++', n_clusters=32, n_init=10)
-    c = DPGMM(n_components=50, covariance_type='spherical', alpha=10)
+    c = DPGMM(n_components=50, covariance_type='diag', alpha=1)
     c.fit(train_fd)
     c_labels = c.predict(train_fd)
     print '# of GMM', len(np.unique(c_labels))
@@ -333,7 +333,7 @@ for train, test in kf:
             n = 5
         else:
             n = len(c_id)
-        c_ = DPGMM(n_components=n, covariance_type='spherical', alpha=10)
+        c_ = DPGMM(n_components=n, covariance_type='diag', alpha=1)
         c_.fit(sub_fn)
         cc_labels = c_.predict(sub_fn)
         #print '# of sub-GMM', len(np.unique(cc_labels))

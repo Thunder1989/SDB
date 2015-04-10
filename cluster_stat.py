@@ -126,14 +126,29 @@ plt.xlabel('Number of clusters')
 plt.title('Elbow for KMeans clustering')
 plt.show()
 '''
-
-c = DPGMM(n_components=50, covariance_type='spherical', alpha=10)
+'''
+src = np.mean(fn,axis=0)
+ecdf = ECDF(src)
+x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
+y = ecdf(x)
+plt.plot(x, y, 'k')
+plt.legend(loc='lower right')
+plt.xlabel('mean value')
+plt.title('CDF of mean distribution over all dimensions')
+plt.grid(axis='y')
+plt.show()
+c = DPGMM(n_components=50, covariance_type='diag', alpha=10000)
 c.fit(fn)
 c_labels = c.predict(fn)
 print '# of GMM', len(np.unique(c_labels))
 prob = np.sort(c.predict_proba(fn))
 mu = c.means_
 cov = c._get_covars()
+for i,m in enumerate(mu):
+    if not np.any(c_labels == i):
+        continue
+    print m
+print cov[0]
 
 d_c = dd(list) #distance to centroid
 for i,j,k in zip(c_labels, xrange(len(fn)), prob):
@@ -171,6 +186,8 @@ plt.xlabel('z-value sqaure')
 plt.title('dist. to centroid distribution')
 plt.grid(axis='y')
 plt.show()
+'''
+
 '''
 n_class = 16*2
 c = KMeans(init='k-means++', n_clusters=2*n_class, n_init=10)
@@ -259,7 +276,10 @@ pl.title('Cluster Distance Matrix')
 pl.show()
 '''
 
-'''
+
+n_class = 16
+c = KMeans(init='k-means++', n_clusters=2*n_class, n_init=10)
+c.fit(fn)
 #generating CDF
 p_same = []
 p_diff = []
@@ -374,4 +394,3 @@ plt.title('pairwise dist. distribution on inter-cluster pairs')
 plt.grid(axis='y')
 plt.show()
 s = raw_input()
-'''
