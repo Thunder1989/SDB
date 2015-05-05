@@ -87,7 +87,11 @@ for i in feature_rank:
     if i[0]>=0.05:
         feature_idx.append(i[1])
 #print 'feature num', len(feature_idx)
-#fn = fn[:, feature_idx]
+fn = fn[:, feature_idx]
+
+#svd = TruncatedSVD(n_components=400)
+#fn = svd.fit_transform(fn)
+#print 'var explained', svd.explained_variance_ratio_.sum()
 
 '''
 p_same = []
