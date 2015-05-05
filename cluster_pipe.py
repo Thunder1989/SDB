@@ -210,6 +210,10 @@ for train, test in kf:
         p_idx = idx_tmp
         p_label = label_tmp
 
+        if itr==3:
+            #make up for p_labels for the first 2 itrs
+            #TBD
+
         for e in ex_id[key]:
             if e == idx:
                 continue
@@ -238,6 +242,7 @@ for train, test in kf:
         acc = accuracy_score(test_label, preds_fn)
         acc_sum[ctr-1].append(acc)
     #'''
+
     '''
     for k,v in ex.items():
         for i in range(1):
@@ -312,8 +317,8 @@ for train, test in kf:
     ex_al = [] #the ex added in each itr
     test_fn = fn[test]
     test_label = label[test]
-    #for rr in range(ctr, rounds):
-    for rr in range(rounds):
+    for rr in range(ctr, rounds):
+    #for rr in range(rounds):
         if not p_idx:
             train_fn = fn[km_idx]
             train_label = label[km_idx]
