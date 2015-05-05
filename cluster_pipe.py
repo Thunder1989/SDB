@@ -44,7 +44,7 @@ input6 = np.genfromtxt('soda_45min_new', delimiter=',')
 label1 = input2[:,-1]
 label = input4[:,-1]
 label1 = input6[:,-1]
-#input3 = input5 #quick run of the code using other building
+#input3 = input1 #quick run of the code using other building
 #input3, label = shuffle(input3, label)
 name = []
 for i in input3:
@@ -138,30 +138,107 @@ for train, test in kf:
     #print 'class count of true labels on cluster training ex:\n', ct(label[train])
     train_fd = fn[train]
     #n_class = len(np.unique(label[train]))
-    #c = KMeans(init='k-means++', n_clusters=32, n_init=10)
+    c = KMeans(init='k-means++', n_clusters=32, n_init=10)
+    c.fit(train_fd)
+    '''
     c = DPGMM(n_components=50, covariance_type='diag', alpha=1)
     c.fit(train_fd)
     c_labels = c.predict(train_fd)
     print '# of GMM', len(np.unique(c_labels))
-    #dist = np.sort(c.transform(train_fd))
     mu = c.means_
     cov = c._get_covars()
     c_inv = []
     for co in cov:
         c_inv.append(np.linalg.inv(co))
     e_pr = np.sort(c.predict_proba(train_fd))
+    '''
+    dist = np.sort(c.transform(train_fd))
     ex = dd(list) #example id, distance to centroid
     ex_id = dd(list) #example id for each C
-    for i,j,k in zip(c_labels, train, e_pr):
-        ex[i].append([j,k[-1]])
+    ex_N = [] #example id for each C
+    #for i,j,k in zip(c_labels, train, e_pr):
+    for i,j,k in zip(c.labels_, train, dist):
+        ex[i].append([j,k[0]])
         ex_id[i].append(int(j))
     for i,j in ex.items():
-        ex[i] = sorted(j, key=lambda x: x[-1], reverse=True)
+        ex[i] = sorted(j, key=lambda x: x[-1])
+        ex_N.append([i,len(ex[i])])
+    ex_N = sorted(ex_N, key=lambda x: x[-1],reverse=True)
     km_idx = []
     p_idx = []
     p_label = []
     p_dist = dd()
     #print 'initial exs from k clusters centroid=============================='
+
+    #'''
+    #ordered by density on the first batch of exs
+    ctr = 0
+    for ee in ex_N:
+        key = ee[0]
+        idx = ex[key][0][0]
+        km_idx.append(idx)
+        ctr+=1
+        if ctr<3:
+            continue
+
+        fit_dist = []
+        fit_same = []
+        fit_diff = []
+        pair = list(itertools.combinations(km_idx,2))
+        for p in pair:
+            d = np.linalg.norm(fn[p[0]]-fn[p[1]])
+            fit_dist.append(d)
+            if label[p[0]] == label[p[1]]:
+                fit_same.append(d)
+            else:
+                fit_diff.append(d)
+        src = fit_diff
+        tao = alpha_*min(src)/2
+
+        #exclude exs
+        tmp = []
+        #re-visit exs removed on previous itr with the new tao
+        idx_tmp=[]
+        label_tmp=[]
+        for i,j in zip(p_idx,p_label):
+            if p_dist[i]<tao:
+                idx_tmp.append(i)
+                label_tmp.append(j)
+            else:
+                p_dist.pop(i)
+                tmp.append(i)
+        p_idx = idx_tmp
+        p_label = label_tmp
+
+        for e in ex_id[key]:
+            if e == idx:
+                continue
+            d = np.linalg.norm(fn[e]-fn[idx])
+            if d<tao:
+                p_dist[e] = d
+                p_idx.append(e)
+                p_label.append(label[idx])
+            else:
+                tmp.append(e)
+        if not tmp:
+            ex_id.pop(key)
+        else:
+            ex_id[key] = tmp
+
+        test_fn = fn[test]
+        test_label = label[test]
+        if not p_idx:
+            train_fn = fn[km_idx]
+            train_label = label[km_idx]
+        else:
+            train_fn = fn[np.hstack((km_idx, p_idx))]
+            train_label = np.hstack((label[km_idx], p_label))
+        clf.fit(train_fn, train_label)
+        preds_fn = clf.predict(test_fn)
+        acc = accuracy_score(test_label, preds_fn)
+        acc_sum[ctr-1].append(acc)
+    #'''
+    '''
     for k,v in ex.items():
         for i in range(1):
             if len(v)<=i:
@@ -191,28 +268,6 @@ for train, test in kf:
     tao = alpha_*min(src)/2
     print 'inital tao', tao
 
-    '''
-    #popt, pcov = curve_fit(sigmoid, xdata, ydata)
-    #print popt
-    #x_p = np.linspace(min(src), max(src), 100)
-    #y_p = sigmoid(x_p, popt[0],popt[1])
-    plt.plot(x, y, 'r', label='all_true')
-    #plt.plot(x_p, y_p, 'k--', label='fit')
-    plt.plot(xdata, ydata, 'k', label='all_prx')
-    src = fit_same
-    ecdf = ECDF(src)
-    xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-    ydata = ecdf(xdata)
-    plt.plot(xdata, ydata, 'r--', label='same_prx')
-    src = fit_diff
-    ecdf = ECDF(src)
-    xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-    ydata = ecdf(xdata)
-    plt.plot(xdata, ydata, 'k--', label='diff_prx')
-    plt.legend(loc='lower right')
-    plt.grid(axis='y')
-    plt.show()
-    '''
     #tao = 3
     #with tao, excluding the exs near initial C centroid
     for k,idx in zip(ex.keys(),km_idx):
@@ -236,6 +291,7 @@ for train, test in kf:
             ex_id.pop(k)
         else:
             ex_id[k] = tmp
+    '''
 
     '''
     #find neighbors for each ex within each cluster
@@ -256,6 +312,7 @@ for train, test in kf:
     ex_al = [] #the ex added in each itr
     test_fn = fn[test]
     test_label = label[test]
+    #for rr in range(ctr, rounds):
     for rr in range(rounds):
         if not p_idx:
             train_fn = fn[km_idx]
@@ -327,7 +384,10 @@ for train, test in kf:
         sub_fn = fn[c_id]
 
         #sub-clustering the cluster
-        #c_ = KMeans(init='k-means++', n_clusters=len(np.unique(sub_label)), n_init=10)
+        c_ = KMeans(init='k-means++', n_clusters=len(np.unique(sub_label)), n_init=10)
+        c_.fit(sub_fn)
+        dist = np.sort(c_.transform(sub_fn))
+        '''
         n=0
         if len(c_id)>=5:
             n = 5
@@ -337,18 +397,19 @@ for train, test in kf:
         c_.fit(sub_fn)
         cc_labels = c_.predict(sub_fn)
         #print '# of sub-GMM', len(np.unique(cc_labels))
-        #dist = np.sort(c_.transform(sub_fn))
         mu = c_.means_
         cov = c_._get_covars()
         c_inv = []
         for co in cov:
             c_inv.append(np.linalg.inv(co))
         e_pr = np.sort(c_.predict_proba(sub_fn))
+        '''
         ex_ = dd(list)
-        for i,j,k,l in zip(cc_labels, c_id, e_pr, sub_label):
-            ex_[i].append([j,l,k[-1]])
+        #for i,j,k,l in zip(cc_labels, c_id, e_pr, sub_label):
+        for i,j,k,l in zip(c_.labels_, c_id, dist, sub_label):
+            ex_[i].append([j,l,k[0]])
         for i,j in ex_.items(): #sort by ex. dist to the centroid for each C
-            ex_[i] = sorted(j, key=lambda x: x[-1], reverse=True)
+            ex_[i] = sorted(j, key=lambda x: x[-1])
         for k,v in ex_.items():
             if v[0][0] not in km_idx:
                 idx = v[0][0]

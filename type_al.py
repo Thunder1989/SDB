@@ -32,14 +32,14 @@ input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 input5 = [i.strip().split('_')[-1][:-5] for i in open('soda_pt_new').readlines()]
 input6 = np.genfromtxt('soda_45min_new', delimiter=',')
 label1 = input2[:,-1]
-label = input4[:,-1]
-label1 = input6[:,-1]
+label1 = input4[:,-1]
+label = input6[:,-1]
 name = []
-for i in input3:
+for i in input5:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
 
-iteration = 180
+iteration = 130
 fold = 10
 alpha = 1
 #loo = LeaveOneOut(len(data))
@@ -205,8 +205,8 @@ for fd in range(fold):
                 margin = 1
             else:
                 margin = pr[-1]-pr[-2]
-            #margin = 1 - margin
-            #margin *= p_x[h]
+            margin = 1 - margin
+            margin *= p_x[h]
             res.append([h,i,margin])
         #print 'iter', itr, 'wrong #', len(wrong)
 
@@ -217,12 +217,12 @@ for fd in range(fold):
         '''
 
         #Margin-based, sort and pick the one with least margin
-        #res = sorted(res, key=lambda x: x[-1], reverse=True)
-        res = sorted(res, key=lambda x: x[-1])
+        res = sorted(res, key=lambda x: x[-1], reverse=True)
+        #res = sorted(res, key=lambda x: x[-1])
         #print 'iter', itr, len(res)
         idx = 0
-        '''
 
+        '''
         #least confidence based
         tmp = sorted(label_pr, key=lambda x: x[-1])
         idx = 0
@@ -293,6 +293,7 @@ for fd in range(fold):
         #train_idx.append(elmt)
         #test_idx.remove(elmt)
 
+        '''
         tao = 4.8 #5-percentile
         for e in validate:
             if e == elmt:
@@ -305,6 +306,7 @@ for fd in range(fold):
         if not validate.any():
             print 'v set is exhausted', len(validate)
             break
+        '''
         '''
         #compute tao and remove ex<tao
         fit_dist = []
