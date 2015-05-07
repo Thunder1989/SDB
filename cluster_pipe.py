@@ -31,6 +31,7 @@ from sklearn.svm import LinearSVC
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score as FS
 from sklearn.metrics import confusion_matrix as CM
 from sklearn import tree
 from sklearn.preprocessing import normalize
@@ -44,14 +45,13 @@ input6 = np.genfromtxt('soda_45min_new', delimiter=',')
 label1 = input2[:,-1]
 label = input4[:,-1]
 label1 = input6[:,-1]
-#input3 = input1 #quick run of the code using other building
+input3 = input3 #quick run of the code using other building
 #input3, label = shuffle(input3, label)
 name = []
 for i in input3:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
-
-cv = CV(analyzer='char_wb', ngram_range=(3,4))
+cv = CV(analyzer='char', ngram_range=(3,7))
 #tv = TV(analyzer='char_wb', ngram_range=(3,4))
 fn = cv.fit_transform(name).toarray()
 #fn = cv.fit_transform(input1).toarray()
@@ -87,7 +87,7 @@ for i in feature_rank:
     if i[0]>=0.05:
         feature_idx.append(i[1])
 #print 'feature num', len(feature_idx)
-fn = fn[:, feature_idx]
+#fn = fn[:, feature_idx]
 
 #svd = TruncatedSVD(n_components=400)
 #fn = svd.fit_transform(fn)
@@ -138,7 +138,13 @@ acc_sum = [[] for i in xrange(rounds)]
 acc_ave = dd(list)
 tao = 0
 alpha_ = 1
+
+p1 = []
+p5 = []
+p10 = []
+run = 0
 for train, test in kf:
+    run += 1
     #print 'class count of true labels on cluster training ex:\n', ct(label[train])
     train_fd = fn[train]
     #n_class = len(np.unique(label[train]))
@@ -174,7 +180,7 @@ for train, test in kf:
     p_dist = dd()
     #print 'initial exs from k clusters centroid=============================='
 
-    #'''
+    '''
     #ordered by density on the first batch of exs
     ctr = 0
     for ee in ex_N:
@@ -245,9 +251,19 @@ for train, test in kf:
         preds_fn = clf.predict(test_fn)
         acc = accuracy_score(test_label, preds_fn)
         acc_sum[ctr-1].append(acc)
-    #'''
 
+        if itr>=0.01*len(train) and len(p1)<run+1:
+            f1 = FS(test_label, preds_fn, average='weighted')
+            p1.append(f1)
+        if itr>=0.05*len(train) and len(p5)<run+1:
+            f1 = FS(test_label, preds_fn, average='weighted')
+            p5.append(f1)
+        if itr>=0.1*len(train) and len(p10)<run+1:
+            f1 = FS(test_label, preds_fn, average='weighted')
+            p10.append(f1)
     '''
+
+    #'''
     for k,v in ex.items():
         for i in range(1):
             if len(v)<=i:
@@ -300,7 +316,28 @@ for train, test in kf:
             ex_id.pop(k)
         else:
             ex_id[k] = tmp
-    '''
+
+        test_fn = fn[test]
+        test_label = label[test]
+        if not p_idx:
+            train_fn = fn[km_idx]
+            train_label = label[km_idx]
+        else:
+            train_fn = fn[np.hstack((km_idx, p_idx))]
+            train_label = np.hstack((label[km_idx], p_label))
+        clf.fit(train_fn, train_label)
+        preds_fn = clf.predict(test_fn)
+
+        if len(km_idx)>=0.01*len(train) and len(p1)<run+1:
+            f1 = FS(test_label, preds_fn, average='weighted')
+            p1.append(f1)
+        if len(km_idx)>=0.05*len(train) and len(p5)<run+1:
+            f1 = FS(test_label, preds_fn, average='weighted')
+            p5.append(f1)
+        if len(km_idx)>=0.1*len(train) and len(p10)<run+1:
+            f1 = FS(test_label, preds_fn, average='weighted')
+            p10.append(f1)
+
 
     '''
     #find neighbors for each ex within each cluster
@@ -321,8 +358,8 @@ for train, test in kf:
     ex_al = [] #the ex added in each itr
     test_fn = fn[test]
     test_label = label[test]
-    for rr in range(ctr, rounds):
-    #for rr in range(rounds):
+    #for rr in range(ctr, rounds):
+    for rr in range(rounds):
         if not p_idx:
             train_fn = fn[km_idx]
             train_label = label[km_idx]
@@ -342,6 +379,15 @@ for train, test in kf:
         #print 'acc on cluster set', acc_
         acc_sum[rr].append(acc)
         #print 'iteration', rr, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+        if len(km_idx)>=0.01*len(train) and len(p1)<run+1:
+            f1 = FS(test_label, preds_fn, average='weighted')
+            p1.append(f1)
+        if len(km_idx)>=0.05*len(train) and len(p5)<run+1:
+            f1 = FS(test_label, preds_fn, average='weighted')
+            p5.append(f1)
+        if len(km_idx)>=0.1*len(train) and len(p10)<run+1:
+            f1 = FS(test_label, preds_fn, average='weighted')
+            p10.append(f1)
         '''
         for k in ex.keys():
             prev = ex_cur[k]
@@ -485,7 +531,9 @@ for train, test in kf:
                 #ex_cur[k] = idx
                 ex_al.append([rr,cc,v[0][-2],label[idx],input3[idx]])
                 #print cc,label[idx],input3[idx]
+
                 break
+
         #print len(km_idx), 'training examples'
         '''
         train_fn = fn[km_idx]
@@ -520,6 +568,11 @@ for train, test in kf:
 print 'class count of clf training ex:', ct(train_label)
 print 'average acc:', [np.mean(i) for i in acc_sum]
 print 'average p label acc:', np.mean(p_acc)
+
+print np.mean(p1)
+print np.mean(p5)
+print np.mean(p10)
+
 tmp = []
 for i,j in acc_ave.items():
     tmp.append([i,np.mean(j)])

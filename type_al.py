@@ -11,6 +11,7 @@ from sklearn.svm import SVC
 from sklearn.svm import LinearSVC
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score as FS
 from sklearn.metrics import confusion_matrix as CM
 from sklearn import tree
 from sklearn.preprocessing import normalize
@@ -31,7 +32,7 @@ input3 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlin
 input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 input5 = [i.strip().split('_')[-1][:-5] for i in open('soda_pt_new').readlines()]
 input6 = np.genfromtxt('soda_45min_new', delimiter=',')
-label1 = input2[:,-1]
+label = input2[:,-1]
 label1 = input4[:,-1]
 label = input6[:,-1]
 name = []
@@ -79,6 +80,11 @@ clf = RFC(n_estimators=100, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = SVC(kernel='linear')
 #clf = LinearSVC()
+
+
+p1 = []
+p5 = []
+p10 = []
 for fd in range(fold):
 #for fd in range(1):
     print 'fold...', fd
@@ -146,7 +152,15 @@ for fd in range(fold):
         preds = clf.predict(test_data)
         acc = clf.score(test_data, test_label)
         acc_sum[itr].append(acc)
-
+        if itr>=0.01*len(test)*9 and len(p1)<fd+1:
+            f1 = FS(test_label, preds, average='weighted')
+            p1.append(f1)
+        if itr>=0.05*len(test)*9 and len(p5)<fd+1:
+            f1 = FS(test_label, preds, average='weighted')
+            p5.append(f1)
+        if itr>=0.1*len(test)*9 and len(p10)<fd+1:
+            f1 = FS(test_label, preds, average='weighted')
+            p10.append(f1)
         '''
         cm_ = CM(test_label,preds)
         cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
@@ -217,8 +231,8 @@ for fd in range(fold):
         '''
 
         #Margin-based, sort and pick the one with least margin
-        res = sorted(res, key=lambda x: x[-1], reverse=True)
-        #res = sorted(res, key=lambda x: x[-1])
+        #res = sorted(res, key=lambda x: x[-1], reverse=True)
+        res = sorted(res, key=lambda x: x[-1])
         #print 'iter', itr, len(res)
         idx = 0
 
@@ -393,6 +407,12 @@ for i in range(6):
     ave_rec[i] = [np.mean(r) for r in recall_type[i] ]
 '''
 print 'overall acc:', repr(ave_acc)
+print 'p1',p1
+print np.mean(p1)
+print 'p5',p5
+print np.mean(p5)
+print 'p10',p10
+print np.mean(p10)
 #print ex_30
 #print ex_50
 #print 'acc std:', repr(acc_std)
