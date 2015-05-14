@@ -51,7 +51,7 @@ name = []
 for i in input3:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
-cv = CV(analyzer='char', ngram_range=(3,7))
+cv = CV(analyzer='char_wb', ngram_range=(3,4))
 #tv = TV(analyzer='char_wb', ngram_range=(3,4))
 fn = cv.fit_transform(name).toarray()
 #fn = cv.fit_transform(input1).toarray()
@@ -71,7 +71,7 @@ print 'class count of true labels of all ex:\n', ct(label)
 fold = 10
 rounds = 100
 clf = LinearSVC()
-#clf = SVC(kernel='linear')
+#clf = SVC(kernel='linear', probability=True)
 #clf = RFC(n_estimators=100, criterion='entropy')
 
 clf.fit(fn, label)
@@ -270,6 +270,10 @@ for train, test in kf:
                 continue
             idx = v[i][0]
             km_idx.append(idx)
+            #FIXED: remove the labeled center also
+            tmp = np.asarray(ex_id[k])
+            tmp = tmp[tmp!=idx]
+            ex_id[k] = tmp
             #print k,label[idx],input3[idx]
 
     #compute all pair dist distribution, set tao to min_X
@@ -337,8 +341,50 @@ for train, test in kf:
         if len(km_idx)>=0.1*len(train) and len(p10)<run+1:
             f1 = FS(test_label, preds_fn, average='weighted')
             p10.append(f1)
-
-
+        '''
+        if len(km_idx)>=0.05*len(test):
+            t_p=0
+            t_tp=0
+            t_pp=0
+            h_p=0
+            h_tp=0
+            h_pp=0
+            o_p=0
+            o_tp=0
+            o_pp=0
+            for i,j,k in zip(test_label, preds_fn, test):
+                if i==4:
+                    t_p+=1
+                    if j==i:
+                        t_tp+=1
+                if j==4:
+                    t_pp+=1
+                    print '4',name[k]
+                if i==2:
+                    h_p+=1
+                    if j==i:
+                        h_tp+=1
+                if j==2:
+                    h_pp+=1
+                    print '2',name[k]
+                if i==1:
+                    o_p+=1
+                    if j==i:
+                        o_tp+=1
+                if j==1:
+                    o_pp+=1
+                    print '21',name[k]
+            print t_p
+            print t_tp
+            print t_pp
+            print h_p
+            print h_tp
+            print h_pp
+            print o_p
+            print o_tp
+            print o_pp
+            break
+        '''
     '''
     #find neighbors for each ex within each cluster
     neighbor = dd(list)
@@ -369,10 +415,14 @@ for train, test in kf:
         #print 'ct on traing label', ct(train_label)
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
-        #print clf.decision_function(test_fn)
         sub_pred = dd(list) #Mn predicted labels for each cluster
+        uc = dd()
         for k,v in ex_id.items():
             sub_pred[k] = clf.predict(fn[v]) #predict labels for cluster learning set
+            df = np.sort(clf.decision_function(fn[v]))
+            for vv,pp in zip(v,df):
+                uc[vv] = pp[-1]
+
         acc = accuracy_score(test_label, preds_fn)
         #acc_ = accuracy_score(label[train_], preds_c)
         #print 'acc on test set', acc
@@ -462,7 +512,7 @@ for train, test in kf:
         ex_ = dd(list)
         #for i,j,k,l in zip(cc_labels, c_id, e_pr, sub_label):
         for i,j,k,l in zip(c_.labels_, c_id, dist, sub_label):
-            ex_[i].append([j,l,k[0]])
+            ex_[i].append([j,l,k[0]*uc[j]])
         for i,j in ex_.items(): #sort by ex. dist to the centroid for each C
             ex_[i] = sorted(j, key=lambda x: x[-1])
         for k,v in ex_.items():

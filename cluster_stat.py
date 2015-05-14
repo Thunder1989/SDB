@@ -348,7 +348,12 @@ plt.legend(loc='lower right')
 plt.xlabel('L2 distance')
 plt.title('pairwise example distance distribution')
 plt.grid(axis='y')
-plt.show()
+from matplotlib.backends.backend_pdf import PdfPages
+pp = PdfPages('dist.pdf')
+pp.savefig(dpi = 300)
+pp.close()
+plt.close()
+#plt.show()
 s = raw_input()
 
 src = intra_same
