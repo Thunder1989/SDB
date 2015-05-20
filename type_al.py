@@ -1,3 +1,6 @@
+'''
+active learning on a single building
+'''
 from sklearn.feature_extraction.text import CountVectorizer as CV
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.cross_validation import KFold

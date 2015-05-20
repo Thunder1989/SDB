@@ -14,28 +14,34 @@ from sklearn import tree
 from sklearn.preprocessing import normalize
 from collections import defaultdict
 import numpy as np
+import re
 import math
 import random
 import pylab as pl
 
 #input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
-#input1 = [i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_new_forrice').readlines()]
+#input1 = [i.strip().split('\\')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
 #input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
-input1 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_forsdh').readlines()]
+input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlines()]
 input2 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
-#input1 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_part').readlines()]
+#input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_new_part').readlines()]
 #input2 = np.genfromtxt('sdh_45min_part', delimiter=',')
-#input1 = [i.strip().split('_')[-1][:-4] for i in open('soda_pt_part').readlines()]
+#input1 = [i.strip().split('_')[-1][:-5] for i in open('soda_pt_part').readlines()]
 #input2 = np.genfromtxt('soda_45min_part', delimiter=',')
 label1 = input2[:,-1]
 #label2 = input4[:,-1]
+
+name = []
+for i in input2:
+    s = re.findall('(?i)[a-z]{2,}',i)
+    name.append(' '.join(s))
 
 '''
 first do AL using string features to generate labels
 and train a data feature model on the generated labels
 '''
 iteration = 120
-fold = 60
+fold = 10
 #skf = StratifiedKFold(label1, n_folds=fold)
 kf = KFold(len(label1), n_folds=fold, shuffle=True)
 folds = [[] for i in range(fold)]
@@ -49,9 +55,9 @@ clf = RFC(n_estimators=50, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = SVC(kernel='linear')
 
-vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
+vc = CV(analyzer='char_wb', ngram_range=(3,4))
 #vc = CV(token_pattern='[a-z]{2,}')
-data1 = vc.fit_transform(input1).toarray()
+data1 = vc.fit_transform(name).toarray()
 for fd in range(1):
     train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
     validate = np.hstack((folds[(fd+x)%fold] for x in range(1,30)))
