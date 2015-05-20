@@ -51,10 +51,12 @@ name = []
 for i in input3:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
-cv = CV(analyzer='char', ngram_range=(3,7))
+
+cv = CV(analyzer='char_wb', ngram_range=(3,4))
 #tv = TV(analyzer='char_wb', ngram_range=(3,4))
 fn = cv.fit_transform(name).toarray()
 #fn = cv.fit_transform(input1).toarray()
+#print cv.vocabulary_
 fd = input4[:,[0,1,2,3,5,6,7]]
 print 'class count of true labels of all ex:\n', ct(label)
 #n_class = len(np.unique(label))
@@ -148,7 +150,7 @@ for train, test in kf:
     #print 'class count of true labels on cluster training ex:\n', ct(label[train])
     train_fd = fn[train]
     #n_class = len(np.unique(label[train]))
-    c = KMeans(init='k-means++', n_clusters=32, n_init=10)
+    c = KMeans(init='k-means++', n_clusters=3, n_init=10)
     c.fit(train_fd)
     '''
     c = DPGMM(n_components=50, covariance_type='diag', alpha=1)
@@ -180,7 +182,7 @@ for train, test in kf:
     p_dist = dd()
     #print 'initial exs from k clusters centroid=============================='
 
-    '''
+    #'''
     #ordered by density on the first batch of exs
     ctr = 0
     for ee in ex_N:
@@ -190,7 +192,7 @@ for train, test in kf:
         ctr+=1
         if ctr<3:
             continue
-
+        '''
         fit_dist = []
         fit_same = []
         fit_diff = []
@@ -238,7 +240,7 @@ for train, test in kf:
             ex_id.pop(key)
         else:
             ex_id[key] = tmp
-
+        '''
         test_fn = fn[test]
         test_label = label[test]
         if not p_idx:
@@ -252,18 +254,18 @@ for train, test in kf:
         acc = accuracy_score(test_label, preds_fn)
         acc_sum[ctr-1].append(acc)
 
-        if itr>=0.01*len(train) and len(p1)<run+1:
+        if len(km_idx)>=0.01*len(train) and len(p1)<run+1:
             f1 = FS(test_label, preds_fn, average='weighted')
             p1.append(f1)
-        if itr>=0.05*len(train) and len(p5)<run+1:
+        if len(km_idx)>=0.05*len(train) and len(p5)<run+1:
             f1 = FS(test_label, preds_fn, average='weighted')
             p5.append(f1)
-        if itr>=0.1*len(train) and len(p10)<run+1:
+        if len(km_idx)>=0.1*len(train) and len(p10)<run+1:
             f1 = FS(test_label, preds_fn, average='weighted')
             p10.append(f1)
-    '''
-
     #'''
+
+    '''
     for k,v in ex.items():
         for i in range(1):
             if len(v)<=i:
@@ -271,7 +273,6 @@ for train, test in kf:
             idx = v[i][0]
             km_idx.append(idx)
             #print k,label[idx],input3[idx]
-
     #compute all pair dist distribution, set tao to min_X
     fit_dist = []
     fit_same = []
@@ -337,7 +338,7 @@ for train, test in kf:
         if len(km_idx)>=0.1*len(train) and len(p10)<run+1:
             f1 = FS(test_label, preds_fn, average='weighted')
             p10.append(f1)
-
+    '''
 
     '''
     #find neighbors for each ex within each cluster
@@ -469,7 +470,7 @@ for train, test in kf:
             if v[0][0] not in km_idx:
                 idx = v[0][0]
                 km_idx.append(idx)
-
+                '''
                 #update tao then remove ex<tao
                 fit_dist = []
                 fit_same = []
@@ -531,7 +532,7 @@ for train, test in kf:
                 #ex_cur[k] = idx
                 ex_al.append([rr,cc,v[0][-2],label[idx],input3[idx]])
                 #print cc,label[idx],input3[idx]
-
+                '''
                 break
 
         #print len(km_idx), 'training examples'
