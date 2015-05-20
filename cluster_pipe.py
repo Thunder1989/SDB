@@ -45,7 +45,7 @@ input6 = np.genfromtxt('soda_45min_new', delimiter=',')
 label1 = input2[:,-1]
 label = input4[:,-1]
 label1 = input6[:,-1]
-input3 = input3 #quick run of the code using other building
+#input3 = input3 #quick run of the code using other building
 #input3, label = shuffle(input3, label)
 name = []
 for i in input3:
@@ -73,7 +73,7 @@ print 'class count of true labels of all ex:\n', ct(label)
 fold = 10
 rounds = 100
 clf = LinearSVC()
-#clf = SVC(kernel='linear')
+#clf = SVC(kernel='linear', probability=True)
 #clf = RFC(n_estimators=100, criterion='entropy')
 
 clf.fit(fn, label)
@@ -150,7 +150,7 @@ for train, test in kf:
     #print 'class count of true labels on cluster training ex:\n', ct(label[train])
     train_fd = fn[train]
     #n_class = len(np.unique(label[train]))
-    c = KMeans(init='k-means++', n_clusters=3, n_init=10)
+    c = KMeans(init='k-means++', n_clusters=32, n_init=10)
     c.fit(train_fd)
     '''
     c = DPGMM(n_components=50, covariance_type='diag', alpha=1)
@@ -272,6 +272,10 @@ for train, test in kf:
                 continue
             idx = v[i][0]
             km_idx.append(idx)
+            #FIXED: remove the labeled center also
+            tmp = np.asarray(ex_id[k])
+            tmp = tmp[tmp!=idx]
+            ex_id[k] = tmp
             #print k,label[idx],input3[idx]
     #compute all pair dist distribution, set tao to min_X
     fit_dist = []
@@ -338,8 +342,8 @@ for train, test in kf:
         if len(km_idx)>=0.1*len(train) and len(p10)<run+1:
             f1 = FS(test_label, preds_fn, average='weighted')
             p10.append(f1)
-    '''
 
+    '''
     '''
     #find neighbors for each ex within each cluster
     neighbor = dd(list)
@@ -370,10 +374,14 @@ for train, test in kf:
         #print 'ct on traing label', ct(train_label)
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
-        #print clf.decision_function(test_fn)
         sub_pred = dd(list) #Mn predicted labels for each cluster
+        uc = dd()
         for k,v in ex_id.items():
             sub_pred[k] = clf.predict(fn[v]) #predict labels for cluster learning set
+            df = np.sort(clf.decision_function(fn[v]))
+            for vv,pp in zip(v,df):
+                uc[vv] = pp[-1]
+
         acc = accuracy_score(test_label, preds_fn)
         #acc_ = accuracy_score(label[train_], preds_c)
         #print 'acc on test set', acc
@@ -417,20 +425,6 @@ for train, test in kf:
         idx = rank[0][0] #pick the id of the 1st cluster on the rank
         cl_id.append(idx) #track cluster id on each iteration
 
-        '''
-        #for debug
-        ss = raw_input('')
-        while ss!='+':
-            l = debug[int(ss)]
-            for ll in l:
-                print '<<', ss, ll
-            ss = raw_input('')
-
-        l = debug[idx]
-        for ll in l:
-            print '<<', idx, ll
-        '''
-
         #for cc,ll in sub_pred.items(): #if commented out, the following out also
             #print 'cluster',cc,'# of ex.', len(ll),'# predicted L', len(np.unique(ll))
         cc = idx #id of the cluster picked by H
@@ -463,7 +457,7 @@ for train, test in kf:
         ex_ = dd(list)
         #for i,j,k,l in zip(cc_labels, c_id, e_pr, sub_label):
         for i,j,k,l in zip(c_.labels_, c_id, dist, sub_label):
-            ex_[i].append([j,l,k[0]])
+            ex_[i].append([j,l,k[0]*uc[j]])
         for i,j in ex_.items(): #sort by ex. dist to the centroid for each C
             ex_[i] = sorted(j, key=lambda x: x[-1])
         for k,v in ex_.items():

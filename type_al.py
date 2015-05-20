@@ -81,7 +81,6 @@ clf = RFC(n_estimators=100, criterion='entropy')
 #clf = SVC(kernel='linear')
 #clf = LinearSVC()
 
-
 p1 = []
 p5 = []
 p10 = []
@@ -134,6 +133,7 @@ for fd in range(fold):
     p_idx = []
     p_label = []
     p_dist = dd()
+    tao = 0
     for itr in range(iteration):
         #train_data = fn[train]
         #train_label = label[train]
@@ -161,6 +161,57 @@ for fd in range(fold):
         if itr>=0.1*len(test)*9 and len(p10)<fd+1:
             f1 = FS(test_label, preds, average='weighted')
             p10.append(f1)
+
+        '''
+        if itr>=0.05*len(test):
+            t_p=0
+            t_tp=0
+            t_pp=0
+            h_p=0
+            h_tp=0
+            h_pp=0
+            o_p=0
+            o_tp=0
+            o_pp=0
+            for i,j,k in zip(test_label, preds, test):
+                if i==4:
+                    t_p+=1
+                    if j==i:
+                        t_tp+=1
+                if j==4:
+                    t_pp+=1
+                    print '4',input3[k]
+                if i==2:
+                    h_p+=1
+                    if j==i:
+                        h_tp+=1
+                if j==2:
+                    h_pp+=1
+                    print '2',input3[k]
+                if i==1:
+                    o_p+=1
+                    if j==i:
+                        o_tp+=1
+                if j==1:
+                    o_pp+=1
+                    print '21',input3[k]
+            print t_p
+            print t_tp
+            print t_pp
+            print h_p
+            print h_tp
+            print h_pp
+            print o_p
+            print o_tp
+            print o_pp
+
+            #cm_ = CM(test_label,preds)
+            #cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
+            #print cm
+            break
+        '''
+
+
         '''
         cm_ = CM(test_label,preds)
         cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
@@ -219,8 +270,8 @@ for fd in range(fold):
                 margin = 1
             else:
                 margin = pr[-1]-pr[-2]
-            margin = 1 - margin
-            margin *= p_x[h]
+            #margin = 1 - margin
+            #margin *= p_x[h]
             res.append([h,i,margin])
         #print 'iter', itr, 'wrong #', len(wrong)
 
@@ -306,9 +357,8 @@ for fd in range(fold):
         validate = validate[validate!=elmt]
         #train_idx.append(elmt)
         #test_idx.remove(elmt)
-
         '''
-        tao = 4.8 #5-percentile
+        tao = 4.8
         for e in validate:
             if e == elmt:
                 continue
@@ -321,28 +371,22 @@ for fd in range(fold):
             print 'v set is exhausted', len(validate)
             break
         '''
-        '''
+
         #compute tao and remove ex<tao
-        fit_dist = []
-        fit_same = []
         fit_diff = []
         pair = list(itertools.combinations(train,2))
         for p in pair:
             d = np.linalg.norm(fn[p[0]]-fn[p[1]])
-            fit_dist.append(d)
+            #fit_dist.append(d)
             if label[p[0]] == label[p[1]]:
-                fit_same.append(d)
+                pass
+                # fit_same.append(d)
             else:
                 fit_diff.append(d)
-        #src = fit_dist
-        if not fit_dist:
+        if not fit_diff:
             continue
-        #src = fit_dist #set tao be the min(inter-class pair dist)/2
         src = fit_diff #set tao be the min(inter-class pair dist)/2
-        #ecdf = ECDF(src)
-        #xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
         tao = alpha*min(src)/2
-        #print 'tao in itr', itr, tao
         #re-visit previous ex using new tao
         idx_tmp = []
         label_tmp = []
@@ -376,12 +420,7 @@ for fd in range(fold):
     else:
         print '# of p label', len(p_label)
         print 'p label acc', sum(label[p_idx]==p_label)/float(len(p_label))
-        '''
-    if len(p_label)==0:
-        print '0 p label'
-    else:
-        print '# of p label', len(p_label)
-        print 'p label acc', sum(label[p_idx]==p_label)/float(len(p_label))
+
     #print 'ex before 30 itr', ct(ex_30)
     #print 'ex after 50 itr', ct(ex_50)
     #print 'ex all', ct(ex_all)
