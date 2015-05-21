@@ -77,31 +77,29 @@ pl.ylabel('True label')
 pl.xticks(range(len(cls)), cls)
 pl.xlabel('Predicted label')
 pl.title('Mn Confusion matrix (%.3f)'%acc)
-pl.show()
+#pl.show()
+
 '''
 step2: AL with string feature on bldg2
 '''
 #input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
-#input1 = [i.strip().split('\\')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
-#input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
-input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlines()]
-input2 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
+input1 = [i.strip().split('\\')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
+input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
+#input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlines()]
+#input2 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 #input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_new_part').readlines()]
 #input2 = np.genfromtxt('sdh_45min_part', delimiter=',')
 #input1 = [i.strip().split('_')[-1][:-5] for i in open('soda_pt_part').readlines()]
 #input2 = np.genfromtxt('soda_45min_part', delimiter=',')
-label1 = input2[:,-1]
+label = input2[:,-1]
 #label2 = input4[:,-1]
-
 name = []
-for i in input2:
+for i in input1:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
-label_gt = input2[:,-1]
-label1 = preds
 
-iteration = 120
-fold = 5
+iteration = 100
+fold = 10
 clx = 13
 kf = KFold(len(label1), n_folds=fold, shuffle=True)
 folds = [[] for i in range(fold)]
@@ -118,9 +116,9 @@ clf = RFC(n_estimators=50, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = SVC(kernel='linear')
 
-vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
+cv = CV(analyzer='char_wb', ngram_range=(3,4))
 #vc = CV(token_pattern='[a-z]{2,}')
-data1 = vc.fit_transform(input1).toarray()
+data1 = cv.fit_transform(input1).toarray()
 ex = []
 for fd in range(1):
     print 'running AL on new bldg - fold', fd
@@ -135,6 +133,34 @@ for fd in range(1):
     test_label = label_gt[test]
     acc_Md.append(accuracy_score(test_label, label1[test]))
 
+    train_fd = fn[train]
+    #n_class = len(np.unique(label[train]))
+    c = KMeans(init='k-means++', n_clusters=32, n_init=10)
+    c.fit(train_fd)
+    '''
+    c = DPGMM(n_components=50, covariance_type='diag', alpha=1)
+    c.fit(train_fd)
+    c_labels = c.predict(train_fd)
+    print '# of GMM', len(np.unique(c_labels))
+    mu = c.means_
+    cov = c._get_covars()
+    c_inv = []
+    for co in cov:
+        c_inv.append(np.linalg.inv(co))
+    e_pr = np.sort(c.predict_proba(train_fd))
+    '''
+    dist = np.sort(c.transform(train_fd))
+    ex = dd(list) #example id, distance to centroid
+    ex_id = dd(list) #example id for each C
+    ex_N = [] #example id for each C
+    #for i,j,k in zip(c_labels, train, e_pr):
+    for i,j,k in zip(c.labels_, train, dist):
+        ex[i].append([j,k[0]])
+        ex_id[i].append(int(j))
+    for i,j in ex.items():
+        ex[i] = sorted(j, key=lambda x: x[-1])
+        ex_N.append([i,len(ex[i])])
+    ex_N = sorted(ex_N, key=lambda x: x[-1],reverse=True)
     for itr in range(iteration):
         train_data = data1[train]
         train_label = label1[train]
