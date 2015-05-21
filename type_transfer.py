@@ -41,7 +41,8 @@ clf = RFC(n_estimators=100, criterion='entropy')
 clf.fit(train_data, train_label)
 #print 'class in Md as training:\n', clf.classes_
 preds = clf.predict(test_data)
-print 'Md acc', clf.score(test_data, test_label)
+acc = clf.score(test_data, test_label)
+print 'Md acc', acc
 
 #compute 'confidence' for each example in the new bldg
 label_pr = np.sort(clf.predict_proba(test_data)) #sort each prob vector in ascending order
@@ -54,6 +55,29 @@ for h,i,pr in zip(range(len(test_data)),preds,label_pr):
         margin = pr[-1]-pr[-2]
     cf_d[h].append([i,margin])
 
+mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
+cm_ = CM(test_label, preds)
+cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
+fig = pl.figure()
+ax = fig.add_subplot(111)
+cax = ax.matshow(cm)
+fig.colorbar(cax)
+for x in xrange(len(cm)):
+    for y in xrange(len(cm)):
+        ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
+                    horizontalalignment='center',
+                    verticalalignment='center',
+                    fontsize=10)
+cm_cls =np.unique(np.hstack((test_label,preds)))
+cls = []
+for c in cm_cls:
+    cls.append(mapping[c])
+pl.yticks(range(len(cls)), cls)
+pl.ylabel('True label')
+pl.xticks(range(len(cls)), cls)
+pl.xlabel('Predicted label')
+pl.title('Mn Confusion matrix (%.3f)'%acc)
+pl.show()
 '''
 step2: AL with string feature on bldg2
 '''
@@ -167,9 +191,7 @@ f.close()
 #print repr(ex)
 
 mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
-
-preds = clf.predict(test_data)
-cm_ = CM(test_label,preds)
+cm_ = CM(test_label, preds_fn)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
 fig = pl.figure()
 ax = fig.add_subplot(111)
@@ -177,40 +199,17 @@ cax = ax.matshow(cm)
 fig.colorbar(cax)
 for x in xrange(len(cm)):
     for y in xrange(len(cm)):
-        ax.annotate(str("%.3f(%d)"%(cm[x][y],cm_[x][y])), xy=(y,x),
+        ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
                     horizontalalignment='center',
                     verticalalignment='center',
                     fontsize=10)
-cls_id =np.unique(test_label)
+cm_cls =np.unique(np.hstack((test_label,preds_fn)))
 cls = []
-for c in cls_id:
+for c in cm_cls:
     cls.append(mapping[c])
-#cls = ['co2','humidity','rmt','stpt','flow','other_t']
-#cls = ['rmt','pos','stpt','flow','other_t','ctrl','spd','sta']
-pl.xticks(range(len(cm)),cls)
-pl.yticks(range(len(cm)),cls)
-pl.title('Mn Confusion matrix (%.3f)'%clf.score(test_data, test_label))
+pl.yticks(range(len(cls)), cls)
 pl.ylabel('True label')
+pl.xticks(range(len(cls)), cls)
 pl.xlabel('Predicted label')
-pl.show()
-
-cm_ = CM(test_label, label1[test])
-cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
-fig = pl.figure()
-ax = fig.add_subplot(111)
-cax = ax.matshow(cm)
-fig.colorbar(cax)
-for x in xrange(len(cm)):
-    for y in xrange(len(cm)):
-        ax.annotate(str("%.3f(%d)"%(cm[x][y],cm_[x][y])), xy=(y,x),
-                    horizontalalignment='center',
-                    verticalalignment='center',
-                    fontsize=10)
-#cls = ['co2','humidity','rmt','stpt','flow','other_t']
-#cls = ['rmt','pos','stpt','flow','other_t','ctrl','spd','sta']
-pl.xticks(range(len(cm)),cls)
-pl.yticks(range(len(cm)),cls)
-pl.title('Md Confusion matrix (%.3f)'%accuracy_score(test_label, label1[test]))
-pl.ylabel('True label')
-pl.xlabel('Predicted label')
+pl.title('Mn Confusion matrix (%.3f)'%acc)
 pl.show()
