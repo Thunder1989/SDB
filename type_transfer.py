@@ -10,13 +10,16 @@ from sklearn.ensemble import ExtraTreesClassifier as ETC
 from sklearn.ensemble import AdaBoostClassifier as Ada
 from sklearn.svm import SVC
 from sklearn.svm import LinearSVC
+from sklearn.cluster import KMeans
+from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import confusion_matrix as CM
-from sklearn import tree
 from sklearn.preprocessing import normalize
-from collections import defaultdict
+from sklearn import tree
+from collections import defaultdict as DD
+
 import numpy as np
 import re
 import math
@@ -36,24 +39,13 @@ train_data = data1
 train_label = label1
 test_data = data2
 test_label = label2
-clf = RFC(n_estimators=100, criterion='entropy')
+md = RFC(n_estimators=100, criterion='entropy')
 #clf = LinearSVC()
-clf.fit(train_data, train_label)
+md.fit(train_data, train_label)
 #print 'class in Md as training:\n', clf.classes_
-preds = clf.predict(test_data)
-acc = clf.score(test_data, test_label)
+preds = md.predict(test_data)
+acc = md.score(test_data, test_label)
 print 'Md acc', acc
-
-#compute 'confidence' for each example in the new bldg
-label_pr = np.sort(clf.predict_proba(test_data)) #sort each prob vector in ascending order
-cf_d = defaultdict(list)
-for h,i,pr in zip(range(len(test_data)),preds,label_pr):
-    #entropy = np.sum(-p*math.log(p,2) for p in pr if p!=0)
-    if len(pr)<2:
-        margin = 1
-    else:
-        margin = pr[-1]-pr[-2]
-    cf_d[h].append([i,margin])
 
 mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
 cm_ = CM(test_label, preds)
@@ -68,7 +60,7 @@ for x in xrange(len(cm)):
                     horizontalalignment='center',
                     verticalalignment='center',
                     fontsize=10)
-cm_cls =np.unique(np.hstack((test_label,preds)))
+cm_cls = np.unique(np.hstack((test_label,preds)))
 cls = []
 for c in cm_cls:
     cls.append(mapping[c])
@@ -80,7 +72,7 @@ pl.title('Mn Confusion matrix (%.3f)'%acc)
 #pl.show()
 
 '''
-step2: AL with string feature on bldg2
+step2: AL with name feature on bldg2
 '''
 #input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 input1 = [i.strip().split('\\')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
@@ -98,10 +90,10 @@ for i in input1:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
 
-iteration = 100
+iteration = 20
 fold = 10
 clx = 13
-kf = KFold(len(label1), n_folds=fold, shuffle=True)
+kf = KFold(len(label), n_folds=fold, shuffle=True)
 folds = [[] for i in range(fold)]
 i = 0
 for train, test in kf:
@@ -109,18 +101,21 @@ for train, test in kf:
     i+=1
 
 acc_sum = [[] for i in range(iteration)]
+acc_train = [[] for i in range(iteration)]
 acc_Md = []
 acc_type = [[] for i in range(clx)]
 #acc_type = [[[] for i in range(iteration)] for i in range(6)]
-clf = RFC(n_estimators=50, criterion='entropy')
+#clf = RFC(n_estimators=100, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
 #clf = SVC(kernel='linear')
+mn = LinearSVC()
 
 cv = CV(analyzer='char_wb', ngram_range=(3,4))
 #vc = CV(token_pattern='[a-z]{2,}')
-data1 = cv.fit_transform(input1).toarray()
-ex = []
-for fd in range(1):
+fn = cv.fit_transform(name).toarray()
+for train, test in kf:
+#for fd in range(1):
+    '''
     print 'running AL on new bldg - fold', fd
     train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
     validate = np.hstack((folds[(fd+x)%fold] for x in range(1,fold/2)))
@@ -129,14 +124,24 @@ for fd in range(1):
     train = train[:1]
 
     test = np.hstack((folds[(fd+x)%fold] for x in range(fold/2,fold)))
-    test_data = data1[test]
-    test_label = label_gt[test]
-    acc_Md.append(accuracy_score(test_label, label1[test]))
+    '''
+    test_data = fn[test]
+    test_label = label[test]
+    train_data = fn[train]
+    preds = md.predict(data2[train])
+    train_label = DD()
+    for i,j in zip(train, preds):
+        train_label[i] = j
+    #acc_Md.append(accuracy_score(test_label, label1[test]))
+    mn.fit(train_data, preds)
+    acc = mn.score(test_data, test_label)
+    acc_sum[0].append(acc)
 
-    train_fd = fn[train]
+    c_fn = fn[train]
     #n_class = len(np.unique(label[train]))
-    c = KMeans(init='k-means++', n_clusters=32, n_init=10)
-    c.fit(train_fd)
+    n_class = 15
+    c = KMeans(init='k-means++', n_clusters=15, n_init=10)
+    c.fit(c_fn)
     '''
     c = DPGMM(n_components=50, covariance_type='diag', alpha=1)
     c.fit(train_fd)
@@ -149,10 +154,10 @@ for fd in range(1):
         c_inv.append(np.linalg.inv(co))
     e_pr = np.sort(c.predict_proba(train_fd))
     '''
-    dist = np.sort(c.transform(train_fd))
-    ex = dd(list) #example id, distance to centroid
-    ex_id = dd(list) #example id for each C
-    ex_N = [] #example id for each C
+    dist = np.sort(c.transform(c_fn))
+    ex = DD(list) #example id, distance to centroid
+    ex_id = DD(list) #example id for each C
+    ex_N = [] #number of examples for each C
     #for i,j,k in zip(c_labels, train, e_pr):
     for i,j,k in zip(c.labels_, train, dist):
         ex[i].append([j,k[0]])
@@ -160,26 +165,54 @@ for fd in range(1):
     for i,j in ex.items():
         ex[i] = sorted(j, key=lambda x: x[-1])
         ex_N.append([i,len(ex[i])])
-    ex_N = sorted(ex_N, key=lambda x: x[-1],reverse=True)
-    for itr in range(iteration):
-        train_data = data1[train]
-        train_label = label1[train]
-        validate_data = data1[validate]
-        validate_label = label1[validate]
+    ex_N = sorted(ex_N, key=lambda x: x[-1],reverse=True) #sort cluster by density
 
-        clf.fit(train_data, train_label)
-        print clf.classes_
-        acc = clf.score(test_data, test_label)
+    #confidence of training ex
+    label_pr = np.sort(md.predict_proba(data2[train]))
+    cf_d = DD()
+    for i,pr in zip(train, label_pr):
+        if len(pr)<2:
+            margin = 1
+        else:
+            margin = pr[-1]-pr[-2]
+        cf_d[i] = margin
+    #cf_d = sorted(cf_d, key=lambda x: x[-1])
+
+    for itr in range(1,n_class+1):
+        print 'running itr', itr
+        #train_data = fn[train]
+        #train_label = md.predict(train_data)
+        #validate_data = data1[validate]
+        #validate_label = label1[validate]
+
+        #kNN based voting on Md labels
+        knn = KNN(n_neighbors=7, weights='distance', metric='euclidean')
+        c_id = ex_N[itr-1][0]
+        e_id = np.asarray([i[0] for i in ex[c_id]]) #voting starts from the centroid
+        '''
+        sub_cf = [[i, cf_d[i]] for i in e_id]
+        sub_cf = sorted(sub_cf, key=lambda x: x[-1])
+        e_id = np.asarray([i[0] for i in sub_cf]) #voting starts frim min_cf by Md
+        '''
+        for i in e_id:
+            tmp = e_id[e_id!=i]
+            X = fn[tmp]
+            Y = []
+            for t in tmp:
+                Y.append(train_label[t])
+            knn.fit(X, Y)
+            train_label[i] = int(knn.predict(fn[i]))
+
+        Y = []
+        for t in train:
+            Y.append(train_label[t])
+        mn.fit(train_data, Y)
+        #print mn.classes_
+        acc = mn.score(test_data, test_label)
         acc_sum[itr].append(acc)
+        acc_train[itr].append(accuracy_score(label[train], Y))
 
-        preds = clf.predict(test_data)
-        cm = CM(test_label,preds)
-        cm = normalize(cm.astype(np.float), axis=1, norm='l1')
-        k=0
-        while k<clx:
-            acc_type[k].append(cm[k,k])
-            k += 1
-
+        '''
         #entropy based example selection block
         #compute entropy for each instance and rank
         label_pr = np.sort(clf.predict_proba(validate_data)) #sort in ascending order
@@ -199,19 +232,20 @@ for fd in range(1):
         ex.extend([itr+1, elmt, label1[elmt], label_gt[elmt]])
         train = np.append(train, elmt)
         validate = validate[validate!=elmt]
-
-print 'acc from Md', np.mean(acc_Md)
+        '''
+#print 'acc from Md', np.mean(acc_Md)
 ave_acc = [np.mean(acc) for acc in acc_sum]
-acc_std = [np.std(acc) for acc in acc_sum]
-
+ave_train = [np.mean(acc) for acc in acc_train]
+#acc_std = [np.std(acc) for acc in acc_sum]
 print 'overall acc:', repr(ave_acc)
+print 'overall acc on train:', repr(ave_train)
 #print 'acc std:', repr(acc_std)
 #print 'acc by type', repr(acc_type)
-f = open('pipe_out','w')
-f.writelines('%s;\n'%repr(i) for i in acc_type)
-f.write('ex in each itr:'+repr(ex)+'\n')
-f.write(repr(np.unique(test_label)))
-f.close()
+#f = open('pipe_out','w')
+#f.writelines('%s;\n'%repr(i) for i in acc_type)
+#f.write('ex in each itr:'+repr(ex)+'\n')
+#f.write(repr(np.unique(test_label)))
+#f.close()
 #for i in acc_type:
     #print 'a = ', repr(i), '; plot(a\');'
 #print repr(ex)
