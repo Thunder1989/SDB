@@ -35,10 +35,10 @@ label1 = input1[:,-1]
 input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
 data2 = input2[:,[0,1,2,3,5,6,7]]
 label2 = input2[:,-1]
-train_data = data1
-train_label = label1
-test_data = data2
-test_label = label2
+train_data = data2
+train_label = label2
+test_data = data1
+test_label = label1
 md = RFC(n_estimators=100, criterion='entropy')
 #clf = LinearSVC()
 md.fit(train_data, train_label)
@@ -77,8 +77,8 @@ step2: AL with name feature on bldg2
 #input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 input1 = [i.strip().split('\\')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
 input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
-#input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlines()]
-#input2 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
+input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlines()]
+input2 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 #input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_new_part').readlines()]
 #input2 = np.genfromtxt('sdh_45min_part', delimiter=',')
 #input1 = [i.strip().split('_')[-1][:-5] for i in open('soda_pt_part').readlines()]
@@ -90,7 +90,7 @@ for i in input1:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
 
-iteration = 20
+iteration = 40
 fold = 10
 clx = 13
 kf = KFold(len(label), n_folds=fold, shuffle=True)
@@ -128,7 +128,7 @@ for train, test in kf:
     test_data = fn[test]
     test_label = label[test]
     train_data = fn[train]
-    preds = md.predict(data2[train])
+    preds = md.predict(data1[train])
     train_label = DD()
     for i,j in zip(train, preds):
         train_label[i] = j
@@ -139,8 +139,8 @@ for train, test in kf:
 
     c_fn = fn[train]
     #n_class = len(np.unique(label[train]))
-    n_class = 15
-    c = KMeans(init='k-means++', n_clusters=15, n_init=10)
+    n_class = 20
+    c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
     c.fit(c_fn)
     '''
     c = DPGMM(n_components=50, covariance_type='diag', alpha=1)
@@ -168,7 +168,7 @@ for train, test in kf:
     ex_N = sorted(ex_N, key=lambda x: x[-1],reverse=True) #sort cluster by density
 
     #confidence of training ex
-    label_pr = np.sort(md.predict_proba(data2[train]))
+    label_pr = np.sort(md.predict_proba(data1[train]))
     cf_d = DD()
     for i,pr in zip(train, label_pr):
         if len(pr)<2:
@@ -186,7 +186,7 @@ for train, test in kf:
         #validate_label = label1[validate]
 
         #kNN based voting on Md labels
-        knn = KNN(n_neighbors=7, weights='distance', metric='euclidean')
+        knn = KNN(n_neighbors=3, weights='distance', metric='euclidean')
         c_id = ex_N[itr-1][0]
         e_id = np.asarray([i[0] for i in ex[c_id]]) #voting starts from the centroid
         '''

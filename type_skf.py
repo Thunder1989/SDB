@@ -3,6 +3,10 @@ from sklearn.feature_extraction.text import CountVectorizer as CV
 from sklearn.tree import DecisionTreeClassifier as DT
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.svm import SVC
+from sklearn.svm import SVR
+from sklearn.svm import LinearSVC
+from sklearn.feature_selection import RFE
+from sklearn.decomposition import PCA
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix as CM
 from sklearn import tree
@@ -12,11 +16,11 @@ import math
 import pylab as pl
 
 #input1 = np.genfromtxt('rice_45min_raw_sliding', delimiter=',')
-input1 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
-input2 = [i.strip().split('\\')[-1][:-4] for i in open('rice_pt_forsdh').readlines()]
+input1 = np.genfromtxt('rice_45min', delimiter=',')
+input2 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlines()]
 #data1 = input1[:,[0,1,2,3,5,6,7,9,10,11]]
 fd = input1[:,[0,1,2,3,5,6,7]]
-#data1 = input1[:,0:-1]
+#fd = input1[:,0:-1]
 #index = data1.shape[1]*2/3
 #data1 = input1[:,0:index]
 label = input1[:,-1]
@@ -25,12 +29,21 @@ input4 = [i.strip().split('+')[-1][:-4] for i in open('sdh_pt_new_forrice').read
 fd1 = input3[:,[0,1,2,3,5,6,7]]
 label1 = input3[:,-1]
 
-fold = 2
+fold = 10
 clx = 9
 skf = StratifiedKFold(label, n_folds=fold)
 acc_sum = []
 indi_acc =[[] for i in range(clx)]
 clf1 = RFC(n_estimators=100, criterion='entropy')
+#pca = PCA(n_components=100)
+#pca.fit(fd)
+#print pca.explained_variance_ratio_
+#print pca.n_components_
+#model = SVR(kernel="linear")
+#selector = RFE(model, 500)
+#selector = selector.fit(fd, label)
+#fd = fd[:,selector.support_]
+#print fd.shape
 #clf = DT(criterion='entropy', random_state=0)
 clf2 = SVC(kernel='linear')
 vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
@@ -50,12 +63,12 @@ while loop<run/fold:
         aka, use 1 fold to train, k-1 folds to test
         so the indexing is inversed
         '''
-        train_fd = fd[test_idx]
-        train_fn = fn[test_idx]
-        train_label = label[test_idx]
-        test_fd = fd[train_idx]
-        test_fn = fn[train_idx]
-        test_label = label[train_idx]
+        train_fd = fd[train_idx]
+        train_fn = fn[train_idx]
+        train_label = label[train_idx]
+        test_fd = fd[test_idx]
+        test_fn = fn[test_idx]
+        test_label = label[test_idx]
         #test_data = data2
         #test_label = label2
         clf1.fit(train_fd, train_label)
