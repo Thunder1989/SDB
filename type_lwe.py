@@ -10,6 +10,7 @@ from sklearn.ensemble import ExtraTreesClassifier as ETC
 from sklearn.ensemble import AdaBoostClassifier as Ada
 from sklearn.svm import SVC
 from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegression as LR
 from sklearn.cluster import KMeans
 from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.metrics import accuracy_score
@@ -19,6 +20,7 @@ from sklearn.metrics import confusion_matrix as CM
 from sklearn.preprocessing import normalize
 from sklearn import tree
 from collections import defaultdict as DD
+from collections import Counter as CT
 
 import numpy as np
 import re
@@ -27,26 +29,41 @@ import random
 import pylab as pl
 
 '''
-step1: apply a data model from bldg1 to bldg2
+step1: train base models from bldg1
 '''
-input1 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
-data1 = input1[:,[0,1,2,3,5,6,7]]
-label1 = input1[:,-1]
-input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
-data2 = input2[:,[0,1,2,3,5,6,7]]
-label2 = input2[:,-1]
-train_data = data1
-train_label = label1
-test_data = data2
-test_label = label2
-md = RFC(n_estimators=100, criterion='entropy')
-#clf = LinearSVC()
-md.fit(train_data, train_label)
-#print 'class in Md as training:\n', clf.classes_
-preds = md.predict(test_data)
-acc = md.score(test_data, test_label)
-print 'Md acc', acc
+input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlines()]
+input2 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
+fd = input2[:,[0,1,2,3,5,6,7]]
+label = input2[:,-1]
+class_ = np.unique(label)
+name = []
+for i in input1:
+    s = re.findall('(?i)[a-z]{2,}',i)
+    name.append(' '.join(s))
+input1 = [i.strip().split('\\')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
+for i in input1:
+    s = re.findall('(?i)[a-z]{2,}',i)
+    name.append(' '.join(s))
+cv = CV(analyzer='char_wb', ngram_range=(3,4))
+#fn = cv.fit_transform(name).toarray()
+cv.fit(name)
 
+input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlines()]
+name = []
+for i in input1:
+    s = re.findall('(?i)[a-z]{2,}',i)
+    name.append(' '.join(s))
+fn = cv.transform(name).toarray()
+
+rf = RFC(n_estimators=100, criterion='entropy')
+svm = SVC(kernel='rbf', probability=True)
+lr = LR()
+#clf = LinearSVC()
+bl = [lr, rf, svm] #set of base classifier
+for b in bl:
+    b.fit(fd, label) #train each base classifier
+    print b
+'''
 mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
 cm_ = CM(test_label, preds)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
@@ -69,14 +86,16 @@ pl.ylabel('True label')
 pl.xticks(range(len(cls)), cls)
 pl.xlabel('Predicted label')
 pl.title('Mn Confusion matrix (%.3f)'%acc)
-#pl.show()
+pl.show()
+'''
 
 '''
-step2: AL with name feature on bldg2
+step2: TL with name feature on bldg2
 '''
 #input1 = [i.strip().split('\\')[-2]+i.strip().split('\\')[-1][:-4] for i in open('sdh_pt_name').readlines()]
 input1 = [i.strip().split('\\')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
 input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
+fd = input2[:,[0,1,2,3,5,6,7]]
 #input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlines()]
 #input2 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 #input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_new_part').readlines()]
@@ -89,19 +108,127 @@ name = []
 for i in input1:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
-cv = CV(analyzer='char_wb', ngram_range=(3,4))
-#vc = CV(token_pattern='[a-z]{2,}')
-fn = cv.fit_transform(name).toarray()
+#cv = CV(analyzer='char_wb', ngram_range=(3,4))
+fn = cv.transform(name).toarray()
+#fd = fn
+for b in bl:
+    print b.score(fd,label)
+
+n_class = 10
+c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
+c.fit(fd)
+dist = np.sort(c.transform(fd))
+ex = DD(list) #example id, distance to centroid
+ex_id = DD(list) #example id for each C
+ex_N = [] #number of examples for each C
+for i,j,k in zip(c.labels_, xrange(len(fd)), dist):
+    ex[i].append([j,k[0]])
+    ex_id[i].append(int(j))
+for i,j in ex.items():
+    ex[i] = sorted(j, key=lambda x: x[-1])
+    ex_N.append([i,len(ex[i])])
+ex_N = sorted(ex_N, key=lambda x: x[-1],reverse=True) #sort cluster by density
+nb_c = DD()
+for exx in ex_id.values():
+    exx = np.asarray(exx)
+    for e in exx:
+        nb_c[e] = exx[exx!=e]
+nb_f = [DD(), DD(), DD()]
+for b,n in zip(bl, nb_f):
+    preds = b.predict(fd)
+    ex_ = DD(list)
+    for i,j in zip(preds, xrange(len(fd))):
+        ex_[i].append(int(j))
+    for exx in ex_.values():
+        exx = np.asarray(exx)
+        for e in exx:
+            n[e] = exx[exx!=e]
+
+preds = np.array([999 for i in xrange(len(fd))])
+delta = 0.5
+ct=0
+t=0
+true = []
+pred = []
+for i in xrange(len(fd)):
+    w = []
+    v_c = set(nb_c[i])
+    for n in nb_f:
+        v_f = set(n[i])
+        sim = len(v_c & v_f) / float(len(v_c | v_f))
+        w.append(sim)
+    if np.mean(w) > delta:
+        w[:] = [float(j)/sum(w) for j in w]
+        pred_pr = np.zeros(len(class_))
+        for wi, b in zip(w,bl):
+            pr = b.predict_proba(fd[i])
+            pred_pr = pred_pr + wi*pr
+        preds[i] = class_[np.argmax(pred_pr)]
+        true.append(label[i])
+        pred.append(preds[i])
+        ct+=1
+        if preds[i]==label[i]:
+            t+=1
+print 'part acc' , float(t)/ct
+print 'percent', float(ct)/len(label)
+mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
+cm_ = CM(true, pred)
+cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
+fig = pl.figure()
+ax = fig.add_subplot(111)
+cax = ax.matshow(cm)
+fig.colorbar(cax)
+for x in xrange(len(cm)):
+    for y in xrange(len(cm)):
+        ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
+                    horizontalalignment='center',
+                    verticalalignment='center',
+                    fontsize=8)
+cm_cls =np.unique(np.hstack((true,pred)))
+cls = []
+for c in cm_cls:
+    cls.append(mapping[c])
+pl.yticks(range(len(cls)), cls)
+pl.ylabel('True label')
+pl.xticks(range(len(cls)), cls)
+pl.xlabel('Predicted label')
+pl.title('Confusion Matrix (%.3f)'%(float(t)/ct))
+pl.show()
+ctr = 0
+ct = 0
+t = 0
+for k,v in ex_id.items():
+    l = preds[v]
+    if np.mean(l)==999:
+        idx = ex[k][0][0]
+        m = label[idx]
+        ctr += 1
+    else:
+        rank = CT(l).keys()
+        m = rank[0]
+        if m==999:
+            m=rank[1]
+        for vv in v:
+            if preds[vv]==999:
+                preds[vv] = m
+                ct+=1
+                if preds[vv]==label[vv]:
+                    t+=1
+if ct!=0:
+    print 'propogate acc' , float(t)/ct
+    print 'propogate percent', float(ct)/len(label)
+print '# of manual label', ctr
+print 'acc by LWE', accuracy_score(preds, label)
 
 iteration = 40
 fold = 10
 clx = 13
 kf = KFold(len(label), n_folds=fold, shuffle=True)
-#folds = [[] for i in range(fold)]
-#i = 0
-#for train, test in kf:
-#    folds[i] = test
-#    i+=1
+folds = [[] for i in range(fold)]
+i = 0
+for train, test in kf:
+    folds[i] = test
+    i+=1
 
 acc_sum = [[] for i in range(iteration)]
 acc_train = [[] for i in range(iteration)]
@@ -128,7 +255,7 @@ for train, test in kf:
     test_data = fn[test]
     test_label = label[test]
     train_data = fn[train]
-    preds = md.predict(data2[train])
+    preds = md.predict(data1[train])
     train_label = DD()
     for i,j in zip(train, preds):
         train_label[i] = j
@@ -139,7 +266,7 @@ for train, test in kf:
 
     c_fn = fn[train]
     #n_class = len(np.unique(label[train]))
-    n_class = 16
+    n_class = 20
     c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
     c.fit(c_fn)
     '''
@@ -168,7 +295,7 @@ for train, test in kf:
     ex_N = sorted(ex_N, key=lambda x: x[-1],reverse=True) #sort cluster by density
 
     #confidence of training ex
-    label_pr = np.sort(md.predict_proba(data2[train]))
+    label_pr = np.sort(md.predict_proba(data1[train]))
     cf_d = DD()
     for i,pr in zip(train, label_pr):
         if len(pr)<2:
@@ -178,15 +305,15 @@ for train, test in kf:
         cf_d[i] = margin
     #cf_d = sorted(cf_d, key=lambda x: x[-1])
 
-    for itr in range(1, n_class+1):
-        print 'itr', itr
+    for itr in range(1,n_class+1):
+        print 'running itr', itr
         #train_data = fn[train]
         #train_label = md.predict(train_data)
         #validate_data = data1[validate]
         #validate_label = label1[validate]
 
         #kNN based voting on Md labels
-        #knn = KNN(n_neighbors=3, weights='distance', metric='euclidean')
+        knn = KNN(n_neighbors=3, weights='distance', metric='euclidean')
         c_id = ex_N[itr-1][0]
         e_id = np.asarray([i[0] for i in ex[c_id]]) #voting starts from the centroid
         '''
@@ -200,10 +327,6 @@ for train, test in kf:
             Y = []
             for t in tmp:
                 Y.append(train_label[t])
-            nb = len(tmp)
-            if nb>=5:
-                nb = 5
-            knn = KNN(n_neighbors=nb, weights='distance', metric='euclidean')
             knn.fit(X, Y)
             train_label[i] = int(knn.predict(fn[i]))
 

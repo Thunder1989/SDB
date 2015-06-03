@@ -41,7 +41,7 @@ acc_sum = []
 indi_acc =[[] for i in range(clx)]
 #clf = RFC(n_estimators=100, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
-clf = SVC(kernel='linear')
+clf = SVC(kernel='linear', probability=True)
 #clf = GNB()
 
 #vc = CV(token_pattern='[a-z]{2,}')
