@@ -1,4 +1,5 @@
 from sklearn.cross_validation import StratifiedKFold
+from sklearn.cross_validation import KFold
 from sklearn.feature_extraction.text import CountVectorizer as CV
 from sklearn.tree import DecisionTreeClassifier as DT
 from sklearn.ensemble import RandomForestClassifier as RFC
@@ -77,6 +78,7 @@ label1 = input3[:,-1]
 
 fold = 10
 clx = 9
+#skf = KFold(len(label), n_folds=fold, shuffle=True)
 skf = StratifiedKFold(label, n_folds=fold, shuffle=True)
 acc_sum = []
 indi_acc =[[] for i in range(clx)]
