@@ -29,8 +29,8 @@ import random
 import pylab as pl
 
 #cross building data clx
-input1 = np.genfromtxt('rice_day_wpeak', delimiter=',')
-input2 = np.genfromtxt('rice_hour_sum', delimiter=',')
+input1 = np.genfromtxt('rice_hour_sum', delimiter=',')
+input2 = np.genfromtxt('rice_day_wpeak', delimiter=',')
 input3 = np.genfromtxt('rice_diu_sum', delimiter=',')
 input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 input5 = np.genfromtxt('sdh_hour_sum', delimiter=',')
@@ -49,17 +49,17 @@ fd6 = input9[:,0:-1]
 train_fd = np.hstack((fd1,fd2))
 fd21 = np.hstack((fd3,fd4))
 fd22 = np.hstack((fd5,fd6))
-test_fd = np.vstack((fd21,fd22))
+test_fd = np.vstack((fd22,fd21))
 train_label = input4[:,-1]
 test_label = input11[:,-1]
 print train_fd.shape
 print train_label.shape
 print test_fd.shape
-print train_label.shape
+print test_label.shape
 
 rf = RFC(n_estimators=100, criterion='entropy')
 rf.fit(train_fd, train_label) #train each base classifier
-print fd.score(test_fd, test_label)
+print rf.score(test_fd, test_label)
 
 
 
