@@ -40,16 +40,32 @@ input8 = np.genfromtxt('keti_hour_sum', delimiter=',')
 input9 = np.genfromtxt('keti_day_sum', delimiter=',')
 input10 = np.genfromtxt('keti_diu_sum', delimiter=',')
 input11 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
+input12 = [i.strip().split('\\')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
 fd1 = input1[:,0:-1]
 fd2 = input2[:,0:-1]
 fd3 = input5[:,0:-1]
 fd4 = input6[:,0:-1]
 fd5 = input8[:,0:-1]
 fd6 = input9[:,0:-1]
-train_fd = np.hstack((fd1,fd2))
+fi = np.array([0.0329,0.0387,0.0016,0.0387,
+        0.0152,0.0274,0.0027,0.0327,
+        0.0157,0.0405,0.0052,0.0243,
+        0.025,0.0296,0.0069,0.0032,
+        0.0293,0.022,0.0012,0.0254,
+        0.0462,0.0041,0.0026,0.0751,
+        0.0328,0.0174,0.0323,0.0135,
+        0.025,0.0312,0.0201,0.0134,
+        0.0289,0.0124,0.0254,0.0114,
+        0.0384,0.0165,0.0364,0.0107,
+        0.0347,0.0079,0.0339,0.0117])
+#train_fd = np.hstack((fd1,fd2))
+train_fd = fd1
+#train_fd = train_fd[:,fi>0.023]
 fd21 = np.hstack((fd3,fd4))
 fd22 = np.hstack((fd5,fd6))
-test_fd = np.vstack((fd22,fd21))
+#test_fd = np.vstack((fd22,fd21))
+test_fd = np.vstack((fd5,fd3))
+#test_fd = test_fd[:,fi>0.023]
 train_label = input4[:,-1]
 test_label = input11[:,-1]
 print train_fd.shape
@@ -59,10 +75,33 @@ print test_label.shape
 
 rf = RFC(n_estimators=100, criterion='entropy')
 rf.fit(train_fd, train_label) #train each base classifier
+print rf.feature_importances_
+pred = rf.predict(test_fd) #train each base classifier
 print rf.score(test_fd, test_label)
 
-
-
+mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
+cm_ = CM(test_label, pred)
+cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
+fig = pl.figure()
+ax = fig.add_subplot(111)
+cax = ax.matshow(cm)
+fig.colorbar(cax)
+for x in xrange(len(cm)):
+    for y in xrange(len(cm)):
+        ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
+                    horizontalalignment='center',
+                    verticalalignment='center',
+                    fontsize=8)
+cm_cls =np.unique(np.hstack((test_label, pred)))
+cls = []
+for c in cm_cls:
+    cls.append(mapping[c])
+pl.yticks(range(len(cls)), cls)
+pl.ylabel('True label')
+pl.xticks(range(len(cls)), cls)
+pl.xlabel('Predicted label')
+pl.title('Confusion Matrix (%.3f)'%(rf.score(test_fd, test_label)))
+pl.show()
 
 '''
 step1: train base models from bldg1
@@ -97,7 +136,7 @@ lr = LR()
 #clf = LinearSVC()
 bl = [lr, rf, svm] #set of base classifier
 for b in bl:
-    b.fit(fd, label) #train each base classifier
+    b.fit(train_fd, label) #train each base classifier
     print b
 '''
 mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
@@ -148,16 +187,16 @@ for i in input1:
 fn = cv.transform(name).toarray()
 #fd = fn
 for b in bl:
-    print b.score(fd,label)
+    print b.score(test_fd,label)
 
 n_class = 10
 c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
-c.fit(fd)
-dist = np.sort(c.transform(fd))
+c.fit(test_fd)
+dist = np.sort(c.transform(test_fd))
 ex = DD(list) #example id, distance to centroid
 ex_id = DD(list) #example id for each C
 ex_N = [] #number of examples for each C
-for i,j,k in zip(c.labels_, xrange(len(fd)), dist):
+for i,j,k in zip(c.labels_, xrange(len(test_fd)), dist):
     ex[i].append([j,k[0]])
     ex_id[i].append(int(j))
 for i,j in ex.items():
@@ -171,33 +210,34 @@ for exx in ex_id.values():
         nb_c[e] = exx[exx!=e]
 nb_f = [DD(), DD(), DD()]
 for b,n in zip(bl, nb_f):
-    preds = b.predict(fd)
+    preds = b.predict(test_fd)
     ex_ = DD(list)
-    for i,j in zip(preds, xrange(len(fd))):
+    for i,j in zip(preds, xrange(len(test_fd))):
         ex_[i].append(int(j))
     for exx in ex_.values():
         exx = np.asarray(exx)
         for e in exx:
             n[e] = exx[exx!=e]
 
-preds = np.array([999 for i in xrange(len(fd))])
+preds = np.array([999 for i in xrange(len(test_fd))])
 delta = 0.5
 ct=0
 t=0
 true = []
 pred = []
-for i in xrange(len(fd)):
+for i in xrange(len(test_fd)):
     w = []
     v_c = set(nb_c[i])
     for n in nb_f:
         v_f = set(n[i])
         sim = len(v_c & v_f) / float(len(v_c | v_f))
         w.append(sim)
+    #print w
     if np.mean(w) > delta:
         w[:] = [float(j)/sum(w) for j in w]
         pred_pr = np.zeros(len(class_))
         for wi, b in zip(w,bl):
-            pr = b.predict_proba(fd[i])
+            pr = b.predict_proba(test_fd[i])
             pred_pr = pred_pr + wi*pr
         preds[i] = class_[np.argmax(pred_pr)]
         true.append(label[i])
