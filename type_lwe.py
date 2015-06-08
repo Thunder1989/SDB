@@ -40,7 +40,7 @@ input8 = np.genfromtxt('keti_hour_sum', delimiter=',')
 input9 = np.genfromtxt('keti_day_sum', delimiter=',')
 input10 = np.genfromtxt('keti_diu_sum', delimiter=',')
 input11 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
-input12 = [i.strip().split('\\')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
+input12 = [i.strip() for i in open('sdh_pt_new_forrice').readlines()]
 fd1 = input1[:,0:-1]
 fd2 = input2[:,0:-1]
 fd3 = input5[:,0:-1]
@@ -77,6 +77,9 @@ rf = RFC(n_estimators=100, criterion='entropy')
 rf.fit(train_fd, train_label) #train each base classifier
 print rf.feature_importances_
 pred = rf.predict(test_fd) #train each base classifier
+for i,j,k in zip(np.ravel(pred), np.ravel(test_label), xrange(len(test_label))):
+    if i!=j:
+        print i,j,input12[k]
 print rf.score(test_fd, test_label)
 
 mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
