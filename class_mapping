@@ -28,14 +28,14 @@ Occupancy 21
 Soda & SDH
 --------
 4 rmt
-5 pos
+30 pos
 6 stpt 
 7 flow
 8 other_t
-9 power
-10 ctrl
-11 occupancy
-12 fan speed
-13 status
-14 air pressure
-15 timer
+#31 power
+32 ctrl
+21 occupancy
+33 fan speed
+5 status
+3 air pressure
+34 timer
