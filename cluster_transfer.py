@@ -1,3 +1,7 @@
+'''
+#old learning across buidlings case
+based on some simple confidence of Fd
+'''
 from sklearn.feature_extraction.text import CountVectorizer as CV
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.cross_validation import KFold
