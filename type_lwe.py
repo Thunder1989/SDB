@@ -50,17 +50,6 @@ fd3 = input5[:,0:-1]
 fd4 = input6[:,0:-1]
 fd5 = input8[:,0:-1]
 fd6 = input9[:,0:-1]
-fi = np.array([0.0329,0.0387,0.0016,0.0387,
-        0.0152,0.0274,0.0027,0.0327,
-        0.0157,0.0405,0.0052,0.0243,
-        0.025,0.0296,0.0069,0.0032,
-        0.0293,0.022,0.0012,0.0254,
-        0.0462,0.0041,0.0026,0.0751,
-        0.0328,0.0174,0.0323,0.0135,
-        0.025,0.0312,0.0201,0.0134,
-        0.0289,0.0124,0.0254,0.0114,
-        0.0384,0.0165,0.0364,0.0107,
-        0.0347,0.0079,0.0339,0.0117])
 #train_fd = np.hstack((fd1,fd2))
 train_fd = fd1
 #train_fd = train_fd[:,fi>0.023]
@@ -120,7 +109,7 @@ for x in xrange(len(cm)):
         ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
                     horizontalalignment='center',
                     verticalalignment='center',
-                    fontsize=12)
+                    fontsize=11)
 cm_cls =np.unique(np.hstack((test_label, pred)))
 cls = []
 for c in cm_cls:
@@ -135,6 +124,7 @@ pl.show()
 '''
 step1: train base models from bldg1
 '''
+'''
 input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlines()]
 input2 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 fd = input2[:,[0,1,2,3,5,6,7]]
@@ -144,7 +134,7 @@ name = []
 for i in input1:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
-input1 = [i.strip().split('\\')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
+input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
 for i in input1:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
@@ -158,6 +148,7 @@ for i in input1:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
 fn = cv.transform(name).toarray()
+'''
 
 rf = RFC(n_estimators=100, criterion='entropy')
 svm = SVC(kernel='rbf', probability=True)
@@ -167,6 +158,7 @@ bl = [lr, rf, svm] #set of base learner
 for b in bl:
     b.fit(train_fd, train_label) #train each base classifier
     print b
+
 '''
 mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
 cm_ = CM(test_label, preds)
@@ -198,7 +190,6 @@ step2: TL with name feature on bldg2
 '''
 input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
 input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
-fd = input2[:,[0,1,2,3,5,6,7]]
 #input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlines()]
 #input2 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 #input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_new_part').readlines()]
