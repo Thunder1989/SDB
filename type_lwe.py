@@ -186,13 +186,13 @@ input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_rice').readlines()
 #input2 = np.genfromtxt('soda_45min_part', delimiter=',')
 label = test_label
 label_sum = CT(label)
-#label2 = input4[:,-1]
+class_ = np.unique(label)
 name = []
 for i in input1:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
-#cv = CV(analyzer='char_wb', ngram_range=(3,4))
-test_fn = cv.transform(name).toarray()
+cv = CV(analyzer='char_wb', ngram_range=(3,4))
+test_fn = cv.fit_transform(name).toarray()
 #test_fn = test_fd
 #fd = fn
 for b in bl:
@@ -312,9 +312,8 @@ for i in xrange(len(test_fn)):
 
 print 'part acc' , float(t)/ct
 print 'percent', float(ct)/len(label)
-print 'FN', fn
-
-
+#print 'FN', fn
+'''
 src = mean_t
 ecdf = ECDF(src)
 #x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
@@ -340,8 +339,7 @@ plt.xlabel('entropy of weight')
 plt.title('CDF of weight entropy distribution for T/F')
 plt.grid(axis='y')
 plt.show()
-
-
+'''
 pair = list(itertools.combinations(l_id,2))
 dist = []
 for p in pair:
@@ -363,7 +361,7 @@ for x in xrange(len(cm)):
         ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
                     horizontalalignment='center',
                     verticalalignment='center',
-                    fontsize=9)
+                    fontsize=12)
 cm_cls = np.unique(np.hstack((true,pred)))
 cls_x = []
 cls_y = []
@@ -393,7 +391,7 @@ for i in xrange(len(test_fn)):
         continue
     else:
         preds[i] = tmp
-        print '--->', tmp, label[i], input1[i], true[idx], dis
+        #print '--->', tmp, label[i], input1[i], true[idx], dis
         ct+=1
         if preds[i]==label[i]:
             t+=1
