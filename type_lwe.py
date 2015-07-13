@@ -33,27 +33,30 @@ import pylab as pl
 import matplotlib.pyplot as plt
 
 input1 = np.genfromtxt('rice_hour_sdh', delimiter=',')
+#input1 = np.genfromtxt('sdh_hour_soda', delimiter=',')
 input2 = np.genfromtxt('keti_hour_sum', delimiter=',')
+#input2 = np.genfromtxt('soda_hour_sdh', delimiter=',')
 input3 = np.genfromtxt('sdh_hour_rice', delimiter=',')
 fd1 = input1[:,0:-1]
 fd2 = input2[:,0:-1]
 fd3 = input3[:,0:-1]
 #train_fd = np.hstack((fd1,fd2))
 train_fd = fd1
-#train_fd = train_fd[:,fi>0.023]
 #fd21 = np.hstack((fd3,fd4))
 #fd22 = np.hstack((fd5,fd6))
 #test_fd = np.vstack((fd22,fd21))
 test_fd = np.vstack((fd2,fd3))
-#test_fd = test_fd[:,fi>0.023]
+#test_fd = fd2
 train_label = input1[:,-1]
 test_label = np.hstack((input2[:,-1],input3[:,-1]))
-#test_label = input11[:,-1]
+#test_label = input2[:,-1]
+print np.unique(train_label)
+print np.unique(test_label)
 #print train_fd.shape
 #print train_label.shape
 #print test_fd.shape
 #print test_label.shape
-'''
+
 fd_tmp = train_fd
 train_fd = test_fd
 test_fd = fd_tmp
@@ -61,6 +64,7 @@ l_tmp = train_label
 train_label = test_label
 test_label = l_tmp
 
+'''
 input1 = np.genfromtxt('shape_all', delimiter=',')
 input2 = np.genfromtxt('label_all', delimiter=',')
 #input3 = np.genfromtxt('train-all', delimiter=',')
@@ -86,7 +90,7 @@ for i,j,k in zip(np.ravel(pred), np.ravel(test_label), xrange(len(test_label))):
         #print k+30
 print 'test acc',rf.score(test_fd, test_label)
 
-mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
+mapping = {1:'co2',2:'humidity',3:'pressure',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu',30:'pos',31:'power',32:'ctrl',33:'fan spd',34:'timer'}
 cm_ = CM(test_label, pred)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
 fig = pl.figure()
@@ -98,7 +102,7 @@ for x in xrange(len(cm)):
         ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
                     horizontalalignment='center',
                     verticalalignment='center',
-                    fontsize=11)
+                    fontsize=9)
 cm_cls =np.unique(np.hstack((test_label, pred)))
 cls = []
 for c in cm_cls:
@@ -149,7 +153,6 @@ for b in bl:
     print b
 
 '''
-mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
 cm_ = CM(test_label, preds)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
 fig = pl.figure()
@@ -177,10 +180,9 @@ pl.show()
 '''
 step2: TL with name feature on bldg2
 '''
-input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_rice').readlines()]
-#input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlines()]
-#input2 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
-#input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_new_part').readlines()]
+#input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_soda').readlines()]
+input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_sdh').readlines()]
+#input1 = [i.strip().split('\\')[-1][:-5] for i in open('soda_pt_sdh').readlines()]
 #input2 = np.genfromtxt('sdh_45min_part', delimiter=',')
 #input1 = [i.strip().split('_')[-1][:-5] for i in open('soda_pt_part').readlines()]
 #input2 = np.genfromtxt('soda_45min_part', delimiter=',')
@@ -229,7 +231,7 @@ for b,n in zip(bl, nb_f):
             n[e] = exx[exx!=e]
 
 preds = np.array([999 for i in xrange(len(test_fd))])
-delta = 0.5
+delta = 0.35
 ct=0
 t=0
 fn=0
@@ -265,7 +267,8 @@ for i in xrange(len(test_fn)):
         #print 'sim\'', sim
         w.append(sim)
         if sim<0:
-            print 'bug case',d_i, d_u, len(inter), len(union)
+            pass
+            #print 'bug case',d_i, d_u, len(inter), len(union)
     #print w
     H = np.sum(-p*math.log(abs(p),2) for p in w if p!=0)
     #H = np.max(w)
@@ -348,7 +351,6 @@ for p in pair:
 #r = np.percentile(dist,5)/2
 #print 'estimated r', r
 
-mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
 cm_ = CM(true, pred)
 cm_sum = np.sum(cm_, axis=1)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
@@ -642,7 +644,6 @@ print 'overall acc on train:', repr(ave_train)
     #print 'a = ', repr(i), '; plot(a\');'
 #print repr(ex)
 
-mapping = {1:'co2',2:'humidity',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu'}
 cm_ = CM(test_label, preds_fn)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
 fig = pl.figure()
