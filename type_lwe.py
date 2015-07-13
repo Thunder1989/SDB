@@ -32,34 +32,23 @@ import itertools
 import pylab as pl
 import matplotlib.pyplot as plt
 
-input1 = np.genfromtxt('rice_hour_sum', delimiter=',')
-input2 = np.genfromtxt('rice_day_wpeak', delimiter=',')
-input3 = np.genfromtxt('rice_diu_sum', delimiter=',')
-input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
-input5 = np.genfromtxt('sdh_hour_sum', delimiter=',')
-input6 = np.genfromtxt('sdh_day_sum', delimiter=',')
-input7 = np.genfromtxt('sdh_diu_sum', delimiter=',')
-input8 = np.genfromtxt('keti_hour_sum', delimiter=',')
-input9 = np.genfromtxt('keti_day_sum', delimiter=',')
-input10 = np.genfromtxt('keti_diu_sum', delimiter=',')
-input11 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
-input12 = [i.strip() for i in open('sdh_pt_new_forrice').readlines()]
+input1 = np.genfromtxt('rice_hour_sdh', delimiter=',')
+input2 = np.genfromtxt('keti_hour_sum', delimiter=',')
+input3 = np.genfromtxt('sdh_hour_rice', delimiter=',')
 fd1 = input1[:,0:-1]
 fd2 = input2[:,0:-1]
-fd3 = input5[:,0:-1]
-fd4 = input6[:,0:-1]
-fd5 = input8[:,0:-1]
-fd6 = input9[:,0:-1]
+fd3 = input3[:,0:-1]
 #train_fd = np.hstack((fd1,fd2))
 train_fd = fd1
 #train_fd = train_fd[:,fi>0.023]
-fd21 = np.hstack((fd3,fd4))
-fd22 = np.hstack((fd5,fd6))
+#fd21 = np.hstack((fd3,fd4))
+#fd22 = np.hstack((fd5,fd6))
 #test_fd = np.vstack((fd22,fd21))
-test_fd = np.vstack((fd5,fd3))
+test_fd = np.vstack((fd2,fd3))
 #test_fd = test_fd[:,fi>0.023]
-train_label = input4[:,-1]
-test_label = input11[:,-1]
+train_label = input1[:,-1]
+test_label = np.hstack((input2[:,-1],input3[:,-1]))
+#test_label = input11[:,-1]
 #print train_fd.shape
 #print train_label.shape
 #print test_fd.shape
@@ -88,7 +77,7 @@ print train_fd.shape
 rf = RFC(n_estimators=100, criterion='entropy')
 #rf = SVC(kernel='poly')
 rf.fit(train_fd, train_label) #train each base classifier
-print rf.feature_importances_
+#print rf.feature_importances_
 pred = rf.predict(test_fd) #train each base classifier
 for i,j,k in zip(np.ravel(pred), np.ravel(test_label), xrange(len(test_label))):
     if i!=j:
@@ -188,15 +177,14 @@ pl.show()
 '''
 step2: TL with name feature on bldg2
 '''
-input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
-input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
+input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_rice').readlines()]
 #input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlines()]
 #input2 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 #input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_new_part').readlines()]
 #input2 = np.genfromtxt('sdh_45min_part', delimiter=',')
 #input1 = [i.strip().split('_')[-1][:-5] for i in open('soda_pt_part').readlines()]
 #input2 = np.genfromtxt('soda_45min_part', delimiter=',')
-label = input2[:,-1]
+label = test_label
 label_sum = CT(label)
 #label2 = input4[:,-1]
 name = []
