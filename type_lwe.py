@@ -13,9 +13,10 @@ from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegression as LR
 from sklearn.cluster import KMeans
 from sklearn.neighbors import KNeighborsClassifier as KNN
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score as ACC
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score as FS
 from sklearn.metrics import confusion_matrix as CM
 from sklearn.preprocessing import normalize
 from sklearn import tree
@@ -56,6 +57,7 @@ print np.unique(test_label)
 #print train_label.shape
 #print test_fd.shape
 #print test_label.shape
+
 
 fd_tmp = train_fd
 train_fd = test_fd
@@ -147,7 +149,7 @@ rf = RFC(n_estimators=100, criterion='entropy')
 svm = SVC(kernel='rbf', probability=True)
 lr = LR()
 #clf = LinearSVC()
-bl = [lr, rf, svm] #set of base learner
+bl = [rf, lr, svm] #set of base learner
 for b in bl:
     b.fit(train_fd, train_label) #train each base classifier
     print b
@@ -180,7 +182,7 @@ pl.show()
 '''
 step2: TL with name feature on bldg2
 '''
-#input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_soda').readlines()]
+#input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_rice').readlines()]
 input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_sdh').readlines()]
 #input1 = [i.strip().split('\\')[-1][:-5] for i in open('soda_pt_sdh').readlines()]
 #input2 = np.genfromtxt('sdh_45min_part', delimiter=',')
@@ -200,7 +202,7 @@ test_fn = cv.fit_transform(name).toarray()
 for b in bl:
     print b.score(test_fd,label)
 
-n_class = 10
+n_class = 15
 c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
 c.fit(test_fn)
 dist = np.sort(c.transform(test_fn))
@@ -231,90 +233,105 @@ for b,n in zip(bl, nb_f):
             n[e] = exx[exx!=e]
 
 preds = np.array([999 for i in xrange(len(test_fd))])
-delta = 0.35
-ct=0
-t=0
-fn=0
-true = []
-pred = []
-l_id = []
-mean_t = []
-mean_f = []
-h_t = []
-h_f = []
-for i in xrange(len(test_fn)):
-    w = []
-    v_c = set(nb_c[i])
-    for n in nb_f:
-        v_f = set(n[i])
-        cns = len(v_c & v_f) / float(len(v_c | v_f)) #original count based weight
-        #print cns
-        #print input1[i],
-        #print 'sim', cns, len(v_c & v_f), len(v_c | v_f),
-        inter = v_c & v_f
-        union = v_c | v_f
-        d_i = 0
-        d_u = 0
-        for it in inter:
-            d_i += np.linalg.norm(test_fn[i]-test_fn[it])
-        for u in union:
-            d_u += np.linalg.norm(test_fn[i]-test_fn[u])
-        sim = cns
-        if d_i != 0:
-            sim = 1 - (d_i/d_u)/cns
-            #sim = (d_i/d_u)/cns
-        #print 'di', d_i,
-        #print 'sim\'', sim
-        w.append(sim)
-        if sim<0:
-            pass
-            #print 'bug case',d_i, d_u, len(inter), len(union)
-    #print w
-    H = np.sum(-p*math.log(abs(p),2) for p in w if p!=0)
-    #H = np.max(w)
-    m = np.mean(w)
-    if np.mean(w) > delta and np.mean(w)<=1:
-        w[:] = [float(j)/sum(w) for j in w]
-        pred_pr = np.zeros(len(class_))
-        for wi, b in zip(w,bl):
-            pr = b.predict_proba(test_fd[i])
-            pred_pr = pred_pr + wi*pr
-        preds[i] = class_[np.argmax(pred_pr)]
-        true.append(label[i])
-        pred.append(preds[i])
-        #print w, H, preds[i], label[i], input1[i]
-        ct+=1
-        l_id.append(i)
-        if preds[i]==label[i]:
-            t+=1
-            mean_t.append(m)
-            h_t.append(H)
-        else:
-            mean_f.append(m)
-            h_f.append(H)
-    elif np.mean(w) > 0.4 and np.mean(w)<=0.5:
-        continue
-        w[:] = [float(j)/sum(w) for j in w]
-        pred_pr = np.zeros(len(class_))
-        for wi, b in zip(w,bl):
-            pr = b.predict_proba(test_fd[i])
-            pred_pr = pred_pr + wi*pr
-        tmp = class_[np.argmax(pred_pr)]
-        #print '--->', w,tmp, label[i], input1[i]
-        true.append(label[i])
-        pred.append(tmp)
-        ct+=1
-        if tmp==label[i]:
-            t+=1
-            fn+=1
-            mean_t.append(m)
-            h_t.append(H)
-        else:
-            mean_f.append(m)
-            h_f.append(H)
+#delta = 0.3
+acc_ = []
+cov_ = []
+for delta in np.linspace(0.1, 0.5, 5):
+    print 'delta=', delta
+    ct=0
+    t=0
+    fn=0
+    true = []
+    pred = []
+    l_id = []
+    mean_t = []
+    mean_f = []
+    h_t = []
+    h_f = []
+    for i in xrange(len(test_fn)):
+        w = []
+        v_c = set(nb_c[i])
+        for n in nb_f:
+            v_f = set(n[i])
+            cns = len(v_c & v_f) / float(len(v_c | v_f)) #original count based weight
+            #print cns
+            #print input1[i],
+            #print 'sim', cns, len(v_c & v_f), len(v_c | v_f),
+            inter = v_c & v_f
+            union = v_c | v_f
+            d_i = 0
+            d_u = 0
+            for it in inter:
+                d_i += np.linalg.norm(test_fn[i]-test_fn[it])
+            for u in union:
+                d_u += np.linalg.norm(test_fn[i]-test_fn[u])
+            sim = cns
+            if d_i != 0:
+                sim = 1 - (d_i/d_u)/cns
+                #sim = (d_i/d_u)/cns
+            #print 'di', d_i,
+            #print 'sim\'', sim
+            w.append(sim)
+            if sim<0:
+                pass
+                #print 'bug case',d_i, d_u, len(inter), len(union)
+        #print w
+        H = np.sum(-p*math.log(abs(p),2) for p in w if p!=0)
+        #H = np.max(w)
+        m = np.mean(w)
+        if np.mean(w) > delta and np.mean(w)<=1:
+            w[:] = [float(j)/sum(w) for j in w]
+            pred_pr = np.zeros(len(class_))
+            for wi, b in zip(w,bl):
+                pr = b.predict_proba(test_fd[i])
+                pred_pr = pred_pr + wi*pr
+            preds[i] = class_[np.argmax(pred_pr)]
+            true.append(label[i])
+            pred.append(preds[i])
+            #print w, H, preds[i], label[i], input1[i]
+            ct+=1
+            l_id.append(i)
+            if preds[i]==label[i]:
+                t+=1
+                #mean_t.append(m)
+                #h_t.append(H)
+            else:
+                pass
+                #mean_f.append(m)
+                #h_f.append(H)
+        elif np.mean(w) > 0.4 and np.mean(w)<=0.5:
+            continue
+            w[:] = [float(j)/sum(w) for j in w]
+            pred_pr = np.zeros(len(class_))
+            for wi, b in zip(w,bl):
+                pr = b.predict_proba(test_fd[i])
+                pred_pr = pred_pr + wi*pr
+            tmp = class_[np.argmax(pred_pr)]
+            #print '--->', w,tmp, label[i], input1[i]
+            true.append(label[i])
+            pred.append(tmp)
+            ct+=1
+            if tmp==label[i]:
+                t+=1
+                fn+=1
+                mean_t.append(m)
+                h_t.append(H)
+            else:
+                mean_f.append(m)
+                h_f.append(H)
+    #print 'part acc' , float(t)/ct
+    #print 'percent', float(ct)/len(label)
+    #print FS(true, pred, average='weighted')
+    for b in bl:
+        pred_tmp = b.predict(test_fd[l_id])
+        #print ACC(true, pred_tmp)
+        #print FS(true, pred_tmp, average='weighted')
+    acc_.append(float(t)/ct)
+    cov_.append(float(ct)/len(label))
+print acc_
+print cov_
+s = raw_input('wait')
 
-print 'part acc' , float(t)/ct
-print 'percent', float(ct)/len(label)
 #print 'FN', fn
 '''
 src = mean_t
