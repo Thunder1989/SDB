@@ -33,11 +33,30 @@ import itertools
 import pylab as pl
 import matplotlib.pyplot as plt
 
-input1 = np.genfromtxt('rice_hour_sdh', delimiter=',')
+#input1 = np.genfromtxt('rice_hour_soda', delimiter=',')
 #input1 = np.genfromtxt('sdh_hour_soda', delimiter=',')
-input2 = np.genfromtxt('keti_hour_sum', delimiter=',')
-#input2 = np.genfromtxt('soda_hour_sdh', delimiter=',')
-input3 = np.genfromtxt('sdh_hour_rice', delimiter=',')
+input1 = np.genfromtxt('soda_hour_rice', delimiter=',')
+'''
+input1x = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_sdh').readlines()]
+input1y = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_soda').readlines()]
+p = DD()
+for i,j in zip(input1x, input1):
+    p[i] = j
+for i,j in zip(input1y, input12):
+    p[i] = j
+input1 = []
+input1p = []
+for k,v in p.items():
+    input1.append(v)
+    input1p.append(k)
+'''
+#input2 = np.genfromtxt('keti_hour_sum', delimiter=',')
+input21 = np.genfromtxt('rice_hour_soda', delimiter=',')
+input3 = np.genfromtxt('sdh_hour_soda', delimiter=',')
+#input2 = np.vstack((input2,input21,input3))
+#input2 = np.vstack((input2,input21,input3))
+#input1 = np.vstack((input2,input1))
+input2 = np.vstack((input21,input3))
 fd1 = input1[:,0:-1]
 fd2 = input2[:,0:-1]
 fd3 = input3[:,0:-1]
@@ -46,13 +65,13 @@ train_fd = fd1
 #fd21 = np.hstack((fd3,fd4))
 #fd22 = np.hstack((fd5,fd6))
 #test_fd = np.vstack((fd22,fd21))
-test_fd = np.vstack((fd2,fd3))
-#test_fd = fd2
+#test_fd = np.vstack((fd2,fd3))
+test_fd = fd2
 train_label = input1[:,-1]
-test_label = np.hstack((input2[:,-1],input3[:,-1]))
-#test_label = input2[:,-1]
-print np.unique(train_label)
-print np.unique(test_label)
+#test_label = np.hstack((input2[:,-1],input3[:,-1]))
+test_label = input2[:,-1]
+#print np.unique(train_label)
+#print np.unique(test_label)
 #print train_fd.shape
 #print train_label.shape
 #print test_fd.shape
@@ -182,15 +201,12 @@ pl.show()
 '''
 step2: TL with name feature on bldg2
 '''
-#input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_rice').readlines()]
-input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_sdh').readlines()]
-#input1 = [i.strip().split('\\')[-1][:-5] for i in open('soda_pt_sdh').readlines()]
-#input2 = np.genfromtxt('sdh_45min_part', delimiter=',')
-#input1 = [i.strip().split('_')[-1][:-5] for i in open('soda_pt_part').readlines()]
-#input2 = np.genfromtxt('soda_45min_part', delimiter=',')
+#input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_soda').readlines()]
+#input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_soda').readlines()]
+input1 = [i.strip().split('\\')[-1][:-5] for i in open('soda_pt_rice').readlines()]
 label = test_label
 label_sum = CT(label)
-class_ = np.unique(label)
+class_ = np.unique(train_label)
 name = []
 for i in input1:
     s = re.findall('(?i)[a-z]{2,}',i)
@@ -202,7 +218,7 @@ test_fn = cv.fit_transform(name).toarray()
 for b in bl:
     print b.score(test_fd,label)
 
-n_class = 15
+n_class = 10
 c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
 c.fit(test_fn)
 dist = np.sort(c.transform(test_fn))
@@ -237,7 +253,7 @@ preds = np.array([999 for i in xrange(len(test_fd))])
 acc_ = []
 cov_ = []
 for delta in np.linspace(0.1, 0.5, 5):
-    print 'delta=', delta
+    print 'delta =', delta
     ct=0
     t=0
     fn=0

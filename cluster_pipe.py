@@ -36,10 +36,10 @@ from sklearn.metrics import confusion_matrix as CM
 from sklearn import tree
 from sklearn.preprocessing import normalize
 
-input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
+input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_rice').readlines()]
 input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
-input3 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlines()]
-input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
+input3 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_soda').readlines()]
+input4 = np.genfromtxt('rice_hour_soda', delimiter=',')
 input5 = [i.strip().split('_')[-1][:-5] for i in open('soda_pt_new').readlines()]
 input6 = np.genfromtxt('soda_45min_new', delimiter=',')
 label1 = input2[:,-1]
@@ -192,7 +192,7 @@ for train, test in kf:
         ctr+=1
         if ctr<3:
             continue
-        '''
+        #'''
         fit_dist = []
         fit_same = []
         fit_diff = []
@@ -222,9 +222,10 @@ for train, test in kf:
         p_idx = idx_tmp
         p_label = label_tmp
 
-        if itr==3:
+        if ctr==3:
             #make up for p_labels for the first 2 itrs
             #TBD
+            pass
 
         for e in ex_id[key]:
             if e == idx:
@@ -240,7 +241,7 @@ for train, test in kf:
             ex_id.pop(key)
         else:
             ex_id[key] = tmp
-        '''
+        #'''
         test_fn = fn[test]
         test_label = label[test]
         if not p_idx:
@@ -254,6 +255,7 @@ for train, test in kf:
         acc = accuracy_score(test_label, preds_fn)
         acc_sum[ctr-1].append(acc)
 
+        '''
         if len(km_idx)>=0.01*len(train) and len(p1)<run+1:
             f1 = FS(test_label, preds_fn, average='weighted')
             p1.append(f1)
@@ -263,9 +265,11 @@ for train, test in kf:
         if len(km_idx)>=0.1*len(train) and len(p10)<run+1:
             f1 = FS(test_label, preds_fn, average='weighted')
             p10.append(f1)
+        '''
     #'''
 
     '''
+    #the first iteration is the batch of centroids
     for k,v in ex.items():
         for i in range(1):
             if len(v)<=i:
@@ -363,8 +367,8 @@ for train, test in kf:
     ex_al = [] #the ex added in each itr
     test_fn = fn[test]
     test_label = label[test]
-    #for rr in range(ctr, rounds):
-    for rr in range(rounds):
+    for rr in range(ctr, rounds):
+    #for rr in range(rounds):
         if not p_idx:
             train_fn = fn[km_idx]
             train_label = label[km_idx]
@@ -382,12 +386,13 @@ for train, test in kf:
             for vv,pp in zip(v,df):
                 uc[vv] = pp[-1]
 
-        acc = accuracy_score(test_label, preds_fn)
+        #acc = accuracy_score(test_label, preds_fn)
         #acc_ = accuracy_score(label[train_], preds_c)
         #print 'acc on test set', acc
         #print 'acc on cluster set', acc_
-        acc_sum[rr].append(acc)
+        #acc_sum[rr].append(acc)
         #print 'iteration', rr, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+        '''
         if len(km_idx)>=0.01*len(train) and len(p1)<run+1:
             f1 = FS(test_label, preds_fn, average='weighted')
             p1.append(f1)
@@ -397,6 +402,7 @@ for train, test in kf:
         if len(km_idx)>=0.1*len(train) and len(p10)<run+1:
             f1 = FS(test_label, preds_fn, average='weighted')
             p10.append(f1)
+        '''
         '''
         for k in ex.keys():
             prev = ex_cur[k]
@@ -457,14 +463,15 @@ for train, test in kf:
         ex_ = dd(list)
         #for i,j,k,l in zip(cc_labels, c_id, e_pr, sub_label):
         for i,j,k,l in zip(c_.labels_, c_id, dist, sub_label):
-            ex_[i].append([j,l,k[0]*uc[j]])
+            ex_[i].append([j,l,k[0]])
+            #ex_[i].append([j,l,k[0]*uc[j]]) #combine p(x)*U(x)
         for i,j in ex_.items(): #sort by ex. dist to the centroid for each C
             ex_[i] = sorted(j, key=lambda x: x[-1])
         for k,v in ex_.items():
             if v[0][0] not in km_idx:
                 idx = v[0][0]
                 km_idx.append(idx)
-                '''
+                #'''
                 #update tao then remove ex<tao
                 fit_dist = []
                 fit_same = []
@@ -526,22 +533,21 @@ for train, test in kf:
                 #ex_cur[k] = idx
                 ex_al.append([rr,cc,v[0][-2],label[idx],input3[idx]])
                 #print cc,label[idx],input3[idx]
-                '''
+                #'''
                 break
 
         #print len(km_idx), 'training examples'
-        '''
-        train_fn = fn[km_idx]
-        train_label = label[km_idx]
+        if not p_idx:
+            train_fn = fn[km_idx]
+            train_label = label[km_idx]
+        else:
+            train_fn = fn[np.hstack((km_idx, p_idx))]
+            train_label = np.hstack((label[km_idx], p_label))
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
-        preds_train = clf.predict(fn[train])
         acc = accuracy_score(test_label, preds_fn)
-        acc_ = accuracy_score(label[train], preds_train)
-        print 'acc on test set', acc
-        print 'acc on cluster set', acc_
-        print 'class count of predicted labels on cluster training ex:\n', ct(preds_train)
-        '''
+        acc_sum[rr].append(acc)
+
     #for e in ex_al: #print the example detail added on each itr
     #    print e
     #print len(p_idx)
