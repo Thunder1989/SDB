@@ -150,7 +150,7 @@ for train, test in kf:
     #print 'class count of true labels on cluster training ex:\n', ct(label[train])
     train_fd = fn[train]
     #n_class = len(np.unique(label[train]))
-    c = KMeans(init='k-means++', n_clusters=32, n_init=10)
+    c = KMeans(init='k-means++', n_clusters=28, n_init=10)
     c.fit(train_fd)
     '''
     c = DPGMM(n_components=50, covariance_type='diag', alpha=1)
@@ -253,7 +253,7 @@ for train, test in kf:
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
         acc = accuracy_score(test_label, preds_fn)
-        acc_sum[ctr-1].append(acc)
+        acc_sum[ctr-3].append(acc)
 
         '''
         if len(km_idx)>=0.01*len(train) and len(p1)<run+1:

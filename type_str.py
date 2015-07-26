@@ -19,12 +19,12 @@ import re
 import math
 import pylab as pl
 
-input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
-input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
-input3 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlines()]
-input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
+input1 = [i.strip().split('+')[-1][:-5] for i in open('rice_pt_soda').readlines()]
+input2 = np.genfromtxt('rice_hour_soda', delimiter=',')
+input3 = [i.strip().split('\\')[-1][:-5] for i in open('soda_pt_rice').readlines()]
+input4 = np.genfromtxt('soda_hour_rice', delimiter=',')
 label1 = input2[:,-1]
-label = input4[:,-1]
+label2 = input4[:,-1]
 #input3, label = shuffle(input3, label)
 
 name = []
@@ -33,26 +33,43 @@ for i in input3:
     name.append(' '.join(s))
 #print name
 
+'''
 fold = 10
 #clx = len(np.unique(label))
 clx = 10
 skf = StratifiedKFold(label, n_folds=fold, shuffle=True)
 acc_sum = []
 indi_acc =[[] for i in range(clx)]
-#clf = RFC(n_estimators=100, criterion='entropy')
+'''
+clf = RFC(n_estimators=100, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
-clf = SVC(kernel='linear', probability=True)
+#clf = SVC(kernel='linear', probability=True)
 #clf = GNB()
 
 #vc = CV(token_pattern='[a-z]{2,}')
 #vc = TV(analyzer='char_wb', ngram_range=(3,4))
 vc = CV(analyzer='char_wb', ngram_range=(3,4), min_df=1, token_pattern='[a-z]{2,}')
 #fn = vc.fit_transform(name).toarray()
-fn = vc.fit_transform(input3).toarray()
+#fn = vc.fit_transform(input3).toarray()
 #print vc.get_feature_names()
-#vc.fit(input1)
-#data1 = vc.transform(input1).toarray()
-#data2 = vc.transform(input3).toarray()
+name = []
+for i in input1:
+    s = re.findall('(?i)[a-z]{2,}',i)
+    name.append(' '.join(s))
+vc.fit(name)
+data1 = vc.transform(name).toarray()
+name = []
+for i in input3:
+    s = re.findall('(?i)[a-z]{2,}',i)
+    name.append(' '.join(s))
+data2 = vc.transform(name).toarray()
+train_data = data2
+train_label = label2
+test_data = data1
+test_label = label1
+clf.fit(train_data, train_label)
+preds = clf.predict(test_data)
+print accuracy_score(test_label, preds)
 
 for train_idx, test_idx in skf:
 #for test_idx,train_idx in skf:
@@ -65,6 +82,8 @@ for train_idx, test_idx in skf:
     train_label = label[test_idx]
     test_data = fn[train_idx]
     test_label = label[train_idx]
+    #train_data = data1
+    #train_label = label1
     #test_data = data2
     #test_label = label2
     clf.fit(train_data, train_label)

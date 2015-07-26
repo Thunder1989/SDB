@@ -58,7 +58,7 @@ input3 = np.genfromtxt('sdh_hour_soda', delimiter=',')
 #input1 = np.vstack((input2,input1))
 input2 = np.vstack((input21,input3))
 fd1 = input1[:,0:-1]
-fd2 = input2[:,0:-1]
+fd2 = input21[:,0:-1]
 fd3 = input3[:,0:-1]
 #train_fd = np.hstack((fd1,fd2))
 train_fd = fd1
@@ -69,7 +69,7 @@ train_fd = fd1
 test_fd = fd2
 train_label = input1[:,-1]
 #test_label = np.hstack((input2[:,-1],input3[:,-1]))
-test_label = input2[:,-1]
+test_label = input21[:,-1]
 #print np.unique(train_label)
 #print np.unique(test_label)
 #print train_fd.shape
@@ -206,6 +206,7 @@ step2: TL with name feature on bldg2
 input1 = [i.strip().split('\\')[-1][:-5] for i in open('soda_pt_rice').readlines()]
 label = test_label
 label_sum = CT(label)
+print label_sum
 class_ = np.unique(train_label)
 name = []
 for i in input1:
@@ -252,7 +253,7 @@ preds = np.array([999 for i in xrange(len(test_fd))])
 #delta = 0.3
 acc_ = []
 cov_ = []
-for delta in np.linspace(0.1, 0.5, 5):
+for delta in np.linspace(0.4, 0.4, 1):
     print 'delta =', delta
     ct=0
     t=0
@@ -387,27 +388,37 @@ for p in pair:
 cm_ = CM(true, pred)
 cm_sum = np.sum(cm_, axis=1)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
-fig = pl.figure()
+fig = pl.figure(figsize=(10,10))
 ax = fig.add_subplot(111)
-cax = ax.matshow(cm, cmap=Color.YlOrBr)
-fig.colorbar(cax)
+#cax = ax.matshow(cm, cmap=Color.YlOrBr)
+cax = ax.matshow(cm, cmap=Color.Blues)
+#fig.colorbar(cax)
 for x in xrange(len(cm)):
     for y in xrange(len(cm)):
-        ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
+        #ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
+        ax.annotate(str("%d"%cm_[x][y]), xy=(y,x),
                     horizontalalignment='center',
                     verticalalignment='center',
-                    fontsize=12)
+                    fontsize=16)
 cm_cls = np.unique(np.hstack((true,pred)))
 cls_x = []
 cls_y = []
 for c, count in zip(cm_cls,cm_sum):
     cls_x.append(mapping[c]+'\n%.3f'%(float(label_sum[c])/len(label)))
-    cls_y.append(mapping[c]+'\n%.3f'%(float(count)/label_sum[c]))
-pl.yticks(range(len(cls_y)), cls_y)
-pl.ylabel('True label')
-pl.xticks(range(len(cls_x)), cls_x)
-pl.xlabel('Predicted label')
-pl.title('Confusion Matrix (%.3f on %0.3f, threshold=%s)'%(float(t)/ct,float(ct)/len(label),delta))
+    if label_sum[c] == 0:
+        cls_y.append(mapping[c]+'\n%.3f'%(float(0)))
+    else:
+        cls_y.append(mapping[c]+'\n%.3f'%(float(count)/label_sum[c]))
+pl.yticks(range(len(cls_y)), cls_y,fontsize=16)
+pl.ylabel('True label',fontsize=16)
+pl.xticks(range(len(cls_x)), cls_x,fontsize=16)
+pl.xlabel('Predicted label',fontsize=16)
+#pl.title('Confusion Matrix')
+#pl.title('Confusion Matrix (%.3f on %0.3f\%, threshold=%s)'%(float(t)/ct,float(ct)/len(label),delta))
+from matplotlib.backends.backend_pdf import PdfPages
+pp = PdfPages('cm_single.pdf')
+pp.savefig(dpi = 300)
+pp.close()
 pl.show()
 
 #knn pass
