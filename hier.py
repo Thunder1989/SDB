@@ -11,6 +11,7 @@ from collections import defaultdict as dd
 from collections import Counter as ct
 
 from sklearn import metrics
+from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.cluster import KMeans
 from sklearn.cluster import AgglomerativeClustering as AC
 from sklearn.mixture import GMM
@@ -23,6 +24,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer as TV
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.cross_validation import KFold
 from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegression as LR
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
@@ -60,9 +62,10 @@ print 'class count of true labels of all ex:\n', ct(label)
 
 fold = 10
 rounds = 100
-clf = LinearSVC()
+#clf = LR()
+#clf = LinearSVC()
 #clf = SVC(kernel='linear', probability=True)
-#clf = RFC(n_estimators=100, criterion='entropy')
+clf = RFC(n_estimators=100, criterion='entropy')
 
 #kf = StratifiedKFold(label, n_folds=fold, shuffle=True)
 kf = KFold(len(label), n_folds=fold, shuffle=True)
@@ -78,31 +81,71 @@ p1 = []
 p5 = []
 p10 = []
 run = 0
+n_clu = 30
 for train, test in kf:
     run += 1
+    print 'fold', run
     #print 'class count of true labels on cluster training ex:\n', ct(label[train])
     train_fn = fn[train]
-    hc = AC(n_clusters=30, linkage="average")
+    test_fn = fn[test]
+    test_label = label[test]
+    hc = AC(n_clusters=n_clu, linkage="average")
     hc.fit(train_fn)
     #n_class = len(np.unique(label[train]))
     #ii = itertools.count(train_fn.shape[0])
     #T = dd()
     #[{'node_id': next(ii), 'left': x[0], 'right':x[1]} for x in hc.children_]
+    ex = dd(list)
+    ex_N = dd() #example id for each C
+    for i,j in zip(hc.labels_, train):
+        ex[i].append(int(j))
+    for i,j in ex.items():
+        ex_N[i] = len(ex[i])
 
+    c_L = dd()
+    for i in ex.keys():
+        c_L[i] = []
+    train_id = []
+    for r in xrange(rounds):
+        H_rank = []
+        for k in ex.keys():
+            v = c_L[k]
+            if not v:
+                H = 0
+            else:
+                count = ct(v).values()
+                count[:] = [i/float(max(count)) for i in count]
+                H = np.sum(-p*math.log(p,2) for p in count if p!=0)
+            H_rank.append([k,H*ex_N[k]])
+        H_rank  = sorted(H_rank, key=lambda x: x[-1], reverse=True)
+        flag = 1
+        ctr = 0
+        while(flag):
+            c_id = H_rank[ctr][0]
+            ex_ = ex[c_id]
+            random.shuffle(ex_)
+            for e in ex_:
+                if e not in train_id:
+                    train_id.append(e)
+                    c_L[c_id].append(label[e])
+                    flag=0
+                    break
+            ctr+=1
 
-    test_fn = fn[test]
-    test_label = label[test]
-    clf.fit(train_fn, train_label)
-    preds_fn = clf.predict(test_fn)
-    acc = accuracy_score(test_label, preds_fn)
-    acc_sum[ctr-3].append(acc)
+        print c_L
+        train_fn = fn[train_id]
+        train_label = label[train_id]
+        clf.fit(train_fn, train_label)
+        preds = clf.predict(test_fn)
+        acc = accuracy_score(test_label, preds)
+        acc_sum[r].append(acc)
 
     print '----------------------------------------------------'
     print '----------------------------------------------------'
     #ss = raw_input()
-print 'class count of clf training ex:', ct(train_label)
+#print 'class count of clf training ex:', ct(train_label)
 print 'average acc:', [np.mean(i) for i in acc_sum]
-print 'average p label acc:', np.mean(p_acc)
+#print 'average p label acc:', np.mean(p_acc)
 
 cm_ = CM(test_label, preds_fn)
 cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
