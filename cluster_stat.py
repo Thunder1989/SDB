@@ -27,9 +27,9 @@ from sklearn.metrics import confusion_matrix as CM
 from sklearn import tree
 from sklearn.preprocessing import normalize
 
-input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_new_forrice').readlines()]
+input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_rice').readlines()]
 input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
-input3 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_forsdh').readlines()]
+input3 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_sdh').readlines()]
 input4 = np.genfromtxt('rice_45min_forsdh', delimiter=',')
 input5 = [i.strip().split('_')[-1][:-5] for i in open('soda_pt_new').readlines()]
 input6 = np.genfromtxt('soda_45min_new', delimiter=',')
@@ -332,6 +332,7 @@ ecdf = ECDF(src)
 #plt.plot(ecdf.x, ecdf.y, 'b--', label='within')
 x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
 y = ecdf(x)
+plt.figure(figsize=(8,5))
 plt.plot(x, y, 'k--', label='intra-class', linewidth=2.0)
 src = p_diff
 ecdf = ECDF(src)
@@ -344,14 +345,16 @@ ecdf = ECDF(src)
 x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
 y = ecdf(x)
 plt.plot(x, y, 'k-', label='all', linewidth=2.0)
-plt.legend(loc='lower right')
-plt.xlabel('L2 distance')
-plt.title('pairwise example distance distribution')
+plt.legend(loc='lower right', fontsize=16)
+plt.xlabel('L2 distance',fontsize=16)
+#plt.title('pairwise example distance distribution')
+plt.tick_params(axis='both', which='major', labelsize=14)
 plt.grid(axis='y')
 from matplotlib.backends.backend_pdf import PdfPages
 pp = PdfPages('dist.pdf')
 pp.savefig(dpi = 300)
 pp.close()
+plt.savefig(r'dist.eps')
 plt.close()
 #plt.show()
 s = raw_input()
