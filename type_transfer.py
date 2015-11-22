@@ -1,5 +1,5 @@
 '''
-transfer learning btw buildings
+outdated - transfer learning btw buildings
 '''
 from sklearn.feature_extraction.text import CountVectorizer as CV
 from sklearn.cross_validation import StratifiedKFold

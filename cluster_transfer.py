@@ -1,6 +1,5 @@
 '''
-#old learning across buidlings case
-based on some simple confidence of Fd
+old transfer learning script
 '''
 from sklearn.feature_extraction.text import CountVectorizer as CV
 from sklearn.cross_validation import StratifiedKFold
