@@ -19,7 +19,6 @@ from sklearn.metrics import recall_score
 from sklearn.metrics import f1_score as FS
 from sklearn.metrics import confusion_matrix as CM
 from sklearn.preprocessing import normalize
-from sklearn import tree
 from collections import defaultdict as DD
 from collections import Counter as CT
 from matplotlib import cm as Color
@@ -36,29 +35,20 @@ import pylab as pl
 import matplotlib.pyplot as plt
 
 mapping = {1:'co2',2:'humidity',3:'pressure',4:'rmt',5:'status',6:'stpt',7:'flow',8:'HW sup',9:'HW ret',10:'CW sup',11:'CW ret',12:'SAT',13:'RAT',17:'MAT',18:'C enter',19:'C leave',21:'occu',30:'pos',31:'power',32:'ctrl',33:'fan spd',34:'timer'}
-#input1 = np.genfromtxt('rice_hour_soda', delimiter=',')
+input1 = np.genfromtxt('rice_hour_sdh', delimiter=',')
 #input1 = np.genfromtxt('sdh_hour_soda', delimiter=',')
-input1 = np.genfromtxt('soda_hour_rice', delimiter=',')
-#input2 = np.genfromtxt('keti_hour_sum', delimiter=',')
-input21 = np.genfromtxt('rice_hour_soda', delimiter=',')
-input3 = np.genfromtxt('sdh_hour_soda', delimiter=',')
-#input2 = np.vstack((input2,input21,input3))
-#input2 = np.vstack((input2,input21,input3))
-#input1 = np.vstack((input2,input1))
+#input1 = np.genfromtxt('soda_hour_rice', delimiter=',')
+input21 = np.genfromtxt('keti_hour_sum', delimiter=',')
+#input21 = np.genfromtxt('rice_hour_soda', delimiter=',')
+input3 = np.genfromtxt('sdh_hour_rice', delimiter=',')
 input2 = np.vstack((input21,input3))
-fd1 = input1[:,0:-1]
-fd2 = input21[:,0:-1]
-fd3 = input3[:,0:-1]
-#train_fd = np.hstack((fd1,fd2))
+fd1 = input1[:, 0:-1]
+fd2 = input2[:, 0:-1]
+#fd3 = input3[:, 0:-1]
 train_fd = fd1
-#fd21 = np.hstack((fd3,fd4))
-#fd22 = np.hstack((fd5,fd6))
-#test_fd = np.vstack((fd22,fd21))
-#test_fd = np.vstack((fd2,fd3))
 test_fd = fd2
-train_label = input1[:,-1]
-#test_label = np.hstack((input2[:,-1],input3[:,-1]))
-test_label = input21[:,-1]
+train_label = input1[:, -1]
+test_label = input2[:, -1]
 #print np.unique(train_label)
 #print np.unique(test_label)
 #print train_fd.shape
@@ -142,10 +132,10 @@ pl.show()
 #step2: confidence estimation for each oracle and apply to bldg2
 fold = 10
 kf = KFold(len(test_fd), n_folds=fold, shuffle=True)
-iteration = 150
-lr_ = LR()
-CI = DD()
-acc_ = [[] for i in range(iteration)]
+iteration = 120
+lr_ = LR() #clf for use
+CI = DD() #confidence level for each oracle
+acc_ = [[] for i in range(iteration)] #acc in each run for averaging
 for train, test in kf:
     fd_ = []
     label_ = []
@@ -181,7 +171,7 @@ for train, test in kf:
             cv = t.ppf(0.975, n-1)
             CI[b] = np.mean(r) + cv*np.std(r)/np.sqrt(n)
 
-        epsilon = 0.5*max(CI.values())
+        epsilon = 0.7*max(CI.values())
         preds = []
         for b in bl:
             if CI[b] >= epsilon:
