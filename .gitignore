@@ -2,6 +2,7 @@
 ./KETI
 *.swp
 *.png
+*.pdf
 *.csv
 *.txt
 *.dot
