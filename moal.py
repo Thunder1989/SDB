@@ -56,7 +56,7 @@ test_label = input2[:, -1]
 #print test_fd.shape
 #print test_label.shape
 
-'''
+
 #swap the src and tgt
 fd_tmp = train_fd
 train_fd = test_fd
@@ -64,7 +64,7 @@ test_fd = fd_tmp
 l_tmp = train_label
 train_label = test_label
 test_label = l_tmp
-'''
+
 
 #step1: train base models as 'oracles' from src bldg
 '''
@@ -102,6 +102,7 @@ bl = [rf, lr, svm] #set of base learner
 for b in bl:
     b.fit(train_fd, train_label) #train each base classifier
     #print b
+    print b.score(test_fd, test_label)
     R[b] = [1,0] #initial rewards for each 'oracle'
 
 '''
@@ -189,11 +190,12 @@ for train, test in kf:
         acc_[itr].append(lr_.score(test_fd[test], test_label[test])) #sort in ascending order
         train = train[train!=idx]
 print 'ave_acc', [np.mean(i) for i in acc_]
-
+print R
+print CI
 
 #input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_soda').readlines()]
-#input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_soda').readlines()]
-input1 = [i.strip().split('\\')[-1][:-5] for i in open('soda_pt_rice').readlines()]
+input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_sdh').readlines()]
+#input1 = [i.strip().split('\\')[-1][:-5] for i in open('soda_pt_rice').readlines()]
 label = test_label
 label_sum = CT(label)
 print label_sum
