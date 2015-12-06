@@ -131,10 +131,23 @@ pl.show()
 '''
 
 #step2: confidence estimation for each oracle and apply to bldg2
+#input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_soda').readlines()]
+input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_sdh').readlines()]
+#input1 = [i.strip().split('\\')[-1][:-5] for i in open('soda_pt_rice').readlines()]
+label = test_label
+name = []
+for i in input1:
+    s = re.findall('(?i)[a-z]{2,}',i)
+    name.append(' '.join(s))
+cv = CV(analyzer='char_wb', ngram_range=(3,4))
+test_fn = cv.fit_transform(name).toarray()
+#test_fd = test_fn
+
 fold = 10
-kf = KFold(len(test_fd), n_folds=fold, shuffle=True)
-iteration = 120
-lr_ = LR() #clf for use
+kf = KFold(len(test_fn), n_folds=fold, shuffle=True)
+iteration = 100
+#lr_ = LR() #clf for use
+lr_ = SVC(kernel='linear', probability=True)
 CI = DD() #confidence level for each oracle
 acc_ = [[] for i in range(iteration)] #acc in each run for averaging
 for train, test in kf:
@@ -158,8 +171,8 @@ for train, test in kf:
 
     #pick the most uncertain ex based on f's posterior prob. and ask for 'oracles'
     for itr in range(iteration):
-        lr_.fit(test_fd[fd_], label_)
-        label_pr = np.sort(lr_.predict_proba(test_fd[train])) #sort in ascending order
+        lr_.fit(test_fn[fd_], label_)
+        label_pr = np.sort(lr_.predict_proba(test_fn[train])) #sort in ascending order
         rank = []
         for i,pr in zip(train, label_pr):
             rank.append([i,pr[-1]])
@@ -177,7 +190,9 @@ for train, test in kf:
         for b in bl:
             if CI[b] >= epsilon:
                 preds.append(b.predict(test_fd[idx]))
+        #print 'predicted label from NO', preds
         y_ = mode(preds, axis=None)[0][0]
+        #print 'major', y_
         for b in bl:
             if CI[b] >= epsilon:
                 if b.predict(test_fd[idx]) == y_:
@@ -186,333 +201,9 @@ for train, test in kf:
                     R[b].append(0)
         fd_.append(idx)
         label_.append(y_)
-        lr_.fit(test_fd[fd_], label_)
-        acc_[itr].append(lr_.score(test_fd[test], test_label[test])) #sort in ascending order
+        lr_.fit(test_fn[fd_], label_)
+        acc_[itr].append(lr_.score(test_fn[test], test_label[test])) #sort in ascending order
         train = train[train!=idx]
 print 'ave_acc', [np.mean(i) for i in acc_]
 print R
 print CI
-
-#input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_soda').readlines()]
-input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_sdh').readlines()]
-#input1 = [i.strip().split('\\')[-1][:-5] for i in open('soda_pt_rice').readlines()]
-label = test_label
-label_sum = CT(label)
-print label_sum
-class_ = np.unique(train_label)
-name = []
-for i in input1:
-    s = re.findall('(?i)[a-z]{2,}',i)
-    name.append(' '.join(s))
-cv = CV(analyzer='char_wb', ngram_range=(3,4))
-test_fn = cv.fit_transform(name).toarray()
-#test_fn = test_fd
-#fd = fn
-for b in bl:
-    print b.score(test_fd,label)
-
-n_class = 10
-c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
-c.fit(test_fn)
-dist = np.sort(c.transform(test_fn))
-ex = DD(list) #example id, distance to centroid
-ex_id = DD(list) #example id for each C
-ex_N = [] #number of examples for each C
-for i,j,k in zip(c.labels_, xrange(len(test_fn)), dist):
-    ex[i].append([j,k[0]])
-    ex_id[i].append(int(j))
-for i,j in ex.items():
-    ex[i] = sorted(j, key=lambda x: x[-1])
-    ex_N.append([i,len(ex[i])])
-ex_N = sorted(ex_N, key=lambda x: x[-1],reverse=True) #sort cluster by density
-nb_c = DD()
-for exx in ex_id.values():
-    exx = np.asarray(exx)
-    for e in exx:
-        nb_c[e] = exx[exx!=e]
-nb_f = [DD(), DD(), DD()]
-for b,n in zip(bl, nb_f):
-    preds = b.predict(test_fd)
-    ex_ = DD(list)
-    for i,j in zip(preds, xrange(len(test_fd))):
-        ex_[i].append(int(j))
-    for exx in ex_.values():
-        exx = np.asarray(exx)
-        for e in exx:
-            n[e] = exx[exx!=e]
-
-preds = np.array([999 for i in xrange(len(test_fd))])
-#delta = 0.3
-acc_ = []
-cov_ = []
-for delta in np.linspace(0.4, 0.4, 1):
-    print 'delta =', delta
-    ct=0
-    t=0
-    fn=0
-    true = []
-    pred = []
-    l_id = []
-    mean_t = []
-    mean_f = []
-    h_t = []
-    h_f = []
-    for i in xrange(len(test_fn)):
-        w = []
-        v_c = set(nb_c[i])
-        for n in nb_f:
-            v_f = set(n[i])
-            cns = len(v_c & v_f) / float(len(v_c | v_f)) #original count based weight
-            #print cns
-            #print input1[i],
-            #print 'sim', cns, len(v_c & v_f), len(v_c | v_f),
-            inter = v_c & v_f
-            union = v_c | v_f
-            d_i = 0
-            d_u = 0
-            for it in inter:
-                d_i += np.linalg.norm(test_fn[i]-test_fn[it])
-            for u in union:
-                d_u += np.linalg.norm(test_fn[i]-test_fn[u])
-            sim = cns
-            if d_i != 0:
-                sim = 1 - (d_i/d_u)/cns
-                #sim = (d_i/d_u)/cns
-            #print 'di', d_i,
-            #print 'sim\'', sim
-            w.append(sim)
-            if sim<0:
-                pass
-                #print 'bug case',d_i, d_u, len(inter), len(union)
-        #print w
-        H = np.sum(-p*math.log(abs(p),2) for p in w if p!=0)
-        #H = np.max(w)
-        m = np.mean(w)
-        if np.mean(w) > delta and np.mean(w)<=1:
-            w[:] = [float(j)/sum(w) for j in w]
-            pred_pr = np.zeros(len(class_))
-            for wi, b in zip(w,bl):
-                pr = b.predict_proba(test_fd[i])
-                pred_pr = pred_pr + wi*pr
-            preds[i] = class_[np.argmax(pred_pr)]
-            true.append(label[i])
-            pred.append(preds[i])
-            #print w, H, preds[i], label[i], input1[i]
-            ct+=1
-            l_id.append(i)
-            if preds[i]==label[i]:
-                t+=1
-                #mean_t.append(m)
-                #h_t.append(H)
-            else:
-                pass
-                #mean_f.append(m)
-                #h_f.append(H)
-        elif np.mean(w) > 0.4 and np.mean(w)<=0.5:
-            continue
-            w[:] = [float(j)/sum(w) for j in w]
-            pred_pr = np.zeros(len(class_))
-            for wi, b in zip(w,bl):
-                pr = b.predict_proba(test_fd[i])
-                pred_pr = pred_pr + wi*pr
-            tmp = class_[np.argmax(pred_pr)]
-            #print '--->', w,tmp, label[i], input1[i]
-            true.append(label[i])
-            pred.append(tmp)
-            ct+=1
-            if tmp==label[i]:
-                t+=1
-                fn+=1
-                mean_t.append(m)
-                h_t.append(H)
-            else:
-                mean_f.append(m)
-                h_f.append(H)
-    #print 'part acc' , float(t)/ct
-    #print 'percent', float(ct)/len(label)
-    #print FS(true, pred, average='weighted')
-    for b in bl:
-        pred_tmp = b.predict(test_fd[l_id])
-        #print ACC(true, pred_tmp)
-        #print FS(true, pred_tmp, average='weighted')
-    acc_.append(float(t)/ct)
-    cov_.append(float(ct)/len(label))
-print acc_
-print cov_
-s = raw_input('wait')
-
-#print 'FN', fn
-'''
-src = mean_t
-ecdf = ECDF(src)
-#x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-#y = ecdf(x)
-plt.step(ecdf.x, ecdf.y, 'k', label='mean for trues')
-src = mean_f
-ecdf = ECDF(src)
-plt.step(ecdf.x, ecdf.y, 'r', label='mean for falses')
-plt.legend(loc='lower right')
-plt.xlabel('mean of weight')
-plt.title('CDF of mean weight distribution for T/F')
-plt.grid(axis='y')
-plt.show()
-
-src = h_t
-ecdf = ECDF(src)
-plt.step(ecdf.x, ecdf.y, 'k', label='H for trues')
-src = h_f
-ecdf = ECDF(src)
-plt.step(ecdf.x, ecdf.y, 'r', label='H for falses')
-plt.legend(loc='lower right')
-plt.xlabel('entropy of weight')
-plt.title('CDF of weight entropy distribution for T/F')
-plt.grid(axis='y')
-plt.show()
-'''
-pair = list(itertools.combinations(l_id,2))
-dist = []
-for p in pair:
-    if preds[p[0]] != preds[p[1]]:
-        dist.append(np.linalg.norm(test_fn[p[0]]-test_fn[p[1]]))
-#r = np.percentile(dist,5)/2
-#print 'estimated r', r
-
-cm_ = CM(true, pred)
-cm_sum = np.sum(cm_, axis=1)
-cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
-fig = pl.figure(figsize=(10,10))
-ax = fig.add_subplot(111)
-#cax = ax.matshow(cm, cmap=Color.YlOrBr)
-cax = ax.matshow(cm, cmap=Color.Blues)
-#fig.colorbar(cax)
-for x in xrange(len(cm)):
-    for y in xrange(len(cm)):
-        #ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
-        ax.annotate(str("%d"%cm_[x][y]), xy=(y,x),
-                    horizontalalignment='center',
-                    verticalalignment='center',
-                    fontsize=16)
-cm_cls = np.unique(np.hstack((true,pred)))
-cls_x = []
-cls_y = []
-for c, count in zip(cm_cls,cm_sum):
-    cls_x.append(mapping[c]+'\n%.3f'%(float(label_sum[c])/len(label)))
-    if label_sum[c] == 0:
-        cls_y.append(mapping[c]+'\n%.3f'%(float(0)))
-    else:
-        cls_y.append(mapping[c]+'\n%.3f'%(float(count)/label_sum[c]))
-pl.yticks(range(len(cls_y)), cls_y,fontsize=16)
-pl.ylabel('True label',fontsize=16)
-pl.xticks(range(len(cls_x)), cls_x,fontsize=16)
-pl.xlabel('Predicted label',fontsize=16)
-#pl.title('Confusion Matrix')
-#pl.title('Confusion Matrix (%.3f on %0.3f\%, threshold=%s)'%(float(t)/ct,float(ct)/len(label),delta))
-from matplotlib.backends.backend_pdf import PdfPages
-pp = PdfPages('cm_single.pdf')
-pp.savefig(dpi = 300)
-pp.close()
-pl.show()
-
-#knn pass
-knn = KNN(n_neighbors=1, weights='distance', metric='euclidean')
-knn.fit(test_fn[l_id],pred)
-#knn.fit(test_fn,preds)
-ct = 0
-t = 0
-true = np.array(true)
-for i in xrange(len(test_fn)):
-    if preds[i] != 999:
-        continue
-    tmp = knn.predict(test_fn[i])
-    dis, idx = knn.kneighbors(test_fn[i],3)
-    if tmp == 999:
-        continue
-    else:
-        preds[i] = tmp
-        #print '--->', tmp, label[i], input1[i], true[idx], dis
-        ct+=1
-        if preds[i]==label[i]:
-            t+=1
-print '# of Y by knn', ct
-if ct!=0:
-    print 'knn acc' , float(t)/ct
-    print 'knn percent', float(ct)/len(label)
-
-ctr = 0
-ct = 0
-t = 0
-em = 0
-for k,v in ex.items():
-    '''
-    #propagate the majority label in the cluster
-    l = preds[v]
-    if np.mean(l)==999:
-        idx = ex[k][0][0]
-        m = label[idx]
-        ctr += 1
-    else:
-        rank = CT(l).keys()
-        m = rank[0]
-        if m==999:
-            m=rank[1]
-        for vv in v:
-            if preds[vv]==999:
-                preds[vv] = m
-                ct+=1
-                if preds[vv]==label[vv]:
-                    t+=1
-    '''
-    v = [vv[0] for vv in v]
-    if np.sum(preds[np.array(v)]!=999)==0:
-        em += 1
-    for j,vv in enumerate(v):
-        if preds[vv] == 999:
-            continue
-        #print 'working on', len(v), j, input1[vv]
-        for v_ in v:
-            if v_ == vv:
-                continue
-            #label propagation based on the radius
-            d = np.linalg.norm(test_fn[v_]-test_fn[vv])
-            if preds[v_] == 999:
-                #print 'u-ex', label[v_], input1[v_]
-                if d<=r:
-                    preds[v_] = preds[vv]
-                    true.append(label[v_])
-                    pred.append(preds[v_])
-                    print len(v), j,'--', preds[v_], label[v_], input1[v_], input1[vv]
-                    ct+=1
-                    if preds[v_]==label[v_]:
-                        t+=1
-print 'no labeled cluster', em
-print 'propogated #', ct
-if ct!=0:
-    print 'propogate acc' , float(t)/ct
-    print 'propogate percent', float(ct)/len(label)
-#print '# of manual label', ctr
-#print 'acc by LWE', accuracy_score(preds, label)
-cm_ = CM(true, pred)
-cm_sum = np.sum(cm_, axis=1)
-cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
-fig = pl.figure()
-ax = fig.add_subplot(111)
-cax = ax.matshow(cm, cmap=Color.YlOrBr)
-fig.colorbar(cax)
-for x in xrange(len(cm)):
-    for y in xrange(len(cm)):
-        ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
-                    horizontalalignment='center',
-                    verticalalignment='center',
-                    fontsize=10)
-cm_cls = np.unique(np.hstack((true,pred)))
-cls_x = []
-cls_y = []
-for c, count in zip(cm_cls,cm_sum):
-    cls_x.append(mapping[c]+'\n%.3f'%(float(label_sum[c])/len(label)))
-    cls_y.append(mapping[c]+'\n%.3f'%(float(count)/label_sum[c]))
-pl.yticks(range(len(cls_y)), cls_y)
-pl.ylabel('True label')
-pl.xticks(range(len(cls_x)), cls_x)
-pl.xlabel('Predicted label')
-pl.title('Confusion Matrix (%.3f on %0.3f, threshold=%s)'%(float(t)/ct,float(ct)/len(label),delta))
-pl.show()
