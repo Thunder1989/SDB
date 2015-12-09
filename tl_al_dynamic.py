@@ -1,5 +1,6 @@
 '''
 run transfer learning first, then aplly active learning on the remaining unlabeled population
+the weight in TL is the product of confidence and sim, where confidence estimation will be updated in each iteration
 '''
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,6 +12,7 @@ import pylab as pl
 
 from scikits.statsmodels.tools.tools import ECDF
 from scipy import stats
+from scipy.stats import t
 from collections import defaultdict as dd
 from collections import Counter as ct
 
@@ -82,13 +84,22 @@ acc_sum = [[] for i in xrange(rounds)]
 acc_ave = dd(list)
 tao = 0
 alpha_ = 1
+R = dd()
+CI = dd()
+rf = RFC(n_estimators=100, criterion='entropy')
+svm = SVC(kernel='rbf', probability=True)
+lr = LR()
+bl = [rf, lr, svm] #set of base learner
+for b in bl:
+    R[b] = [1,0]
+    CI[b] = 1
+
 for train, test in kf:
     #insert TL before running AL
     input1 = np.genfromtxt('rice_hour_sdh', delimiter=',')
     input2 = np.genfromtxt('keti_hour_sum', delimiter=',')
     input21 = np.genfromtxt('sdh_hour_rice', delimiter=',')
     input3 = np.genfromtxt('soda_hour_rice', delimiter=',')
-    #input2 = np.vstack((input2,input21,input3))
     input2 = np.vstack((input2,input21))
     fd1 = input1[:,0:-1]
     fd2 = input2[:,0:-1]
@@ -106,10 +117,6 @@ for train, test in kf:
     train_label = test_label
     test_label = l_tmp
 
-    rf = RFC(n_estimators=100, criterion='entropy')
-    svm = SVC(kernel='rbf', probability=True)
-    lr = LR()
-    bl = [rf, lr, svm] #set of base learner
     for b in bl:
         b.fit(train_fd, train_label) #train each base classifier
         #print b
@@ -145,15 +152,15 @@ for train, test in kf:
                 n[e] = exx[exx!=e] #create a dict of nb by f for each ex
 
     delta = 0.6
-    true = []
     pred = []
     l_id = []
+    sim_ = dd() #sim score by each f for each ex
     for i in xrange(len(test_fn)):
         w = []
         v_c = set(nb_c[i])
         for n in nb_f:
             v_f = set(n[i])
-            cns = len(v_c & v_f) / float(len(v_c | v_f)) #original count based weight
+            cns = len(v_c & v_f) / float(len(v_c | v_f)) #original count based sim
             inter = v_c & v_f
             union = v_c | v_f
             d_i = 0
@@ -167,6 +174,7 @@ for train, test in kf:
                 sim = 1 - (d_i/d_u)/cns
                 #sim = (d_i/d_u)/cns
             w.append(sim)
+            sim_[i] = w
             if sim<0:
                 pass
                 #print 'bug case',d_i, d_u, len(inter), len(union)
@@ -177,13 +185,12 @@ for train, test in kf:
                 pr = b.predict_proba(test_fd[i])
                 pred_pr = pred_pr + wi*pr
             tmp = class_[np.argmax(pred_pr)]
-            true.append(label[i])
             pred.append(tmp)
             l_id.append(i)
     print 'tl label #', len(l_id)
     print 'tl acc', accuracy_score(pred, label[l_id])
 
-    #remove ex labeled by TL from the training set
+    #remove ex labeled by TL from AL training set
     tl_idx = []
     tl_label = []
     km_idx = []
@@ -241,11 +248,23 @@ for train, test in kf:
     ctr = 0
     for ee in ex_N:
         key = ee[0] #C id
-        idx = ex[key][0][0]
+        idx = ex[key][0][0] #ex id
         km_idx.append(idx)
         ctr += 1
         if ctr<3:
             continue
+
+        for b in bl: #update reward table for f_i
+            if b.predict(test_fd[idx]) == label[idx]:
+                R[b].append(1)
+            else:
+                R[b].append(0)
+        for b in bl: #update confidence for f_i
+            r = R[b]
+            n = len(r)
+            cv = t.ppf(0.975, n-1)
+            CI[b] = np.mean(r) + cv*np.std(r)/np.sqrt(n)
+
         #'''
         fit_diff = []
         pair = list(itertools.combinations(km_idx,2))
@@ -303,82 +322,43 @@ for train, test in kf:
         acc_sum[ctr-2].append(acc)
     #'''
 
-    '''
-    #the first iteration is the batch of centroids
-    for k,v in ex.items():
-        for i in range(1):
-            if len(v)<=i:
-                continue
-            idx = v[i][0]
-            km_idx.append(idx)
-            #FIXED: remove the labeled center also
-            tmp = np.asarray(ex_id[k])
-            tmp = tmp[tmp!=idx]
-            ex_id[k] = tmp
-            #print k,label[idx],input3[idx]
-    #compute all pair dist distribution, set tao to min_X
-    fit_dist = []
-    fit_same = []
-    fit_diff = []
-    pair = list(itertools.combinations(km_idx,2))
-    for p in pair:
-        d = np.linalg.norm(fn[p[0]]-fn[p[1]])
-        fit_dist.append(d)
-        if label[p[0]] == label[p[1]]:
-            fit_same.append(d)
-        else:
-            fit_diff.append(d)
-    src = fit_dist
-    src = fit_diff #set tao be the min(inter-class pair dist)/2
-    #ecdf = ECDF(src)
-    #xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-    #ydata = ecdf(xdata)
-    #tao = alpha_*min(src)
-    tao = alpha_*min(src)/2
-    print 'inital tao', tao
-
-    #tao = 3
-    #with tao, excluding the exs near initial C centroid
-    for k,idx in zip(ex.keys(),km_idx):
-        tmp = []
-        for e in ex_id[k]:
-            if e == idx:
-                continue
-            d = np.linalg.norm(fn[e]-fn[idx])
-            #a = fn[e] - mu[k]
-            #b = c_inv[k]
-            #d = np.abs(np.dot(np.dot(a,b),a.T))
-            if d<tao:
-                p_dist[e] = d
-                p_idx.append(e)
-                p_label.append(label[idx])
-                #if label[idx]!=label[e]:
-                #print input3[e],label[idx], label[e],d
-            else:
-                tmp.append(e)
-        if not tmp:
-            ex_id.pop(k)
-        else:
-            ex_id[k] = tmp
-
-        test_fn = fn[test]
-        test_label = label[test]
-        if not p_idx:
-            train_fn = fn[km_idx]
-            train_label = label[km_idx]
-        else:
-            train_fn = fn[np.hstack((km_idx, p_idx))]
-            train_label = np.hstack((label[km_idx], p_label))
-        clf.fit(train_fn, train_label)
-        preds_fn = clf.predict(test_fn)
-    '''
-
     cl_id = []
-    ex_al = [] #the ex added in each itr
+    ex_al = [] #ex added in each itr
     test_fn = fn[test]
     test_label = label[test]
     for rr in range(ctr-1, rounds):
     #for rr in range(rounds):
+        delta = 0.6*0.7
+        pred = []
+        l_id = []
+        u_id = []
+        for i in xrange(len(fn)):
+            w = [j*CI[b] for b,j in zip(bl,sim_[i])]
+            if np.mean(w) > delta:
+                w[:] = [float(j)/sum(w) for j in w]
+                pred_pr = np.zeros(len(class_))
+                for wi, b in zip(w,bl):
+                    pr = b.predict_proba(test_fd[i])
+                    pred_pr = pred_pr + wi*pr
+                tmp = class_[np.argmax(pred_pr)]
+                pred.append(tmp)
+                l_id.append(i)
+            else:
+                u_id.append(i)
+
+        #update the training set for AL based on new TL results
+        tl_idx = []
+        tl_label = []
+        for i,l in zip(l_id,pred):
+            if i in train:
+                tl_idx.append(i)
+                tl_label.append(l)
+                train = train[train!=p]
+                p_dist[p] = 0
+        #for i in u_id:
+        #    if i not in test:
+        #        train = np.append(train,i)
+
         if not p_idx:
             train_fn = fn[np.hstack((km_idx, tl_idx))]
             train_label = np.hstack((label[km_idx], tl_label))
@@ -396,17 +376,6 @@ for train, test in kf:
         #print 'acc on cluster set', acc_
         #acc_sum[rr].append(acc)
         #print 'iteration', rr, '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
-        '''
-        for k in ex.keys():
-            prev = ex_cur[k]
-            nb = neighbor[prev]
-            for n in nb:
-                if n[0] not in km_idx:
-                    km_idx.append(n[0])
-                    ex_cur[k] = n[0]
-                    ex_al.append([rr,k,label[n[0]],input3[n[0]]])
-                    break
-        '''
 
         #the original H based cluster selection
         rank = []
@@ -457,6 +426,18 @@ for train, test in kf:
             if v[0][0] not in km_idx:
                 idx = v[0][0]
                 km_idx.append(idx)
+
+                for b in bl: #update reward table for f_i
+                    if b.predict(test_fd[idx]) == label[idx]:
+                        R[b].append(1)
+                    else:
+                        R[b].append(0)
+                for b in bl: #update confidence for f_i
+                    r = R[b]
+                    n = len(r)
+                    cv = t.ppf(0.975, n-1)
+                    CI[b] = np.mean(r) + cv*np.std(r)/np.sqrt(n)
+
                 #'''
                 #update tao then remove ex<tao
                 fit_diff = []
@@ -466,12 +447,7 @@ for train, test in kf:
                         d = np.linalg.norm(fn[p[0]]-fn[p[1]])
                         fit_diff.append(d)
                 src = fit_diff #set tao be the min(inter-class pair dist)/2
-                #ecdf = ECDF(src)
-                #xdata = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-                #ydata = ecdf(xdata)
-                #tao = alpha_*min(src)
                 tao = alpha_*min(src)/2
-                #print '# labeled', len(km_idx)
 
                 tmp = []
                 #re-visit exs removed on previous itr with the new tao
@@ -510,11 +486,11 @@ for train, test in kf:
 
         #print len(km_idx), 'training examples'
         if not p_idx:
-            train_fn = fn[np.hstack((km_idx, tl_idx))]
-            train_label = np.hstack((label[km_idx], tl_label))
+            train_fn = fn[km_idx]
+            train_label = label[km_idx]
         else:
-            train_fn = fn[np.hstack((km_idx, p_idx, tl_idx))]
-            train_label = np.hstack((label[km_idx], p_label, tl_label))
+            train_fn = fn[np.hstack((km_idx, p_idx))]
+            train_label = np.hstack((label[km_idx], p_label))
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
         acc = accuracy_score(test_label, preds_fn)
@@ -524,10 +500,7 @@ for train, test in kf:
     #    print e
     #print len(p_idx)
     print '# of p label', len(p_label)
-    #print 'final tao', tao
     print cl_id
-    #for i,j in zip(p_idx,p_label):
-    #    print input3[i], j, label[i], p_dist[i]
     if not p_label:
         print 'pseudo label acc', 0
         p_acc.append(0)
@@ -536,9 +509,7 @@ for train, test in kf:
         p_acc.append(sum(label[p_idx]==p_label)/float(len(p_label)))
     print '----------------------------------------------------'
     print '----------------------------------------------------'
-    #ss = raw_input()
-#print len(train_label), 'training examples'
-print 'class count of clf training ex:', ct(train_label)
+#print 'class count of clf training ex:', ct(train_label)
 print 'average acc:', [np.mean(i) for i in acc_sum]
 print 'average p label acc:', np.mean(p_acc)
 
