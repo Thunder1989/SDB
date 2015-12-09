@@ -28,7 +28,7 @@ from sklearn.cross_validation import KFold
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
-from sklearn.metrics import f1_score as FS
+from sklearn.metrics import f1_score as F1
 from sklearn.metrics import confusion_matrix as CM
 
 from sklearn.tree import DecisionTreeClassifier as DT
@@ -39,7 +39,10 @@ from sklearn import tree
 from sklearn.preprocessing import normalize
 
 input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_rice').readlines()]
-input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
+input21 = np.genfromtxt('keti_hour_sum', delimiter=',')
+input22 = np.genfromtxt('sdh_hour_rice', delimiter=',')
+input2 = np.vstack((input21,input22))
+#input2 = np.genfromtxt('sdh_45min_forrice', delimiter=',')
 input3 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_sdh').readlines()]
 input4 = np.genfromtxt('rice_hour_sdh', delimiter=',')
 input5 = [i.strip().split('_')[-1][:-5] for i in open('soda_pt_new').readlines()]
@@ -72,26 +75,6 @@ rounds = 100
 clf = LinearSVC()
 #clf = SVC(kernel='linear', probability=True)
 #clf = RFC(n_estimators=100, criterion='entropy')
-
-clf.fit(fn, label)
-coef = abs(clf.coef_)
-weight = np.max(coef, axis=0)
-#weight = np.mean(coef,axis=0)
-feature_rank = []
-for i,j in zip(weight, xrange(len(weight))):
-    feature_rank.append([i,j])
-feature_rank = sorted(feature_rank,key=lambda x: x[0],reverse=True)
-feature_idx=[]
-for i in feature_rank:
-    if i[0]>=0.05:
-        feature_idx.append(i[1])
-#print 'feature num', len(feature_idx)
-#fn = fn[:, feature_idx]
-
-#svd = TruncatedSVD(n_components=400)
-#fn = svd.fit_transform(fn)
-#print 'var explained', svd.explained_variance_ratio_.sum()
-
 #kf = StratifiedKFold(label, n_folds=fold, shuffle=True)
 kf = KFold(len(label), n_folds=fold, shuffle=True)
 p_acc = [] #pseudo label acc
@@ -209,6 +192,7 @@ for train, test in kf:
         train = train[train!=p]
         p_dist[p] = 0
 
+    #training set for AL
     train_fd = fn[train]
     test_fn = fn[test]
     test_label = label[test]
@@ -384,17 +368,6 @@ for train, test in kf:
             train_label = np.hstack((label[km_idx], p_label))
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
-
-        if len(km_idx)>=0.01*len(train) and len(p1)<run+1:
-            f1 = FS(test_label, preds_fn, average='weighted')
-            p1.append(f1)
-        if len(km_idx)>=0.05*len(train) and len(p5)<run+1:
-            f1 = FS(test_label, preds_fn, average='weighted')
-            p5.append(f1)
-        if len(km_idx)>=0.1*len(train) and len(p10)<run+1:
-            f1 = FS(test_label, preds_fn, average='weighted')
-            p10.append(f1)
-
     '''
 
     cl_id = []
