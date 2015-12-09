@@ -184,24 +184,24 @@ for train, test in kf:
     print 'tl acc', accuracy_score(pred, label[l_id])
 
     #remove ex labeled by TL from the training set
-    tl_idx = []
-    tl_label = []
+    p_idx = []
+    p_label = []
     km_idx = []
     p_dist = dd()
     for i,l in zip(l_id,pred):
         if i in train:
-            tl_idx.append(i)
-            tl_label.append(l)
+            p_idx.append(i)
+            p_label.append(l)
             train = train[train!=i]
-            p_dist[p] = 0
+            p_dist[i] = 0
 
     #training set for AL
     train_fd = fn[train]
     test_fn = fn[test]
     test_label = label[test]
 
-    train_fn = fn[tl_idx]
-    train_label = tl_label
+    train_fn = fn[p_idx]
+    train_label = p_label
     if len(np.unique(train_label))>1:
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
@@ -292,11 +292,11 @@ for train, test in kf:
             ex_id[key] = tmp
         #'''
         if not p_idx:
-            train_fn = fn[np.hstack((km_idx, tl_idx))]
-            train_label = np.hstack((label[km_idx], tl_label))
+            train_fn = fn[km_idx]
+            train_label = label[km_idx]
         else:
-            train_fn = fn[np.hstack((km_idx, p_idx, tl_idx))]
-            train_label = np.hstack((label[km_idx], p_label, tl_label))
+            train_fn = fn[np.hstack((km_idx, p_idx))]
+            train_label = np.hstack((label[km_idx], p_label))
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
         acc = accuracy_score(test_label, preds_fn)
@@ -380,11 +380,11 @@ for train, test in kf:
     for rr in range(ctr-1, rounds):
     #for rr in range(rounds):
         if not p_idx:
-            train_fn = fn[np.hstack((km_idx, tl_idx))]
-            train_label = np.hstack((label[km_idx], tl_label))
+            train_fn = fn[km_idx]
+            train_label = label[km_idx]
         else:
-            train_fn = fn[np.hstack((km_idx, p_idx, tl_idx))]
-            train_label = np.hstack((label[km_idx], p_label, tl_label))
+            train_fn = fn[np.hstack((km_idx, p_idx))]
+            train_label = np.hstack((label[km_idx], p_label))
         #print 'ct on traing label', ct(train_label)
         clf.fit(train_fn, train_label)
         sub_pred = dd(list) #Mn predicted labels for each cluster
@@ -510,11 +510,11 @@ for train, test in kf:
 
         #print len(km_idx), 'training examples'
         if not p_idx:
-            train_fn = fn[np.hstack((km_idx, tl_idx))]
-            train_label = np.hstack((label[km_idx], tl_label))
+            train_fn = fn[km_idx]
+            train_label = label[km_idx]
         else:
-            train_fn = fn[np.hstack((km_idx, p_idx, tl_idx))]
-            train_label = np.hstack((label[km_idx], p_label, tl_label))
+            train_fn = fn[np.hstack((km_idx, p_idx))]
+            train_label = np.hstack((label[km_idx], p_label))
         clf.fit(train_fn, train_label)
         preds_fn = clf.predict(test_fn)
         acc = accuracy_score(test_label, preds_fn)
