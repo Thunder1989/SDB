@@ -52,7 +52,7 @@ input6 = np.genfromtxt('soda_45min_new', delimiter=',')
 label1 = input2[:,-1]
 label = input4[:,-1]
 label1 = input6[:,-1]
-print 'class count of true labels of all ex:\n', ct(label)
+#print 'class count of true labels of all ex:\n', ct(label)
 #input3 = input3 #quick run of the code using other building
 name = []
 for i in input3:
@@ -326,9 +326,10 @@ for train, test in kf:
     ex_al = [] #ex added in each itr
     test_fn = fn[test]
     test_label = label[test]
+    tl_ctr = 0
     for rr in range(ctr-1, rounds):
     #for rr in range(rounds):
-        delta = 0.6*0.7
+        delta = 0.3
         pred = []
         l_id = []
         u_id = []
@@ -351,12 +352,17 @@ for train, test in kf:
             if i in train and i not in p_idx:
                 p_idx.append(i)
                 p_label.append(l)
+                tl_ctr += 1
+                #print 'new tl label'
                 train = train[train!=i]
                 p_dist[i] = 0
                 for k,v in ex_id.items():
-                    if i in v:
-                        ex_id[k] = v[v!=i]
-
+                    if type(v) is int:
+                        if v==i:
+                            ex_id.pop(k)
+                    else:
+                        if i in v:
+                            ex_id[k] = v[v!=i]
         if not p_idx:
             train_fn = fn[km_idx]
             train_label = label[km_idx]
@@ -497,6 +503,7 @@ for train, test in kf:
     #for e in ex_al: #print the example detail added on each itr
     #    print e
     #print len(p_idx)
+    print '# of new tl label', tl_ctr
     print '# of p label', len(p_label)
     print cl_id
     if not p_label:
@@ -505,6 +512,7 @@ for train, test in kf:
     else:
         print 'pseudo label acc', sum(label[p_idx]==p_label)/float(len(p_label))
         p_acc.append(sum(label[p_idx]==p_label)/float(len(p_label)))
+    print CI
     print '----------------------------------------------------'
     print '----------------------------------------------------'
 #print 'class count of clf training ex:', ct(train_label)
