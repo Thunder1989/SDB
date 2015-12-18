@@ -1,6 +1,6 @@
 '''
 buildsys15's method:
-transfer learning btw buildings
+local weighted transfer learning btw buildings
 '''
 from sklearn.feature_extraction.text import CountVectorizer as CV
 from sklearn.cross_validation import StratifiedKFold
@@ -34,43 +34,22 @@ import itertools
 import pylab as pl
 import matplotlib.pyplot as plt
 
-#input1 = np.genfromtxt('rice_hour_soda', delimiter=',')
+input1 = np.genfromtxt('rice_hour_sdh', delimiter=',')
 #input1 = np.genfromtxt('sdh_hour_soda', delimiter=',')
-input1 = np.genfromtxt('soda_hour_rice', delimiter=',')
-'''
-input1x = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_sdh').readlines()]
-input1y = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_soda').readlines()]
-p = DD()
-for i,j in zip(input1x, input1):
-    p[i] = j
-for i,j in zip(input1y, input12):
-    p[i] = j
-input1 = []
-input1p = []
-for k,v in p.items():
-    input1.append(v)
-    input1p.append(k)
-'''
-#input2 = np.genfromtxt('keti_hour_sum', delimiter=',')
-input21 = np.genfromtxt('rice_hour_soda', delimiter=',')
-input3 = np.genfromtxt('sdh_hour_soda', delimiter=',')
-#input2 = np.vstack((input2,input21,input3))
-#input2 = np.vstack((input2,input21,input3))
-#input1 = np.vstack((input2,input1))
+#input1 = np.genfromtxt('soda_hour_rice', delimiter=',')
+input21 = np.genfromtxt('keti_hour_sum', delimiter=',')
+#input21 = np.genfromtxt('rice_hour_soda', delimiter=',')
+input3 = np.genfromtxt('sdh_hour_rice', delimiter=',')
 input2 = np.vstack((input21,input3))
 fd1 = input1[:,0:-1]
-fd2 = input21[:,0:-1]
+fd2 = input2[:,0:-1]
 fd3 = input3[:,0:-1]
 #train_fd = np.hstack((fd1,fd2))
 train_fd = fd1
-#fd21 = np.hstack((fd3,fd4))
-#fd22 = np.hstack((fd5,fd6))
-#test_fd = np.vstack((fd22,fd21))
-#test_fd = np.vstack((fd2,fd3))
 test_fd = fd2
 train_label = input1[:,-1]
 #test_label = np.hstack((input2[:,-1],input3[:,-1]))
-test_label = input21[:,-1]
+test_label = input2[:,-1]
 #print np.unique(train_label)
 #print np.unique(test_label)
 #print train_fd.shape
@@ -78,27 +57,12 @@ test_label = input21[:,-1]
 #print test_fd.shape
 #print test_label.shape
 
-
 fd_tmp = train_fd
 train_fd = test_fd
 test_fd = fd_tmp
 l_tmp = train_label
 train_label = test_label
 test_label = l_tmp
-
-'''
-input1 = np.genfromtxt('shape_all', delimiter=',')
-input2 = np.genfromtxt('label_all', delimiter=',')
-#input3 = np.genfromtxt('train-all', delimiter=',')
-#train_fd = np.hstack((input3[0:30],input1[0:30,]))
-#test_fd = np.hstack((input3[30:],input1[30:,]))
-#train_fd = input1[0:30]
-train_fd = input1[0:467]
-test_fd = input1[467:]
-train_label = input2[0:467]
-test_label = input2[467:]
-print train_fd.shape
-'''
 
 rf = RFC(n_estimators=100, criterion='entropy')
 #rf = SVC(kernel='poly')
@@ -172,42 +136,15 @@ lr = LR()
 bl = [rf, lr, svm] #set of base learner
 for b in bl:
     b.fit(train_fd, train_label) #train each base classifier
-    print b
-
-'''
-cm_ = CM(test_label, preds)
-cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
-fig = pl.figure()
-ax = fig.add_subplot(111)
-cax = ax.matshow(cm)
-fig.colorbar(cax)
-for x in xrange(len(cm)):
-    for y in xrange(len(cm)):
-        ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
-                    horizontalalignment='center',
-                    verticalalignment='center',
-                    fontsize=10)
-cm_cls = np.unique(np.hstack((test_label,preds)))
-cls = []
-for c in cm_cls:
-    cls.append(mapping[c])
-pl.yticks(range(len(cls)), cls)
-pl.ylabel('True label')
-pl.xticks(range(len(cls)), cls)
-pl.xlabel('Predicted label')
-pl.title('Mn Confusion matrix (%.3f)'%acc)
-pl.show()
-'''
+    #print b
 
 '''
 step2: TL with name feature on bldg2
 '''
 #input1 = [i.strip().split('+')[-1][:-5] for i in open('sdh_pt_soda').readlines()]
-#input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_soda').readlines()]
-input1 = [i.strip().split('\\')[-1][:-5] for i in open('soda_pt_rice').readlines()]
+input1 = [i.strip().split('\\')[-1][:-5] for i in open('rice_pt_sdh').readlines()]
+#input1 = [i.strip().split('\\')[-1][:-5] for i in open('soda_pt_rice').readlines()]
 label = test_label
-label_sum = CT(label)
-print label_sum
 class_ = np.unique(train_label)
 name = []
 for i in input1:
@@ -215,12 +152,10 @@ for i in input1:
     name.append(' '.join(s))
 cv = CV(analyzer='char_wb', ngram_range=(3,4))
 test_fn = cv.fit_transform(name).toarray()
-#test_fn = test_fd
-#fd = fn
 for b in bl:
     print b.score(test_fd,label)
 
-n_class = 10
+n_class = 32/2
 c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
 c.fit(test_fn)
 dist = np.sort(c.transform(test_fn))
@@ -251,14 +186,13 @@ for b,n in zip(bl, nb_f):
             n[e] = exx[exx!=e]
 
 preds = np.array([999 for i in xrange(len(test_fd))])
-#delta = 0.3
 acc_ = []
 cov_ = []
 for delta in np.linspace(0.4, 0.4, 1):
     print 'delta =', delta
     ct=0
+    ct_=0
     t=0
-    fn=0
     true = []
     pred = []
     l_id = []
@@ -266,6 +200,7 @@ for delta in np.linspace(0.4, 0.4, 1):
     mean_f = []
     h_t = []
     h_f = []
+    output = DD()
     for i in xrange(len(test_fn)):
         w = []
         v_c = set(nb_c[i])
@@ -284,20 +219,30 @@ for delta in np.linspace(0.4, 0.4, 1):
             for u in union:
                 d_u += np.linalg.norm(test_fn[i]-test_fn[u])
             sim = cns
-            if d_i != 0:
+            if len(inter) != 0:
                 sim = 1 - (d_i/d_u)/cns
                 #sim = (d_i/d_u)/cns
-            #print 'di', d_i,
-            #print 'sim\'', sim
+            if i==None:
+                print '==============================================='
+                print name[i], sim, d_i/len(inter), d_u/len(union)
+                print '\t --> common nb', len(inter)
+                for it in inter:
+                    print name[it], np.linalg.norm(test_fn[i]-test_fn[it])
+                print '\t --> other f nb', len(union)
+                for u in union:
+                    if u not in inter:
+                        print name[u], np.linalg.norm(test_fn[i]-test_fn[u])
+                s = raw_input('pause...')
+            if i in output:
+                output[i].extend(['%s/%s'%(len(inter), len(union)), 1-sim])
+            else:
+                output[i] = ['%s/%s'%(len(inter), len(union)), 1-sim]
             w.append(sim)
-            if sim<0:
-                pass
-                #print 'bug case',d_i, d_u, len(inter), len(union)
-        #print w
-        H = np.sum(-p*math.log(abs(p),2) for p in w if p!=0)
+        output[i].append(np.mean(w))
+        #H = np.sum(-p*math.log(abs(p),2) for p in w if p!=0)
         #H = np.max(w)
-        m = np.mean(w)
-        if np.mean(w) > delta and np.mean(w)<=1:
+        #m = np.mean(w)
+        if np.mean(w) >= delta:
             w[:] = [float(j)/sum(w) for j in w]
             pred_pr = np.zeros(len(class_))
             for wi, b in zip(w,bl):
@@ -306,7 +251,6 @@ for delta in np.linspace(0.4, 0.4, 1):
             preds[i] = class_[np.argmax(pred_pr)]
             true.append(label[i])
             pred.append(preds[i])
-            #print w, H, preds[i], label[i], input1[i]
             ct+=1
             l_id.append(i)
             if preds[i]==label[i]:
@@ -317,38 +261,79 @@ for delta in np.linspace(0.4, 0.4, 1):
                 pass
                 #mean_f.append(m)
                 #h_f.append(H)
-        elif np.mean(w) > 0.4 and np.mean(w)<=0.5:
-            continue
+        else:
+            #ct_+=1
+            w_ = w
             w[:] = [float(j)/sum(w) for j in w]
             pred_pr = np.zeros(len(class_))
+            tmp = []
+            tmp_pr = []
             for wi, b in zip(w,bl):
                 pr = b.predict_proba(test_fd[i])
+                tmp.append(int(b.predict(test_fd[i])))
+                tmp_pr.append(pr)
                 pred_pr = pred_pr + wi*pr
-            tmp = class_[np.argmax(pred_pr)]
-            #print '--->', w,tmp, label[i], input1[i]
-            true.append(label[i])
-            pred.append(tmp)
-            ct+=1
-            if tmp==label[i]:
-                t+=1
-                fn+=1
-                mean_t.append(m)
-                h_t.append(H)
-            else:
-                mean_f.append(m)
-                h_f.append(H)
-    #print 'part acc' , float(t)/ct
-    #print 'percent', float(ct)/len(label)
+            pred_ = class_[np.argmax(pred_pr)]
+            #if pred_ == label[i]:
+                #print '--->',
+                #h_t.append(H)
+            #else:
+                #print '===>',
+                #h_f.append(H)
+            #print w_, tmp_pr, tmp, pred_, label[i], input1[i]
+    #print 'ct' , ct
+    #print '# l_id', len(l_id)
     #print FS(true, pred, average='weighted')
+    #s = raw_input('pause...')
     for b in bl:
         pred_tmp = b.predict(test_fd[l_id])
         #print ACC(true, pred_tmp)
         #print FS(true, pred_tmp, average='weighted')
     acc_.append(float(t)/ct)
     cov_.append(float(ct)/len(label))
+
+    tl_label = DD()
+    for i,j in zip(l_id,pred):
+        tl_label[i] = j
+    for k,v in ex_id.items():
+        print '\t ===================================='
+        ctr = 0
+        N = len(v)
+        for vv in v:
+            if vv in l_id:
+                ctr+=1
+                print '\/', vv, name[vv], label[vv], tl_label[vv]
+            else:
+                print '><', vv, name[vv], label[vv], [int(b.predict(test_fd[vv])) for b in bl]
+            print '\t -->', output[vv]
+
+        print '\t %.3f of %s labeled in C-%s'%(ctr/float(N), N, k)
+        '''
+        print '\t -->', input1[v[0]]
+        try:
+            print '\t -->', input1[v[1]]
+            print '\t -->', input1[v[2]]
+        except Exception as e:
+            print e
+        '''
+'''
+src = h_t
+ecdf = ECDF(src)
+x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
+y = ecdf(x)
+plt.figure(figsize=(8,5))
+plt.plot(x, y, 'k--', label='intra-class', linewidth=2.0)
+src = h_f
+ecdf = ECDF(src)
+x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
+y = ecdf(x)
+plt.plot(x, y, 'r--', label='intra-class', linewidth=2.0)
+plt.show()
+'''
+
 print acc_
 print cov_
-s = raw_input('wait')
+s = raw_input('end of TL...')
 
 #print 'FN', fn
 '''
