@@ -14,6 +14,7 @@ from sklearn.svm import LinearSVC
 from sklearn.linear_model import LogisticRegression as LR
 from sklearn.cluster import KMeans
 from sklearn.neighbors import KNeighborsClassifier as KNN
+from sklearn.neighbors import NearestNeighbors as NN
 from sklearn.metrics import accuracy_score as ACC
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
@@ -185,10 +186,16 @@ for b,n in zip(bl, nb_f):
         for e in exx:
             n[e] = exx[exx!=e]
 
+#find k NN for each ex without considering clustering
+k = 21
+nb = NN(n_neighbors=k, algorithm='ball_tree', metric='euclidean').fit(test_fn)
+distances, indices = nb.kneighbors(test_fn)
+
 preds = np.array([999 for i in xrange(len(test_fd))])
 acc_ = []
 cov_ = []
-for delta in np.linspace(0.4, 0.4, 1):
+#for delta in np.linspace(0.4, 0.4, 1):
+for delta in xrange(1, k):
     print 'delta =', delta
     ct=0
     ct_=0
@@ -202,6 +209,8 @@ for delta in np.linspace(0.4, 0.4, 1):
     h_f = []
     output = DD()
     for i in xrange(len(test_fn)):
+        '''
+        #the origianl C v.s. f similiarity
         w = []
         v_c = set(nb_c[i])
         for n in nb_f:
@@ -242,6 +251,7 @@ for delta in np.linspace(0.4, 0.4, 1):
         #H = np.sum(-p*math.log(abs(p),2) for p in w if p!=0)
         #H = np.max(w)
         #m = np.mean(w)
+
         if np.mean(w) >= delta:
             w[:] = [float(j)/sum(w) for j in w]
             pred_pr = np.zeros(len(class_))
@@ -281,17 +291,34 @@ for delta in np.linspace(0.4, 0.4, 1):
                 #print '===>',
                 #h_f.append(H)
             #print w_, tmp_pr, tmp, pred_, label[i], input1[i]
+            '''
+        #new kNN based approach
+        '''
+        print '======================='
+        print name[i]
+        idx = indices[i]
+        for ii in idx:
+            print name[ii]
+        '''
+        p = rf.predict(test_fd[indices[i]])
+        #print p
+        #s = raw_input('pause...')
+        if len(np.unique(p)) <= delta:
+            ct+=1
+            l_id.append(i)
+            p_tmp = rf.predict(test_fd[i])
+            if p_tmp ==label[i]:
+                t+=1
+            pred.append(rf.predict(test_fd[i]))
+
     #print 'ct' , ct
     #print '# l_id', len(l_id)
     #print FS(true, pred, average='weighted')
     #s = raw_input('pause...')
-    for b in bl:
-        pred_tmp = b.predict(test_fd[l_id])
-        #print ACC(true, pred_tmp)
-        #print FS(true, pred_tmp, average='weighted')
     acc_.append(float(t)/ct)
     cov_.append(float(ct)/len(label))
 
+    '''
     tl_label = DD()
     for i,j in zip(l_id,pred):
         tl_label[i] = j
@@ -308,14 +335,8 @@ for delta in np.linspace(0.4, 0.4, 1):
             print '\t -->', output[vv]
 
         print '\t %.3f of %s labeled in C-%s'%(ctr/float(N), N, k)
-        '''
-        print '\t -->', input1[v[0]]
-        try:
-            print '\t -->', input1[v[1]]
-            print '\t -->', input1[v[2]]
-        except Exception as e:
-            print e
-        '''
+    '''
+
 '''
 src = h_t
 ecdf = ECDF(src)
@@ -331,8 +352,8 @@ plt.plot(x, y, 'r--', label='intra-class', linewidth=2.0)
 plt.show()
 '''
 
-print acc_
-print cov_
+print 'y1=',acc_,';'
+print 'y2=',cov_,';'
 s = raw_input('end of TL...')
 
 #print 'FN', fn
