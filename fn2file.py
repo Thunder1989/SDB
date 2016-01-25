@@ -93,7 +93,7 @@ node_feature = np.hstack([y_index, name_feature, O_xy])
 print node_feature.shape
 
 f = open('fn_rice.txt','w')
-f.write("%s,%s,%s\n"%(fn.shape[0],fn.shape[1],len(u_label)))
+f.write("%s,%s,%s\n"%(fn.shape[0],fn.shape[1]+len(bl),len(u_label)))
 f.writelines(",".join(str(y) for y in remap))
 f.write('\n')
 np.savetxt(f, node_feature, delimiter=",", fmt='%d')
