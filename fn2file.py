@@ -2,7 +2,8 @@
 generate node features for CRF and output to file
 ===format=====
 line1: #ofInstance, #ofFeature, #ofClass
-line2~N:
+line2: true Y_i (re-mapped to between 0~k)
+line3~N:
 x_i (implicit), Y_ij, name features, delta(oracle_k(x_i), Y_ij)
 '''
 from sklearn.feature_extraction.text import CountVectorizer as CV
