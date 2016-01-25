@@ -194,8 +194,8 @@ distances, indices = nb.kneighbors(test_fn)
 preds = np.array([999 for i in xrange(len(test_fd))])
 acc_ = []
 cov_ = []
-#for delta in np.linspace(0.4, 0.4, 1):
-for delta in xrange(1, k):
+for delta in np.linspace(0.4, 0.4, 1):
+#for delta in xrange(1, k):
     print 'delta =', delta
     ct=0
     ct_=0
@@ -209,7 +209,7 @@ for delta in xrange(1, k):
     h_f = []
     output = DD()
     for i in xrange(len(test_fn)):
-        '''
+        #'''
         #the origianl C v.s. f similiarity
         w = []
         v_c = set(nb_c[i])
@@ -231,7 +231,7 @@ for delta in xrange(1, k):
             if len(inter) != 0:
                 sim = 1 - (d_i/d_u)/cns
                 #sim = (d_i/d_u)/cns
-            if i==None:
+            if i==None: #disabled, for debugging
                 print '==============================================='
                 print name[i], sim, d_i/len(inter), d_u/len(union)
                 print '\t --> common nb', len(inter)
@@ -272,6 +272,7 @@ for delta in xrange(1, k):
                 #mean_f.append(m)
                 #h_f.append(H)
         else:
+            pass
             #ct_+=1
             w_ = w
             w[:] = [float(j)/sum(w) for j in w]
@@ -291,15 +292,15 @@ for delta in xrange(1, k):
                 #print '===>',
                 #h_f.append(H)
             #print w_, tmp_pr, tmp, pred_, label[i], input1[i]
-            '''
-        #new kNN based approach
+        #'''
         '''
+        #new kNN based approach
         print '======================='
         print name[i]
         idx = indices[i]
         for ii in idx:
             print name[ii]
-        '''
+
         p = rf.predict(test_fd[indices[i]])
         #print p
         #s = raw_input('pause...')
@@ -310,7 +311,7 @@ for delta in xrange(1, k):
             if p_tmp ==label[i]:
                 t+=1
             pred.append(rf.predict(test_fd[i]))
-
+        '''
     #print 'ct' , ct
     #print '# l_id', len(l_id)
     #print FS(true, pred, average='weighted')
@@ -337,21 +338,15 @@ for delta in xrange(1, k):
         print '\t %.3f of %s labeled in C-%s'%(ctr/float(N), N, k)
     '''
 
-'''
-src = h_t
-ecdf = ECDF(src)
-x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-y = ecdf(x)
-plt.figure(figsize=(8,5))
-plt.plot(x, y, 'k--', label='intra-class', linewidth=2.0)
-src = h_f
-ecdf = ECDF(src)
-x = np.linspace(min(src), max(src), int((max(src)-min(src))/0.01))
-y = ecdf(x)
-plt.plot(x, y, 'r--', label='intra-class', linewidth=2.0)
-plt.show()
-'''
-
+#re-map class label to 0~N
+u, remap = np.unique(np.append(label,pred), return_inverse=True)
+remap = remap[-len(pred):]#output parameters for testing in Java
+f = open('TL_out','w')
+f.writelines(",".join(str(i) for i in l_id))
+f.write('\n')
+f.writelines(",".join(str(l) for l in remap))
+f.write('\n')
+f.close()
 print 'y1=',acc_,';'
 print 'y2=',cov_,';'
 s = raw_input('end of TL...')
@@ -428,7 +423,7 @@ pp.savefig(dpi = 300)
 pp.close()
 pl.show()
 
-#knn pass
+#old knn pass on unlabeled fraction
 knn = KNN(n_neighbors=1, weights='distance', metric='euclidean')
 knn.fit(test_fn[l_id],pred)
 #knn.fit(test_fn,preds)
@@ -530,190 +525,4 @@ pl.ylabel('True label')
 pl.xticks(range(len(cls_x)), cls_x)
 pl.xlabel('Predicted label')
 pl.title('Confusion Matrix (%.3f on %0.3f, threshold=%s)'%(float(t)/ct,float(ct)/len(label),delta))
-pl.show()
-
-
-'''
-============
-old block
-============
-'''
-iteration = 40
-fold = 10
-clx = 13
-kf = KFold(len(label), n_folds=fold, shuffle=True)
-folds = [[] for i in range(fold)]
-i = 0
-for train, test in kf:
-    folds[i] = test
-    i+=1
-
-acc_sum = [[] for i in range(iteration)]
-acc_train = [[] for i in range(iteration)]
-acc_Md = []
-acc_type = [[] for i in range(clx)]
-#acc_type = [[[] for i in range(iteration)] for i in range(6)]
-#clf = RFC(n_estimators=100, criterion='entropy')
-#clf = DT(criterion='entropy', random_state=0)
-#clf = SVC(kernel='linear')
-mn = LinearSVC()
-
-for train, test in kf:
-#for fd in range(1):
-    '''
-    print 'running AL on new bldg - fold', fd
-    train = np.hstack((folds[(fd+x)%fold] for x in range(1)))
-    validate = np.hstack((folds[(fd+x)%fold] for x in range(1,fold/2)))
-    #cut train to one example
-    validate = np.append(validate,train[1:])
-    train = train[:1]
-
-    test = np.hstack((folds[(fd+x)%fold] for x in range(fold/2,fold)))
-    '''
-    test_data = fn[test]
-    test_label = label[test]
-    train_data = fn[train]
-    preds = md.predict(data1[train])
-    train_label = DD()
-    for i,j in zip(train, preds):
-        train_label[i] = j
-    #acc_Md.append(accuracy_score(test_label, label1[test]))
-    mn.fit(train_data, preds)
-    acc = mn.score(test_data, test_label)
-    acc_sum[0].append(acc)
-
-    c_fn = fn[train]
-    #n_class = len(np.unique(label[train]))
-    n_class = 20
-    c = KMeans(init='k-means++', n_clusters=n_class, n_init=10)
-    c.fit(c_fn)
-    '''
-    c = DPGMM(n_components=50, covariance_type='diag', alpha=1)
-    c.fit(train_fd)
-    c_labels = c.predict(train_fd)
-    print '# of GMM', len(np.unique(c_labels))
-    mu = c.means_
-    cov = c._get_covars()
-    c_inv = []
-    for co in cov:
-        c_inv.append(np.linalg.inv(co))
-    e_pr = np.sort(c.predict_proba(train_fd))
-    '''
-    dist = np.sort(c.transform(c_fn))
-    ex = DD(list) #example id, distance to centroid
-    ex_id = DD(list) #example id for each C
-    ex_N = [] #number of examples for each C
-    #for i,j,k in zip(c_labels, train, e_pr):
-    for i,j,k in zip(c.labels_, train, dist):
-        ex[i].append([j,k[0]])
-        ex_id[i].append(int(j))
-    for i,j in ex.items():
-        ex[i] = sorted(j, key=lambda x: x[-1])
-        ex_N.append([i,len(ex[i])])
-    ex_N = sorted(ex_N, key=lambda x: x[-1],reverse=True) #sort cluster by density
-
-    #confidence of training ex
-    label_pr = np.sort(md.predict_proba(data1[train]))
-    cf_d = DD()
-    for i,pr in zip(train, label_pr):
-        if len(pr)<2:
-            margin = 1
-        else:
-            margin = pr[-1]-pr[-2]
-        cf_d[i] = margin
-    #cf_d = sorted(cf_d, key=lambda x: x[-1])
-
-    for itr in range(1,n_class+1):
-        print 'running itr', itr
-        #train_data = fn[train]
-        #train_label = md.predict(train_data)
-        #validate_data = data1[validate]
-        #validate_label = label1[validate]
-
-        #kNN based voting on Md labels
-        knn = KNN(n_neighbors=3, weights='distance', metric='euclidean')
-        c_id = ex_N[itr-1][0]
-        e_id = np.asarray([i[0] for i in ex[c_id]]) #voting starts from the centroid
-        '''
-        sub_cf = [[i, cf_d[i]] for i in e_id]
-        sub_cf = sorted(sub_cf, key=lambda x: x[-1])
-        e_id = np.asarray([i[0] for i in sub_cf]) #voting starts frim min_cf by Md
-        '''
-        for i in e_id:
-            tmp = e_id[e_id!=i]
-            X = fn[tmp]
-            Y = []
-            for t in tmp:
-                Y.append(train_label[t])
-            knn.fit(X, Y)
-            train_label[i] = int(knn.predict(fn[i]))
-
-        Y = []
-        for t in train:
-            Y.append(train_label[t])
-        mn.fit(train_data, Y)
-        #print mn.classes_
-        acc = mn.score(test_data, test_label)
-        acc_sum[itr].append(acc)
-        acc_train[itr].append(accuracy_score(label[train], Y))
-
-        '''
-        #entropy based example selection block
-        #compute entropy for each instance and rank
-        label_pr = np.sort(clf.predict_proba(validate_data)) #sort in ascending order
-        preds = clf.predict(validate_data)
-        res = []
-        for h,i,pr in zip(validate,preds,label_pr):
-            entropy = np.sum(-p*math.log(p,clx) for p in pr if p!=0)
-            if len(pr)<2:
-                margin = 1
-            else:
-                margin = pr[-1]-pr[-2]
-            cf = cf_d[h][0][-1]
-            res.append([h,i,entropy,cf/(margin+1)])
-
-        res = sorted(res, key=lambda x: x[-1], reverse=True)
-        elmt = res[idx][0]
-        ex.extend([itr+1, elmt, label1[elmt], label_gt[elmt]])
-        train = np.append(train, elmt)
-        validate = validate[validate!=elmt]
-        '''
-#print 'acc from Md', np.mean(acc_Md)
-ave_acc = [np.mean(acc) for acc in acc_sum]
-ave_train = [np.mean(acc) for acc in acc_train]
-#acc_std = [np.std(acc) for acc in acc_sum]
-print 'overall acc:', repr(ave_acc)
-print 'overall acc on train:', repr(ave_train)
-#print 'acc std:', repr(acc_std)
-#print 'acc by type', repr(acc_type)
-#f = open('pipe_out','w')
-#f.writelines('%s;\n'%repr(i) for i in acc_type)
-#f.write('ex in each itr:'+repr(ex)+'\n')
-#f.write(repr(np.unique(test_label)))
-#f.close()
-#for i in acc_type:
-    #print 'a = ', repr(i), '; plot(a\');'
-#print repr(ex)
-
-cm_ = CM(test_label, preds_fn)
-cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
-fig = pl.figure()
-ax = fig.add_subplot(111)
-cax = ax.matshow(cm)
-fig.colorbar(cax)
-for x in xrange(len(cm)):
-    for y in xrange(len(cm)):
-        ax.annotate(str("%.3f(%d)"%(cm[x][y], cm_[x][y])), xy=(y,x),
-                    horizontalalignment='center',
-                    verticalalignment='center',
-                    fontsize=10)
-cm_cls =np.unique(np.hstack((test_label,preds_fn)))
-cls = []
-for c in cm_cls:
-    cls.append(mapping[c])
-pl.yticks(range(len(cls)), cls)
-pl.ylabel('True label')
-pl.xticks(range(len(cls)), cls)
-pl.xlabel('Predicted label')
-pl.title('Mn Confusion matrix (%.3f)'%acc)
 pl.show()
