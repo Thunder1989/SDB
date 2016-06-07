@@ -194,7 +194,7 @@ distances, indices = nb.kneighbors(test_fn)
 preds = np.array([999 for i in xrange(len(test_fd))])
 acc_ = []
 cov_ = []
-for delta in np.linspace(0.4, 0.4, 1):
+for delta in np.linspace(0.6, 0.6, 1):
 #for delta in xrange(1, k):
     print 'delta =', delta
     ct=0
