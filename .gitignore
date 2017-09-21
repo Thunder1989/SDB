@@ -1,9 +1,0 @@
-.gitignore
-.DS_Store
-./KETI
-*.swp
-*.png
-*.pdf
-*.csv
-*.txt
-*.dot
