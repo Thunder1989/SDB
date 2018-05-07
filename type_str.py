@@ -4,6 +4,7 @@ doing the type classification with point name
 from sklearn.feature_extraction.text import CountVectorizer as CV
 from sklearn.feature_extraction.text import TfidfVectorizer as TV
 from sklearn.cross_validation import StratifiedKFold
+from sklearn.cross_validation import KFold
 from sklearn.tree import DecisionTreeClassifier as DT
 from sklearn.ensemble import RandomForestClassifier as RFC
 from sklearn.naive_bayes import GaussianNB as GNB
@@ -19,19 +20,13 @@ import re
 import math
 import pylab as pl
 
-input1 = [i.strip().split('+')[-1][:-5] for i in open('rice_pt_soda').readlines()]
-input2 = np.genfromtxt('rice_hour_soda', delimiter=',')
-input3 = [i.strip().split('\\')[-1][:-5] for i in open('soda_pt_rice').readlines()]
-input4 = np.genfromtxt('soda_hour_rice', delimiter=',')
+input1 = [i.strip().split('+')[-1][:-5] for i in open('./features/rice_pt_soda').readlines()]
+input2 = np.genfromtxt('./features/rice_hour_soda', delimiter=',')
+input3 = [i.strip().split('\\')[-1][:-5] for i in open('./features/soda_pt_rice').readlines()]
+input4 = np.genfromtxt('./features/soda_hour_rice', delimiter=',')
 label1 = input2[:,-1]
 label2 = input4[:,-1]
 #input3, label = shuffle(input3, label)
-
-name = []
-for i in input3:
-    s = re.findall('(?i)[a-z]{2,}',i)
-    name.append(' '.join(s))
-#print name
 
 '''
 fold = 10
@@ -41,9 +36,10 @@ skf = StratifiedKFold(label, n_folds=fold, shuffle=True)
 acc_sum = []
 indi_acc =[[] for i in range(clx)]
 '''
-clf = RFC(n_estimators=100, criterion='entropy')
+
+#clf = RFC(n_estimators=100, criterion='entropy')
 #clf = DT(criterion='entropy', random_state=0)
-#clf = SVC(kernel='linear', probability=True)
+clf = SVC(kernel='linear', probability=True)
 #clf = GNB()
 
 #vc = CV(token_pattern='[a-z]{2,}')
@@ -57,21 +53,13 @@ for i in input1:
     s = re.findall('(?i)[a-z]{2,}',i)
     name.append(' '.join(s))
 vc.fit(name)
-data1 = vc.transform(name).toarray()
-name = []
-for i in input3:
-    s = re.findall('(?i)[a-z]{2,}',i)
-    name.append(' '.join(s))
-data2 = vc.transform(name).toarray()
-train_data = data2
-train_label = label2
-test_data = data1
-test_label = label1
-clf.fit(train_data, train_label)
-preds = clf.predict(test_data)
-print accuracy_score(test_label, preds)
+fn = vc.transform(name).toarray()
+label = label1
 
-for train_idx, test_idx in skf:
+fold = 10
+kf = KFold(len(label), n_folds=fold, shuffle=True)
+acc_sum = []
+for train_idx, test_idx in kf:
 #for test_idx,train_idx in skf:
     '''
     because we want to do inverse k-fold XV
@@ -94,9 +82,9 @@ for train_idx, test_idx in skf:
     cm_ = CM(test_label,preds)
     cm = normalize(cm_.astype(np.float), axis=1, norm='l1')
     k=0
-    while k<clx:
-        indi_acc[k].append(cm[k,k])
-        k += 1
+    #while k<clx:
+    #    indi_acc[k].append(cm[k,k])
+    #    k += 1
 
     for i,j,k in zip(test_label, preds, train_idx):
         if i==1 and j==1:
@@ -137,9 +125,9 @@ for train_idx, test_idx in skf:
     '''
 
 #print importance/run
-indi_ave_acc = [np.mean(i) for i in indi_acc]
+#indi_ave_acc = [np.mean(i) for i in indi_acc]
 #indi_ave_acc_std = [np.std(i) for i in indi_acc]
-print 'ave acc/type:', indi_ave_acc
+#print 'ave acc/type:', indi_ave_acc
 #print 'acc std/type:', indi_ave_acc_std
 
 '''
@@ -155,7 +143,7 @@ for i,j,pr in zip(test_label,preds,pr):
 log.close()
 '''
 print 'ave acc:', np.mean(acc_sum)
-#print 'std:', np.std(acc_sum)
+print 'std:', np.std(acc_sum)
 
 
 cm_ = CM(test_label,preds)
